@@ -28,7 +28,7 @@ def test_real_station_planner_and_simulation_contract():
         2.0,
     )
 
-    assert candidate["status"] == "feasible", candidate["violations"][:30]
+    assert candidate["status"] == "feasible", {"unassigned": candidate["unassigned"], "violations": candidate["violations"][:10]}
     assert candidate["unassigned"] == [], candidate
     assert candidate["violations"] == [], candidate
 
