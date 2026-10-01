@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import './app/fonts'
 import './app/theme.css'
 import App from './app/App'
 import { setTransport } from './api/transport'
