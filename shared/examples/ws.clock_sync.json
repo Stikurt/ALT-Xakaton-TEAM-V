@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "run_id": "example-run",
+  "ws_seq": 2,
+  "state_version": 2,
+  "type": "clock_sync",
+  "payload": {
+    "sim_time_s": 60,
+    "speed": 1,
+    "paused": false
+  }
+}

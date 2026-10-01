@@ -37,9 +37,7 @@ def test_health_state_and_openapi():
         assert state.status_code == 200
         assert state.json()["snapshot"]["paused"] is True
         assert c.get("/docs").status_code == 200
-        assert set(c.get("/openapi.json").json()["paths"]) == {"/health", "/api/state", "/api/simulation/control",
-                                                               "/api/incidents", "/api/incidents/batch",
-                                                               "/api/login", "/api/logout", "/api/me"}
+        assert set(c.get("/openapi.json").json()["paths"]) == {"/health", "/api/state", "/api/simulation/control", "/api/incidents", "/api/incidents/batch", "/api/replans", "/api/replans/{job_id}", "/api/plans/{plan_id}", "/api/plans/{plan_id}/apply", "/api/history", "/api/export.csv", "/api/login", "/api/logout", "/api/me"}
 
 
 @pytest.mark.parametrize("exc,code", [(NotInitialized(),"NOT_INITIALIZED"),

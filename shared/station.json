@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "uzel-12",
-  "horizon_s": 7200,
+  "horizon_s": 10800,
   "view_box": [
     0,
     0,

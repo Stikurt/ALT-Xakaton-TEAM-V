@@ -9,9 +9,9 @@
 `GET /api/state` возвращает `{schema_version, snapshot, topology}`.
 snapshot содержит run_id, state_version, last_seq, sim_time_s, speed, paused,
 trains, tracks, resources, operations, active_plan_id и replan_required.
-replan_required=true означает сохранённую заявку на пересчёт; на этапе 3
-фоновый исполнитель ещё не подключён. Признак сохраняется после перезапуска,
-включается при инциденте/ожидании операции и очищается reset.
+replan_required=true означает потребность в новом принятом плане. Признак сохраняется
+после перезапуска и расчёта, включается при инциденте/ожидании операции/ручном запросе
+и очищается успешным принятием плана или reset.
 topology содержит station_id, name, view_box, boundary_nodes, conflict_zones, routes.
 Пути и их geometry находятся в snapshot.tracks. Координаты — единицы SVG;
 usable_length_m и length_m — метры. `null` означает отсутствие назначения.
@@ -52,15 +52,15 @@ run_id в примерах равен `example-run`, а bootstrap выдаёт �
 | state_updated | `{snapshot: Snapshot}` — полный динамический снимок |
 | clock_sync | `{sim_time_s, speed, paused}` |
 | replan_started | `{job_id, based_on_version}` |
-| replan_finished | `{job_id, plan_ids, based_on_version, stale}` |
+| replan_finished | `{job_id, plan_ids, based_on_version, stale, identical}` |
 | replan_failed | `{job_id, code, message}` |
 | simulation_error | `{code, message}` |
 
 Сейчас WsEnvelope проверяет конверт; payload описан таблицей и примерами.
 Типизированный discriminated union payload добавляется при реализации WS.
 Примеры каждого типа — отдельные сообщения, не последовательный журнал.
-На этапе 2 реализованы snapshot/state_updated/clock_sync/simulation_error.
-Сообщения replan_* пока остаются согласуемыми примерами следующего этапа.
+Все перечисленные события реализованы. replan_* относятся к сохранённым задачам;
+успешный расчёт не означает допустимость всех вариантов или автоматическое принятие.
 
 ## Команды и ошибки
 
@@ -77,13 +77,20 @@ close_track и locomotive_unavailable требуют duration_s. Парамет�
 изменения условий требует нового command_id. Подробности — incidents.md.
 ApplyPlanCommand: command_id, run_id, expected_state_version.
 
+На этапе 4 Plan дополнен based_on_time_s, calculation_time_ms, violations и changes.
+Операционные unassigned и текстовые explanations нормализуются из формата Н в
+runtime/planning.py. Изменения содержат operation_id, before/after Assignment либо null.
+GET плана оборачивает Plan в `{plan,stale,applicable}`; GET задачи перечисляет plan_ids.
+Полные форматы API планирования и истории — planning-history.md.
+
 Ошибка: `{code, message, details: []}`. Секреты, входные пароли, SQL и traceback
 в ответ не включаются. Доступны 503 DATABASE_UNAVAILABLE / NOT_INITIALIZED /
 SIMULATION_UNAVAILABLE, 409 ошибок движка и повторного ID с другим телом,
 422 валидации, единый формат 404/405. Доступ (этап 6, `docs/auth.md`): 401
 AUTH_REQUIRED / SESSION_EXPIRED / INVALID_CREDENTIALS, 403 FORBIDDEN / CSRF_FAILED /
-ORIGIN_FORBIDDEN, 429 LOGIN_RATE_LIMITED. Команды требуют роль dispatcher или admin
-и заголовок X-CSRF-Token; тела команд, run_id/command_id и идемпотентность не менялись.
+ORIGIN_FORBIDDEN, 429 LOGIN_RATE_LIMITED. Команды (control, incidents, replans, apply)
+требуют роль dispatcher или admin и заголовок X-CSRF-Token; чтение состояния, планов,
+истории и CSV — роль viewer и выше. Тела команд и идемпотентность не менялись.
 
 ## Границы участников
 

@@ -12,7 +12,11 @@ from starlette.exceptions import HTTPException
 
 from app.api.routes import router
 from app.api.live import router as live_router
+from app.api.plans import router as plans_router
+from app.api.history import router as history_router
 from app.auth import CSRF_HEADER, PostgresSessionStore, install_auth
+from app.storage.history import HistoryError
+from app.runtime.planning import PlannerProcess
 from app.runtime.coordinator import Coordinator, RuntimeUnavailable
 from app.simulation.engine import SimulationError
 from app.domain.models import ApiError
@@ -57,8 +61,9 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
             try:
                 await asyncio.to_thread(app.state.repository.claim_owner)
                 state, initial_plan = await asyncio.to_thread(app.state.repository.load_runtime)
-                pending = await asyncio.to_thread(app.state.repository.get_replan_request,state.run_id)
-                owner = Coordinator(app.state.repository,state,initial_plan,replan_required=bool(pending))
+                required = await asyncio.to_thread(app.state.repository.needs_replan,state.run_id)
+                owner = Coordinator(app.state.repository,state,initial_plan,replan_required=required,
+                    planner=PlannerProcess(settings.planner_timeout_s,settings.planner_budget_s))
                 await owner.start()
                 app.state.runtime = owner
             except (psycopg.Error,PoolTimeout,NotInitialized) as exc:
@@ -70,8 +75,8 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
             await asyncio.to_thread(app.state.repository.release_owner)
             pool.close()
 
-    app = FastAPI(title="Узел 12 — Backend", version="0.3.0", lifespan=lifespan,
-                  description="Этап 3: управление, атомарные сбои, PostgreSQL и WebSocket.")
+    app = FastAPI(title="Узел 12 — Backend", version="0.5.0", lifespan=lifespan,
+                  description="Этапы 4–5: фоновые планы, принятие, история и CSV.")
     app.add_middleware(CORSMiddleware, allow_origins=settings.allowed_origins,
                        allow_credentials=True, allow_methods=["GET","POST"],
                        allow_headers=["Content-Type", CSRF_HEADER], expose_headers=["Retry-After"])
@@ -80,6 +85,10 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
     @app.exception_handler(RuntimeUnavailable)
     async def runtime_error(request: Request, exc: RuntimeUnavailable):
         return error_response(503,"SIMULATION_UNAVAILABLE",str(exc))
+
+    @app.exception_handler(HistoryError)
+    async def history_error(request: Request,exc: HistoryError):
+        return error_response(exc.status,exc.code,exc.message)
 
     @app.exception_handler(SimulationError)
     async def simulation_error(request: Request, exc: SimulationError):
@@ -107,8 +116,9 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
     async def http_error(request: Request, exc: HTTPException):
         return error_response(exc.status_code, f"HTTP_{exc.status_code}", str(exc.detail))
 
-    app.include_router(router)
-    app.include_router(live_router)
+    errors={code:{'model':ApiError} for code in (403,404,409,422,503)}
+    for api_router in (router,live_router,plans_router,history_router):
+        app.include_router(api_router,responses=errors)
     return app
 
 

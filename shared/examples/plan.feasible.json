@@ -1,0 +1,43 @@
+{
+  "id": "example-plan",
+  "run_id": "example-run",
+  "based_on_version": 0,
+  "strategy": "passenger_first",
+  "status": "feasible",
+  "assignments": [
+    {
+      "operation_id": "T01_01_arrival",
+      "start_s": 0,
+      "end_s": 120,
+      "track_id": "P01",
+      "route_id": "R_W_P01",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T01_02_dwell",
+      "start_s": 120,
+      "end_s": 480,
+      "track_id": "P01",
+      "route_id": null,
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T01_03_departure",
+      "start_s": 480,
+      "end_s": 600,
+      "track_id": "P01",
+      "route_id": "R_P01_E",
+      "resource_ids": []
+    }
+  ],
+  "unassigned": [],
+  "metrics": {},
+  "explanations": [
+    "Учебный пример контракта. Не результат вызова планировщика."
+  ],
+  "timed_out": false,
+  "based_on_time_s": 0,
+  "calculation_time_ms": 0.0,
+  "violations": [],
+  "changes": []
+}

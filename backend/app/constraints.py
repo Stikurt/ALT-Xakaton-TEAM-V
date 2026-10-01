@@ -482,6 +482,7 @@ def validate_plan(context: Json, plan: Json) -> list[Json]:
         pending_ops = [
             operations[oid] for oid in by_operation
             if oid in operations and get_value(operations[oid], "train_id") == tid
+            and get_value(operations[oid], "status") == "pending"
         ]
         ordered = _topological_for_train(pending_ops)
 

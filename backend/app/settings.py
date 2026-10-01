@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     db_pool_max_size: int = Field(default=4, ge=2, le=10)
     db_timeout_s: float = Field(default=3, gt=0, le=30)
     scenario_path: str = "shared/scenarios/one_train.json"
+    planner_timeout_s: float = Field(default=5, gt=0, le=30)
+    planner_budget_s: float = Field(default=2, gt=0, le=10)
 
     # Stage 6 access control, see docs/auth.md. Values come only from the environment/.env.
     session_secret: SecretStr | None = None

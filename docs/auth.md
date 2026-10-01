@@ -1,7 +1,7 @@
 # Доступ: вход, роли и сессии — этап 6
 
 Ветка: `feat/backend-auth` поверх `backend`. Код: `backend/app/auth/`, миграция
-`004_auth_sessions.sql`, тесты `tests/test_auth.py`. Регистрации, внешнего
+`005_auth_sessions.sql`, тесты `tests/test_auth.py`. Регистрации, внешнего
 провайдера, второго сервера и SQLite нет.
 
 ## Роли
@@ -28,7 +28,7 @@
 $env:PYTHONPATH = "$PWD\backend"
 .\.venv\Scripts\python.exe -m app.auth generate-secret   # строка для SESSION_SECRET
 .\.venv\Scripts\python.exe -m app.auth hash-password     # для каждой роли: пароль дважды, ввод скрыт
-.\.venv\Scripts\python.exe -m app.storage.migrate        # применяет 004_auth_sessions.sql
+.\.venv\Scripts\python.exe -m app.storage.migrate        # применяет 005_auth_sessions.sql
 ```
 
 Результаты записываются в `.env`, которая исключена из Git (см. `.env.example`):
@@ -212,6 +212,6 @@ from app.auth import require_role
 - До `accept` браузер не узнаёт причину отказа WebSocket — frontend вызывает
   `/api/me`. Внешний отзыв доходит до WS с задержкой до `WS_SESSION_RECHECK_S`.
 - `/ws` теперь требует Origin; клиенты не из браузера должны его передавать.
-- `/health` не проверяет наличие таблицы `auth_sessions`: без миграции 004 вход
+- `/health` не проверяет наличие таблицы `auth_sessions`: без миграции 005 вход
   отвечает 503 `DATABASE_UNAVAILABLE`.
 - HTTPS не настраивается этим кодом; `/docs` и `/openapi.json` публичны.
