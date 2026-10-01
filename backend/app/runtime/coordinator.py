@@ -21,9 +21,10 @@ class RuntimeUnavailable(Exception):
 
 class Coordinator:
     """One actor applies commands/ticks. State becomes visible only after SQL commit."""
-    def __init__(self, repository, state, initial_plan, *, tick_s=.1, queue_size=64):
+    def __init__(self, repository, state, initial_plan, *, tick_s=.1, queue_size=64, replan_required=False):
         self.repository, self.state = repository, state
         self.initial_plan = initial_plan
+        self.replan_required = replan_required
         self.tick_s = tick_s
         self.commands = asyncio.Queue(maxsize=queue_size)
         self.broadcast = Broadcast()
@@ -35,6 +36,7 @@ class Coordinator:
 
     def get_state(self):
         result = response(self.state)
+        result.snapshot.replan_required = self.replan_required
         if self.fault:
             result.snapshot.paused = True
         return result
@@ -77,10 +79,11 @@ class Coordinator:
     async def _commit(self, transition, command=None, request_hash=None):
         await asyncio.to_thread(self.repository.save_transition, self.state, transition,
                                 self.initial_plan, command, request_hash)
+        self.replan_required = (self.replan_required if self.state.run_id == transition.state.run_id else False) or transition.replan_required
         self.state = transition.state
         if transition.events:
             self.broadcast.publish(self.message("state_updated", {
-                "snapshot": response(self.state).snapshot.model_dump(mode="json")}))
+                "snapshot": self.get_state().snapshot.model_dump(mode="json")}))
 
     async def tick(self, elapsed_s):
         if self.fault or self.state.paused:
@@ -99,8 +102,18 @@ class Coordinator:
         if cached:
             if cached["request_hash"] != fingerprint:
                 raise SimulationError("COMMAND_ID_REUSED", "command_id уже использован с другим запросом")
+            if cached.get("response_status",200) >= 400:
+                error = cached["response"]
+                raise SimulationError(error["code"],error["message"],error["details"])
             return cached["response"]
-        transition = apply_command(self.state, command, rules=RULES)
+        try:
+            transition = apply_command(self.state, command, rules=RULES)
+        except SimulationError as exc:
+            # Cache domain refusals for known runs too: conditions may change on retry.
+            # Structural HTTP 422 responses and unknown run IDs are not persisted.
+            await asyncio.to_thread(self.repository.save_command_rejection,command,fingerprint,exc)
+            logger.info("command_rejected run_id=%s command_id=%s code=%s",command['run_id'],command['command_id'],exc.code)
+            raise
         if command["action"] == "reset":
             planned = restore_initial_plan(transition.state, self.initial_plan)
             result = dict(transition.result, state_version=planned.state.state_version)
@@ -108,6 +121,12 @@ class Coordinator:
             key = json.dumps([command["run_id"],command["command_id"]])
             planned.state.commands[key]["result"] = deepcopy(result)
             transition = Transition(planned.state, transition.events + planned.events, result)
+        transition.result["replan_required"] = (
+            (self.replan_required if self.state.run_id == transition.state.run_id else False)
+            or transition.replan_required
+        )
+        key = json.dumps([command["run_id"],command["command_id"]])
+        transition.state.commands[key]["result"] = deepcopy(transition.result)
         await self._commit(transition, command, fingerprint)
         return transition.result
 

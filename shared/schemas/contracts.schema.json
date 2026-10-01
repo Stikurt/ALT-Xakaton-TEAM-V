@@ -100,6 +100,42 @@
       "title": "Assignment",
       "type": "object"
     },
+    "CommandResult": {
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "state_version": {
+          "minimum": 0,
+          "title": "State Version",
+          "type": "integer"
+        },
+        "replan_required": {
+          "default": false,
+          "title": "Replan Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "command_id",
+        "run_id",
+        "state_version"
+      ],
+      "title": "CommandResult",
+      "type": "object"
+    },
     "Conflict": {
       "additionalProperties": false,
       "properties": {
@@ -311,7 +347,7 @@
       "title": "Event",
       "type": "object"
     },
-    "IncidentCommand": {
+    "IncidentBatchCommand": {
       "additionalProperties": false,
       "properties": {
         "command_id": {
@@ -328,6 +364,96 @@
           "title": "Run Id",
           "type": "string"
         },
+        "incidents": {
+          "items": {
+            "$ref": "#/$defs/IncidentSpec"
+          },
+          "maxItems": 50,
+          "minItems": 1,
+          "title": "Incidents",
+          "type": "array"
+        }
+      },
+      "required": [
+        "command_id",
+        "run_id",
+        "incidents"
+      ],
+      "title": "IncidentBatchCommand",
+      "type": "object"
+    },
+    "IncidentCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "delay_train",
+            "close_track",
+            "locomotive_unavailable"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "target_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Target Id",
+          "type": "string"
+        },
+        "duration_s": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration S"
+        },
+        "delay_s": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delay S"
+        },
+        "command_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Run Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "target_id",
+        "command_id",
+        "run_id"
+      ],
+      "title": "IncidentCommand",
+      "type": "object"
+    },
+    "IncidentSpec": {
+      "additionalProperties": false,
+      "properties": {
         "kind": {
           "enum": [
             "delay_train",
@@ -372,12 +498,10 @@
         }
       },
       "required": [
-        "command_id",
-        "run_id",
         "kind",
         "target_id"
       ],
-      "title": "IncidentCommand",
+      "title": "IncidentSpec",
       "type": "object"
     },
     "Movement": {
@@ -846,6 +970,11 @@
           },
           "title": "Conflicts",
           "type": "array"
+        },
+        "replan_required": {
+          "default": false,
+          "title": "Replan Required",
+          "type": "boolean"
         }
       },
       "required": [
@@ -1301,6 +1430,12 @@
     },
     {
       "$ref": "#/$defs/IncidentCommand"
+    },
+    {
+      "$ref": "#/$defs/IncidentBatchCommand"
+    },
+    {
+      "$ref": "#/$defs/CommandResult"
     },
     {
       "$ref": "#/$defs/ApplyPlanCommand"

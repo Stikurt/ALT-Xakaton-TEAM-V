@@ -22,16 +22,30 @@ class MemoryRepository:
     def __init__(self):
         self.saved = []
         self.commands = {}
+        self.pending = {}
         self.fail = False
 
     def check_ready(self): pass
     def command_result(self, run_id, command_id):
         return self.commands.get((run_id,command_id))
 
+    def get_replan_request(self, run_id):
+        return self.pending.get(run_id)
+
+    def save_command_rejection(self, command, request_hash, error):
+        if self.fail: raise RuntimeError("Injected storage failure")
+        self.commands[(command['run_id'],command['command_id'])] = {
+            'request_hash':request_hash, 'response_status':409,
+            'response':dict(code=error.code,message=error.message,details=error.details or [])}
+
     def save_transition(self, previous, transition, initial_plan, command=None, request_hash=None):
         if self.fail: raise RuntimeError("Injected storage failure")
         self.saved.extend(deepcopy(transition.events))
         self.checkpoint = encode_checkpoint(transition.state,initial_plan)
+        if previous.run_id != transition.state.run_id:
+            self.pending.pop(previous.run_id,None)
+        if transition.replan_required:
+            self.pending[transition.state.run_id] = dict(based_on_version=transition.state.state_version)
         if command:
             self.commands[(command['run_id'],command['command_id'])] = {
                 'request_hash':request_hash,'response':deepcopy(transition.result)}

@@ -1,8 +1,8 @@
 {
-  "command_id": "example-command",
-  "run_id": "example-run",
   "kind": "close_track",
   "target_id": "P04",
   "duration_s": 600,
-  "delay_s": null
+  "delay_s": null,
+  "command_id": "example-command",
+  "run_id": "example-run"
 }

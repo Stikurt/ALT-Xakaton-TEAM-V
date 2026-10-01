@@ -372,7 +372,8 @@
         }
       ],
       "active_plan_id": null,
-      "conflicts": []
+      "conflicts": [],
+      "replan_required": false
     },
     "topology": {
       "station_id": "uzel12",

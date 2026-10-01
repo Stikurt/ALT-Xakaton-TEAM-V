@@ -48,9 +48,24 @@ class Repository:
 
     def command_result(self, run_id, command_id):
         with self.pool.connection() as conn:
-            row = conn.execute("SELECT request_hash,response FROM commands WHERE run_id=%s AND command_id=%s",
+            row = conn.execute("SELECT request_hash,response,response_status FROM commands WHERE run_id=%s AND command_id=%s",
                                (run_id,command_id)).fetchone()
-        return {"request_hash":row[0],"response":row[1]} if row else None
+        return {"request_hash":row[0],"response":row[1],"response_status":row[2]} if row else None
+
+    def save_command_rejection(self, command, request_hash, error):
+        payload = {"code":error.code,"message":error.message,"details":error.details or []}
+        with self.pool.connection() as conn:
+            row = conn.execute("SELECT id FROM runs WHERE id=%s FOR UPDATE",(command['run_id'],)).fetchone()
+            if row is None:
+                return
+            conn.execute("""INSERT INTO commands(run_id,command_id,request_hash,response_status,response)
+                VALUES (%s,%s,%s,%s,%s)""",(command['run_id'],command['command_id'],request_hash,
+                422 if error.code=='INVALID_INPUT' else 409,Jsonb(payload)))
+
+    def get_replan_request(self, run_id):
+        with self.pool.connection() as conn:
+            row = conn.execute("SELECT based_on_version,last_seq,command_id FROM replan_requests WHERE run_id=%s",(run_id,)).fetchone()
+        return dict(run_id=run_id,based_on_version=row[0],last_seq=row[1],command_id=row[2]) if row else None
 
     def save_transition(self, previous, transition, initial_plan, command=None, request_hash=None):
         from app.runtime.state import encode_checkpoint, response
@@ -69,6 +84,15 @@ class Repository:
                 conn.execute("UPDATE runs SET status='archived' WHERE id=%s",(previous.run_id,))
                 conn.execute("INSERT INTO runs(id,station_config_id,status) VALUES (%s,%s,'active')",
                              (state.run_id,row[2]))
+                conn.execute("DELETE FROM replan_requests WHERE run_id=%s",(previous.run_id,))
+            if transition.replan_required:
+                conn.execute("""INSERT INTO replan_requests(run_id,based_on_version,last_seq,command_id)
+                    VALUES (%s,%s,%s,%s) ON CONFLICT(run_id) DO UPDATE SET
+                    based_on_version=excluded.based_on_version,last_seq=excluded.last_seq,
+                    command_id=excluded.command_id,requested_at=now()""",
+                    (state.run_id,state.state_version,state.last_seq,(command or {}).get('command_id')))
+            snapshot['replan_required'] = bool(conn.execute(
+                "SELECT 1 FROM replan_requests WHERE run_id=%s",(state.run_id,)).fetchone())
             for event in transition.events:
                 conn.execute("""INSERT INTO events(run_id,event_id,seq,sim_time_s,recorded_at,type,entity_id,payload)
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
@@ -101,7 +125,7 @@ class Repository:
     def check_ready(self) -> None:
         with self.pool.connection() as conn:
             row = conn.execute("""
-                SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE name='001_initial.sql'),
+                SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE name='003_replan_requests.sql'),
                        EXISTS(SELECT 1 FROM runs r JOIN snapshots s ON s.run_id=r.id
                               WHERE r.status='active')
             """).fetchone()
@@ -112,7 +136,8 @@ class Repository:
         # A single statement sees config + snapshot in one PostgreSQL MVCC snapshot.
         with self.pool.connection() as conn:
             row = conn.execute("""
-                SELECT s.payload, c.config->'topology'
+                SELECT s.payload, c.config->'topology',
+                       EXISTS(SELECT 1 FROM replan_requests q WHERE q.run_id=r.id)
                 FROM runs r
                 JOIN station_config c ON c.id=r.station_config_id
                 JOIN LATERAL (
@@ -123,4 +148,6 @@ class Repository:
             """).fetchone()
         if row is None:
             raise NotInitialized("No active run")
-        return StateResponse(snapshot=row[0], topology=row[1])
+        state = StateResponse(snapshot=row[0], topology=row[1])
+        state.snapshot.replan_required = row[2]
+        return state

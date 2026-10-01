@@ -370,7 +370,8 @@
       }
     ],
     "active_plan_id": "example-plan",
-    "conflicts": []
+    "conflicts": [],
+    "replan_required": false
   },
   "topology": {
     "station_id": "uzel12",

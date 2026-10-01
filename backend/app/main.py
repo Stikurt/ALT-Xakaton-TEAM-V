@@ -53,7 +53,8 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
             try:
                 await asyncio.to_thread(app.state.repository.claim_owner)
                 state, initial_plan = await asyncio.to_thread(app.state.repository.load_runtime)
-                owner = Coordinator(app.state.repository,state,initial_plan)
+                pending = await asyncio.to_thread(app.state.repository.get_replan_request,state.run_id)
+                owner = Coordinator(app.state.repository,state,initial_plan,replan_required=bool(pending))
                 await owner.start()
                 app.state.runtime = owner
             except (psycopg.Error,PoolTimeout,NotInitialized) as exc:
@@ -65,8 +66,8 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
             await asyncio.to_thread(app.state.repository.release_owner)
             pool.close()
 
-    app = FastAPI(title="Узел 12 — Backend", version="0.2.0", lifespan=lifespan,
-                  description="Этап 2: общий движок, PostgreSQL, команды управления и WebSocket.")
+    app = FastAPI(title="Узел 12 — Backend", version="0.3.0", lifespan=lifespan,
+                  description="Этап 3: управление, атомарные сбои, PostgreSQL и WebSocket.")
     app.add_middleware(CORSMiddleware, allow_origins=settings.allowed_origins,
                        allow_credentials=True, allow_methods=["GET","POST"], allow_headers=["Content-Type"])
 

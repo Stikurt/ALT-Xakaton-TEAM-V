@@ -8,7 +8,10 @@
 
 `GET /api/state` возвращает `{schema_version, snapshot, topology}`.
 snapshot содержит run_id, state_version, last_seq, sim_time_s, speed, paused,
-trains, tracks, resources, operations и active_plan_id.
+trains, tracks, resources, operations, active_plan_id и replan_required.
+replan_required=true означает сохранённую заявку на пересчёт; на этапе 3
+фоновый исполнитель ещё не подключён. Признак сохраняется после перезапуска,
+включается при инциденте/ожидании операции и очищается reset.
 topology содержит station_id, name, view_box, boundary_nodes, conflict_zones, routes.
 Пути и их geometry находятся в snapshot.tracks. Координаты — единицы SVG;
 usable_length_m и length_m — метры. `null` означает отсутствие назначения.
@@ -65,6 +68,13 @@ ControlCommand: command_id, run_id, action=start/pause/speed/reset;
 speed обязателен только для action=speed и равен 1, 5 или 10.
 IncidentCommand: command_id, run_id, kind, target_id; delay_train требует delay_s,
 close_track и locomotive_unavailable требуют duration_s. Параметры положительные.
+`POST /api/incidents/batch`: command_id, run_id, incidents — от 1 до 50 IncidentSpec
+без отдельных command_id/run_id внутри списка. Пакет атомарный.
+Успешный ответ обеих команд и control: `{command_id,run_id,state_version,replan_required}`.
+Результат повтора совпадает с первоначальным ответом, поэтому его версия может быть
+старее текущей. Отказы движка тоже сохраняются для существующего run_id;
+структурные ошибки 422 и неизвестные run_id не сохраняются. Новая попытка после
+изменения условий требует нового command_id. Подробности — incidents.md.
 ApplyPlanCommand: command_id, run_id, expected_state_version.
 
 Ошибка: `{code, message, details: []}`. Секреты, входные пароли, SQL и traceback
@@ -86,7 +96,7 @@ Origin; роли ещё не реализованы.
 Pydantic проверяет структуру и ссылки, но не доказывает отсутствие конфликтов
 станции. Жёсткие правила и проверка физической допустимости — функции Н.
 SimulationPort в `ports.py` отражает существующий модуль В на commit d4d2b62;
-PlannerPort пока предложение. Адаптеры будут реализованы на этапе 2. Движок
+PlannerPort пока предложение. Адаптер состояния и координатор подключены на этапе 2. Движок
 предварительно назначает seq/event_id/state_version, а backend подтверждает их
 сохранением. recorded_at и ws_seq назначает backend. Отдельные модели в каждом
 модуле создавать не нужно.

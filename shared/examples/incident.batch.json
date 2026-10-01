@@ -1,0 +1,16 @@
+{
+  "command_id": "example-batch",
+  "run_id": "example-run",
+  "incidents": [
+    {
+      "kind": "close_track",
+      "target_id": "P04",
+      "duration_s": 600
+    },
+    {
+      "kind": "locomotive_unavailable",
+      "target_id": "L01",
+      "duration_s": 300
+    }
+  ]
+}

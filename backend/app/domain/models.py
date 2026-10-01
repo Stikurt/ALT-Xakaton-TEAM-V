@@ -194,6 +194,7 @@ class Snapshot(Contract):
     operations: list[Operation]
     active_plan_id: Id | None = None
     conflicts: list[Conflict] = Field(default_factory=list)
+    replan_required: bool = False
 
     @model_validator(mode="after")
     def validate_references(self):
@@ -279,9 +280,7 @@ class ControlCommand(Contract):
         return self
 
 
-class IncidentCommand(Contract):
-    command_id: Id
-    run_id: Id
+class IncidentSpec(Contract):
     kind: Literal["delay_train", "close_track", "locomotive_unavailable"]
     target_id: Id
     duration_s: PositiveInt | None = None
@@ -295,6 +294,24 @@ class IncidentCommand(Contract):
         elif self.duration_s is None or self.delay_s is not None:
             raise ValueError("Resource incident requires only duration_s")
         return self
+
+
+class IncidentCommand(IncidentSpec):
+    command_id: Id
+    run_id: Id
+
+
+class IncidentBatchCommand(Contract):
+    command_id: Id
+    run_id: Id
+    incidents: Annotated[list[IncidentSpec], Field(min_length=1, max_length=50)]
+
+
+class CommandResult(Contract):
+    command_id: Id
+    run_id: Id
+    state_version: Seconds
+    replan_required: bool = False
 
 
 class ApplyPlanCommand(Contract):

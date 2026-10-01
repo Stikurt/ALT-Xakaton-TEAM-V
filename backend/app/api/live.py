@@ -3,7 +3,7 @@ import anyio
 
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 
-from app.domain.models import ControlCommand, ApiError
+from app.domain.models import ControlCommand, IncidentCommand, IncidentBatchCommand, CommandResult, ApiError
 from app.runtime.coordinator import RuntimeUnavailable
 
 router = APIRouter()
@@ -16,13 +16,35 @@ def runtime(request):
     return value
 
 
-@router.post("/api/simulation/control", responses={409:{"model":ApiError},503:{"model":ApiError}})
-async def control(command: ControlCommand, request: Request):
+def check_origin(request: Request):
     origin = request.headers.get("origin")
     if origin and origin not in request.app.state.allowed_origins:
         from fastapi import HTTPException
         raise HTTPException(403,"Origin не разрешён")
+
+
+@router.post("/api/simulation/control", response_model=CommandResult, responses={409:{"model":ApiError},503:{"model":ApiError}})
+async def control(command: ControlCommand, request: Request):
+    check_origin(request)
     return await runtime(request).submit(command.model_dump(exclude_none=True))
+
+
+@router.post("/api/incidents", response_model=CommandResult, responses={409:{"model":ApiError},503:{"model":ApiError}})
+async def incident(command: IncidentCommand, request: Request):
+    check_origin(request)
+    return await runtime(request).submit({
+        "command_id":command.command_id,"run_id":command.run_id,"action":"incident",
+        "incident":command.model_dump(exclude={"command_id","run_id"},exclude_none=True),
+    })
+
+
+@router.post("/api/incidents/batch", response_model=CommandResult, responses={409:{"model":ApiError},503:{"model":ApiError}})
+async def incidents(command: IncidentBatchCommand, request: Request):
+    check_origin(request)
+    return await runtime(request).submit({
+        "command_id":command.command_id,"run_id":command.run_id,"action":"incidents",
+        "incidents":[item.model_dump(exclude_none=True) for item in command.incidents],
+    })
 
 
 @router.websocket("/ws")

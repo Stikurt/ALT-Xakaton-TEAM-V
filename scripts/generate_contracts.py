@@ -9,7 +9,7 @@ sys.path.insert(0, str(ROOT / "backend"))
 
 from pydantic import TypeAdapter
 from app.domain.models import (
-    ApplyPlanCommand, ControlCommand, Event, IncidentCommand, Plan, StateResponse, WsEnvelope,
+    ApplyPlanCommand, ControlCommand, Event, IncidentCommand, IncidentBatchCommand, CommandResult, Plan, StateResponse, WsEnvelope,
 )
 from app.main import create_app
 
@@ -58,6 +58,10 @@ def generate():
     write("shared/examples/state.moving.json", moving.model_dump(mode="json"))
     incident = IncidentCommand(command_id="example-command",run_id="example-run",kind="close_track",target_id="P04",duration_s=600)
     write("shared/examples/incident.close_track.json", incident.model_dump(mode="json"))
+    batch = IncidentBatchCommand(command_id="example-batch",run_id="example-run",incidents=[
+        dict(kind="close_track",target_id="P04",duration_s=600),
+        dict(kind="locomotive_unavailable",target_id="L01",duration_s=300)])
+    write("shared/examples/incident.batch.json",batch.model_dump(mode="json",exclude_none=True))
     feasible = Plan(id="example-plan",run_id="example-run",based_on_version=0,strategy="passenger_first",status="feasible",
                     assignments=[dict(operation_id="T01_01_arrival",start_s=0,end_s=120,track_id="P01",route_id="R_W_P01"),
                                  dict(operation_id="T01_02_dwell",start_s=120,end_s=480,track_id="P01"),
@@ -81,7 +85,7 @@ def generate():
         envelope = WsEnvelope(run_id="example-run",ws_seq=1 if kind=="snapshot" else 2,
                               state_version=0 if kind=="snapshot" else 2,type=kind,payload=payload)
         write(f"shared/examples/ws.{kind}.json",envelope.model_dump(mode="json"))
-    schema = TypeAdapter(Union[StateResponse, Plan, Event, ControlCommand, IncidentCommand,
+    schema = TypeAdapter(Union[StateResponse, Plan, Event, ControlCommand, IncidentCommand, IncidentBatchCommand, CommandResult,
                               ApplyPlanCommand, WsEnvelope]).json_schema()
     write("shared/schemas/contracts.schema.json",schema)
     write("shared/schemas/openapi.json",create_app().openapi())
