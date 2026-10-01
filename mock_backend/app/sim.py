@@ -10,6 +10,7 @@ import uuid
 from collections import deque
 
 from .model import CONFIG, ROUTE_BY_ID, build_operations
+from .planner import index_from_penalties
 
 WAIT_TEXT = {
     "TRACK_CLOSED": "путь {x} закрыт",
@@ -385,22 +386,7 @@ class Station:
             p["utilization"] = p["idle"] = None
         C = len(self.exec_conflicts) + len(self.plan_conflicts)
         p["conflicts"] = min(C / 5, 1)
-        have = {k: v for k, v in p.items() if v is not None}
-        if not have:
-            return None
-        wsum = sum(WEIGHTS[k] for k in have)
-        factors = []
-        for k in WEIGHTS:
-            if k in have:
-                nw = WEIGHTS[k] / wsum
-                factors.append({"id": k, "label": FACTOR_LABEL[k], "penalty": round(have[k], 3),
-                                "weight": WEIGHTS[k], "contribution": round(100 * nw * have[k], 1)})
-            else:
-                factors.append({"id": k, "label": FACTOR_LABEL[k], "penalty": None, "weight": WEIGHTS[k],
-                                "contribution": None, "no_data": True})
-        value = round(100 * (1 - sum(f["contribution"] or 0 for f in factors) / 100))
-        cat = "norm" if value >= 80 else ("attention" if value >= 50 else "critical")
-        return {"value": value, "category": cat, "window_s": min(INDEX_W, t), "factors": factors, "kind": "fact"}
+        return index_from_penalties(p, min(INDEX_W, t), "fact")
 
     # ---------- снимок ----------
     def snapshot(self) -> dict:

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { selectPreviewPlan, useStore } from '../app/store'
+import { selectPreviewPlan, selectRole, selectView, useStore } from '../app/store'
+import Icon from '../app/Icon'
 import { CONFLICT, fmtDur, fmtT, OP_KIND, RES_KIND, TRACK_KIND, TRAIN_KIND, TRAIN_STATUS, useSimNow } from '../app/labels'
 import type { Assignment, Operation } from '../api/types'
 import s from './panels.module.css'
@@ -9,8 +10,14 @@ export default function SelectionCard() {
   if (!sel) {
     return (
       <section className={`${s.card} ${s.grow}`}>
-        <h3 className={s.h3}>Выбранный объект</h3>
-        <p className={s.empty}>Нажмите на поезд, путь, ресурс или конфликт — здесь появятся состояние, операции и назначения.</p>
+        <div className="eyebrow">Выбранный объект</div>
+        <p className={s.empty}>Нажмите на поезд, путь или ресурс на схеме. Здесь появятся состояние, цепочка операций и назначения по плану.</p>
+        <div className={s.legendList}>
+          <span><i style={{ background: 'var(--k-passenger)' }} />пассажирский</span>
+          <span><i style={{ background: 'var(--k-transit)' }} />транзитный</span>
+          <span><i style={{ background: 'var(--k-local)' }} />местный грузовой</span>
+          <span><i style={{ background: 'var(--wait)' }} />ждёт ресурс</span>
+        </div>
       </section>
     )
   }
@@ -25,7 +32,7 @@ export default function SelectionCard() {
 }
 
 function usePlanIndex() {
-  const snap = useStore((x) => x.snapshot)!
+  const snap = useStore(selectView)!
   const preview = useStore(selectPreviewPlan)
   return useMemo(() => {
     const active = Object.fromEntries((snap.active_plan?.assignments ?? []).map((a) => [a.operation_id, a]))
@@ -36,11 +43,11 @@ function usePlanIndex() {
 
 function Close() {
   const select = useStore((x) => x.select)
-  return <button className="btn btn-ghost btn-sm" onClick={() => select(null)} aria-label="Закрыть">✕</button>
+  return <button className="btn btn-ghost btn-sm" onClick={() => select(null)} aria-label="Снять выбор"><Icon name="close" /></button>
 }
 
 function TrainCard({ id }: { id: string }) {
-  const snap = useStore((x) => x.snapshot)!
+  const snap = useStore(selectView)!
   const select = useStore((x) => x.select)
   const now = useSimNow(4)
   const { active, prev } = usePlanIndex()
@@ -68,7 +75,7 @@ function TrainCard({ id }: { id: string }) {
         {t.track_id && <button className="chip chip-muted" onClick={() => select({ type: 'track', id: t.track_id! })}>путь {t.track_id}</button>}
         {t.delay_s > 0 ? <span className="chip chip-wait">задержка {fmtDur(t.delay_s)}</span> : <span className="chip chip-ok">по графику</span>}
       </div>
-      {t.wait_reason && <div className={s.bannerWarn}>⏸ Ожидание: {t.wait_reason}</div>}
+      {t.wait_reason && <div className={s.bannerWarn}>Ждёт: {t.wait_reason}</div>}
       {cur && (
         <div className={s.curOp}>
           <div><b>{OP_KIND[cur.kind]}</b> <span className="muted">идёт · {fmtDur(cur.duration_s)}</span></div>
@@ -87,7 +94,7 @@ function TrainCard({ id }: { id: string }) {
         <dd className="mono">{fmtT(t.actual_departure_s ?? t.forecast_departure_s)}</dd>
         {prevDep && <><dt className={s.prevTxt}>В варианте</dt><dd className={`mono ${s.prevTxt}`}>{fmtT(prevDep.end_s)}</dd></>}
       </dl>
-      <h4 className={s.h4}>Цепочка операций</h4>
+      <h4 className={`${s.h4} eyebrow`}>Цепочка операций</h4>
       <ol className={s.ops}>
         {ops.map((o) => <OpRow key={o.id} op={o} a={active[o.id]} pv={prev?.[o.id]} />)}
       </ol>
@@ -97,7 +104,7 @@ function TrainCard({ id }: { id: string }) {
 
 function OpRow({ op, a, pv }: { op: Operation; a?: Assignment; pv?: Assignment }) {
   const changed = pv && a && op.status === 'pending' && (pv.start_s !== a.start_s || pv.track_id !== a.track_id || pv.resource_ids.join() !== a.resource_ids.join())
-  const icon = op.status === 'completed' ? '✓' : op.status === 'running' ? '▶' : op.wait_reason ? '⏸' : '○'
+  const icon = op.status === 'completed' ? '✓' : op.status === 'running' ? '▸' : op.wait_reason ? '!' : '·'
   const where = op.is_move && a?.route_id ? a.route_id.replace('R_', '').replace('_', '→') : a?.track_id
   return (
     <li className={`${s.op} ${s['op_' + op.status]} ${op.wait_reason ? s.op_wait : ''}`}>
@@ -117,7 +124,7 @@ function OpRow({ op, a, pv }: { op: Operation; a?: Assignment; pv?: Assignment }
 }
 
 function TrackCard({ id }: { id: string }) {
-  const snap = useStore((x) => x.snapshot)!
+  const snap = useStore(selectView)!
   const topo = useStore((x) => x.topology)!
   const select = useStore((x) => x.select)
   const tr = snap.tracks.find((x) => x.id === id)
@@ -144,7 +151,7 @@ function TrackCard({ id }: { id: string }) {
         ) : <span className="chip chip-muted">свободен</span>}
       </div>
       {closed && <p className="muted">Новые входы запрещены. Находящийся состав может закончить работы и выйти.</p>}
-      <h4 className={s.h4}>Ближайшие въезды по принятому плану</h4>
+      <h4 className={`${s.h4} eyebrow`}>Ближайшие въезды по принятому плану</h4>
       {upcoming.length === 0 ? <p className={s.empty}>Нет назначений</p> : (
         <ul className={s.simpleList}>
           {upcoming.map((a) => (
@@ -162,7 +169,7 @@ function TrackCard({ id }: { id: string }) {
 }
 
 function ResourceCard({ id }: { id: string }) {
-  const snap = useStore((x) => x.snapshot)!
+  const snap = useStore(selectView)!
   const select = useStore((x) => x.select)
   const r = snap.resources.find((x) => x.id === id)
   if (!r) return null
@@ -190,7 +197,7 @@ function ResourceCard({ id }: { id: string }) {
         <p>Сейчас: <b>{OP_KIND[cur.kind]}</b>{' '}
           <button className={s.linkBtn} onClick={() => select({ type: 'train', id: cur.train_id })}>{cur.train_id}</button></p>
       )}
-      <h4 className={s.h4}>Ближайшие задания по плану</h4>
+      <h4 className={`${s.h4} eyebrow`}>Ближайшие задания по плану</h4>
       {upcoming.length === 0 ? <p className={s.empty}>Нет заданий</p> : (
         <ul className={s.simpleList}>
           {upcoming.map((a) => (
@@ -208,10 +215,12 @@ function ResourceCard({ id }: { id: string }) {
 }
 
 function ConflictCard({ id }: { id: string }) {
-  const snap = useStore((x) => x.snapshot)!
+  const snap = useStore(selectView)!
   const select = useStore((x) => x.select)
   const requestReplan = useStore((x) => x.requestReplan)
   const replan = useStore((x) => x.replan)
+  const role = useStore(selectRole)
+  const history = useStore((x) => x.history)
   const c = snap.conflicts.find((x) => x.id === id)
   if (!c) return <p className={s.empty}>Конфликт разрешён. <button className={s.linkBtn} onClick={() => select(null)}>Закрыть</button></p>
   const typeOf = (eid: string) =>
@@ -231,7 +240,7 @@ function ConflictCard({ id }: { id: string }) {
         <dt>Тип</dt><dd>{c.kind === 'execution' ? 'Операция ждёт сейчас' : 'Нарушение в будущем плане'}</dd>
         <dt>Интервал</dt><dd className="mono">{fmtT(c.start_s)}{c.end_s ? ` → ${fmtT(c.end_s)}` : ' → …'}</dd>
       </dl>
-      <h4 className={s.h4}>Затронуто</h4>
+      <h4 className={`${s.h4} eyebrow`}>Затронуто</h4>
       <div className={s.chips}>
         {c.entity_ids.map((eid) => {
           const t = typeOf(eid)
@@ -239,13 +248,15 @@ function ConflictCard({ id }: { id: string }) {
             : <span key={eid} className="chip chip-muted">{eid}</span>
         })}
       </div>
-      <h4 className={s.h4}>Рекомендация</h4>
+      <h4 className={`${s.h4} eyebrow`}>Рекомендация</h4>
       <p className="muted">
         {c.kind === 'plan'
           ? 'Принятый план нарушает новое ограничение. Пересчитайте план и сравните варианты.'
           : 'Операция не может начаться. Состав остаётся на месте, пока ресурс не освободится или не будет принят новый план.'}
       </p>
-      <button className="btn btn-primary" disabled={replan.status === 'running'} onClick={() => requestReplan()}>⟳ Пересчитать план</button>
+      <button className="btn btn-primary" disabled={replan.status === 'running' || role === 'viewer' || !!history} onClick={() => requestReplan()}>
+        <Icon name="replan" size={14} /> Пересчитать план
+      </button>
     </>
   )
 }

@@ -8,7 +8,7 @@ export default function Toasts() {
     <div className={s.toasts} aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} className={`${s.toast} ${s['toast_' + t.kind]}`} onClick={() => dismiss(t.id)}>
-          {t.kind === 'error' ? '✕ ' : t.kind === 'ok' ? '✓ ' : ''}{t.text}
+          {t.text}
         </div>
       ))}
     </div>

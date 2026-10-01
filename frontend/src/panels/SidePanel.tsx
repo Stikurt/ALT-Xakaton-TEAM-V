@@ -1,4 +1,5 @@
-import { useStore } from '../app/store'
+import { selectView, useStore } from '../app/store'
+import Icon from '../app/Icon'
 import { fmtDur, fmtT, RES_KIND, TRAIN_KIND_SHORT, TRAIN_STATUS } from '../app/labels'
 import s from './panels.module.css'
 
@@ -8,23 +9,17 @@ export default function SidePanel() {
   return (
     <aside className={s.side}>
       <div className={s.cardHead}>
-        <h3 className={s.h3}>{nav === 'trains' ? 'Поезда' : nav === 'resources' ? 'Ресурсы' : 'История'}</h3>
-        <button className="btn btn-ghost btn-sm" onClick={() => setNav('overview')}>✕</button>
+        <div className="eyebrow">{nav === 'trains' ? 'Поезда · 15 по сценарию' : 'Ресурсы и горловины'}</div>
+        <button className="btn btn-ghost btn-sm" onClick={() => setNav('overview')} aria-label="Закрыть"><Icon name="close" /></button>
       </div>
       {nav === 'trains' && <Trains />}
       {nav === 'resources' && <Resources />}
-      {nav === 'history' && (
-        <div className={s.empty}>
-          Просмотр прошлого состояния (последние 15 минут), явная отметка «ИСТОРИЯ» и возврат в онлайн — приоритет P1.
-          Ожидает <span className="mono">GET /api/history?run_id&at_s</span> от backend.
-        </div>
-      )}
     </aside>
   )
 }
 
 function Trains() {
-  const snap = useStore((x) => x.snapshot)!
+  const snap = useStore(selectView)!
   const sel = useStore((x) => x.selection)
   const select = useStore((x) => x.select)
   return (
@@ -39,7 +34,7 @@ function Trains() {
             <td>{TRAIN_KIND_SHORT[t.kind]}</td>
             <td>
               <span className={t.wait_reason ? s.warnTxt : t.status === 'departed' ? 'muted' : ''}>
-                {t.wait_reason ? '⏸ ждёт' : TRAIN_STATUS[t.status]}
+                {t.wait_reason ? 'ждёт' : TRAIN_STATUS[t.status]}
               </span>
               {t.track_id && <span className="muted"> · {t.track_id}</span>}
             </td>
@@ -53,7 +48,7 @@ function Trains() {
 }
 
 function Resources() {
-  const snap = useStore((x) => x.snapshot)!
+  const snap = useStore(selectView)!
   const sel = useStore((x) => x.selection)
   const select = useStore((x) => x.select)
   const opById = Object.fromEntries(snap.operations.map((o) => [o.id, o]))

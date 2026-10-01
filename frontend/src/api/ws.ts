@@ -1,5 +1,6 @@
 // Единственное WebSocket-соединение (ТЗ разд. 7): reconnect 1,2,4,8 → 10 с; пропуск ws_seq → полный снимок.
 import type { WsEnvelope } from './types'
+import { transport, type SocketLike } from './transport'
 
 export type WsStatus = 'connecting' | 'online' | 'offline'
 
@@ -12,18 +13,17 @@ export interface WsHandlers {
 const BACKOFF = [1000, 2000, 4000, 8000, 10000]
 
 export function connectWs(h: WsHandlers): () => void {
-  let ws: WebSocket | null = null
+  let ws: SocketLike | null = null
   let attempt = 0
   let lastSeq = 0
   let closed = false
   let timer: number | undefined
 
-  const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`
 
   const open = () => {
     if (closed) return
     h.onStatus('connecting')
-    ws = new WebSocket(url)
+    ws = transport().socket('/ws')
     lastSeq = 0
     ws.onopen = () => {
       attempt = 0

@@ -308,6 +308,8 @@ def plan(snapshot: dict, strategy: str = "passenger_first", budget_s: float = 2.
     plan_obj["violations"] = violations
     plan_obj["status"] = "infeasible" if violations else ("partial" if unassigned else "feasible")
     plan_obj["metrics"], plan_obj["explanations"] = _metrics_and_explanations(snapshot, plan_obj, active)
+    plan_obj["index_forecast"] = forecast_index(snapshot, plan_obj["assignments"],
+                                                len(violations) + len(unassigned))
     plan_obj["calc_ms"] = round((time.monotonic() - t_start) * 1000)
     return plan_obj
 
@@ -417,3 +419,93 @@ def _metrics_and_explanations(snapshot, plan_obj, active):
                "delayed_trains": sum(1 for x in vals if x > 0),
                "forecast_departures": dep, "delays": delays}
     return metrics, expl
+
+
+INDEX_W = 900
+INDEX_WEIGHTS = {"delay": 0.35, "on_time": 0.25, "utilization": 0.15, "conflicts": 0.15, "idle": 0.10}
+INDEX_LABELS = {"delay": "Задержка отправления", "on_time": "Выполнение отправлений",
+                "utilization": "Перегрузка путей", "conflicts": "Конфликты плана", "idle": "Простой из-за ожидания"}
+
+
+def index_from_penalties(p: dict, window_s: int, kind: str) -> dict | None:
+    """Общая формула индекса (ТЗ разд. 15): I = round(100·(1 − Σ w·p)), веса без данных исключаются."""
+    have = {k: v for k, v in p.items() if v is not None}
+    if not have:
+        return None
+    wsum = sum(INDEX_WEIGHTS[k] for k in have)
+    factors = []
+    for k, w in INDEX_WEIGHTS.items():
+        if k in have:
+            factors.append({"id": k, "label": INDEX_LABELS[k], "penalty": round(have[k], 3), "weight": w,
+                            "contribution": round(100 * w / wsum * have[k], 1)})
+        else:
+            factors.append({"id": k, "label": INDEX_LABELS[k], "penalty": None, "weight": w,
+                            "contribution": None, "no_data": True})
+    value = round(100 - sum(f["contribution"] or 0 for f in factors))
+    cat = "norm" if value >= 80 else ("attention" if value >= 50 else "critical")
+    return {"value": value, "category": cat, "window_s": window_s, "factors": factors, "kind": kind}
+
+
+def forecast_index(snapshot: dict, assignments: list[dict], conflicts: int) -> dict | None:
+    """Прогноз индекса в будущем окне [now, now+900) по назначениям плана."""
+    now = snapshot["sim_time_s"]
+    w1 = now + INDEX_W
+    trains = {t["id"]: t for t in snapshot["trains"]}
+    dep = {a["train_id"]: a["end_s"] for a in assignments if a["kind"] == "departure"}
+    arr = {a["train_id"]: a["start_s"] for a in assignments if a["kind"] == "arrival"}
+    delays, due, ok = [], 0, 0
+    for tid, t in trains.items():
+        if t["status"] == "departed":
+            continue
+        d = dep.get(tid)
+        sched = t["scheduled_departure_s"]
+        if d is None:
+            if sched < w1:
+                delays.append(w1 - sched)
+                due += 1
+            continue
+        if now <= d < w1 or sched < w1:
+            delays.append(max(0, min(d, w1) - sched))
+        if now <= sched < w1:
+            due += 1
+            ok += 1 if d <= sched else 0
+    p = {"delay": min(sum(delays) / len(delays) / 600, 1) if delays else None,
+         "on_time": (1 - ok / due) if due else None}
+    holds = []
+    by_train = defaultdict(list)
+    for a in assignments:
+        by_train[a["train_id"]].append(a)
+    for lst in by_train.values():
+        holds += _holds(sorted(lst, key=lambda a: a["start_s"]))
+    closed = {t["id"]: t["closed_until_s"] for t in snapshot["tracks"] if t["closed_until_s"]}
+    main = [t["id"] for t in snapshot["tracks"] if t["id"] != "P12"]
+    us, blocked, active = [], 0, 0
+    for ts in range(now, w1, 30):
+        open_ = [x for x in main if not (x in closed and ts < closed[x])]
+        occ = {tr for tr, s, e in holds if s <= ts < e and tr in open_}
+        us.append(len(occ) / len(open_) if open_ else 1)
+        for tid, t in trains.items():
+            if t["status"] == "departed":
+                continue
+            ea = t["expected_arrival_s"]
+            a0 = arr.get(tid)
+            d = dep.get(tid)
+            if ea <= ts and (d is None or ts < d):
+                active += 1
+                if t["status"] in ("scheduled", "waiting_entry") and (a0 is None or ts < a0):
+                    blocked += 1
+    U = sum(us) / len(us) if us else 0
+    p["utilization"] = min(max((U - 0.75) / 0.25, 0), 1)
+    p["idle"] = min(blocked / active, 1) if active else None
+    p["conflicts"] = min(conflicts / 5, 1)
+    return index_from_penalties(p, INDEX_W, "forecast")
+
+
+def baseline_forecast(snapshot: dict) -> dict | None:
+    """Прогноз индекса для текущего принятого плана — для сравнения «прогноз с прогнозом»."""
+    ap = snapshot.get("active_plan")
+    if not ap:
+        return None
+    v = [x for x in validate_plan(snapshot, {"assignments": ap["assignments"]}) if x["code"] != "PAST_START"]
+    n_conf = len({c["id"] for c in snapshot.get("conflicts", [])}) + len(v)
+    return forecast_index(snapshot, ap["assignments"], n_conf)

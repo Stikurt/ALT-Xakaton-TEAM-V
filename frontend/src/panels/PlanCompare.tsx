@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { useStore } from '../app/store'
 import { fmtDur, STRATEGY } from '../app/labels'
-import type { Plan } from '../api/types'
+import type { Plan, StationIndex } from '../api/types'
+import Icon from '../app/Icon'
+import { selectRole } from '../app/store'
+import { Factors, IndexGauge } from './RightPanel'
 import s from './panels.module.css'
 
 const rank = (p: Plan) => [p.status === 'feasible' ? 0 : 1, p.metrics.unassigned_count, p.metrics.total_delay_s, p.metrics.changed_count]
@@ -21,7 +24,7 @@ export default function PlanCompare() {
   const apply = useStore((x) => x.applyPlan)
   const requestReplan = useStore((x) => x.requestReplan)
   const conn = useStore((x) => x.conn)
-  const role = useStore((x) => x.role)
+  const role = useStore(selectRole)
   const pending = useStore((x) => x.pending)
   if (!open) return null
 
@@ -34,10 +37,11 @@ export default function PlanCompare() {
     <div className={s.drawer} role="dialog" aria-label="Сравнение вариантов плана">
       <div className={s.cardHead}>
         <div>
-          <h3 className={s.h3}>Варианты перепланирования</h3>
-          <div className="muted">Симуляция продолжает работу. Варианты — прогноз, а не факт.</div>
+          <div className="eyebrow">Перепланирование</div>
+          <h3 className={s.drawerTitle}>Сравнение вариантов</h3>
+          <div className="muted">Симуляция продолжает работу. Цифры вариантов — прогноз на 15 минут вперёд, не факт.</div>
         </div>
-        <button className="btn btn-ghost btn-sm" onClick={() => setOpen(false)}>✕</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => setOpen(false)} aria-label="Закрыть"><Icon name="close" /></button>
       </div>
       {replan.status === 'running' && <div className={s.banner}><span className={s.spinner} />Идёт расчёт…</div>}
       {replan.status !== 'running' && plans.length === 0 && (
@@ -46,8 +50,16 @@ export default function PlanCompare() {
         </div>
       )}
       {replan.identical && <div className={s.bannerInfo}>Стратегии дали одинаковый план</div>}
-      <div className={s.compareMeta}>
-        Сейчас по принятому плану: суммарная задержка <b className="mono">{fmtDur(curTotal)}</b>, максимальная <b className="mono">{fmtDur(curMax)}</b>, конфликтов <b className="mono">{snap.conflicts.length}</b>
+      <div className={s.baseline}>
+        <IndexGauge idx={replan.baseline} size={74} ghost />
+        <div>
+          <div className="eyebrow">Если ничего не менять</div>
+          <div className={s.baselineText}>
+            Принятый план: задержка <b className="mono">{fmtDur(curTotal)}</b>, максимум <b className="mono">{fmtDur(curMax)}</b>,
+            конфликтов <b className="mono">{snap.conflicts.length}</b>
+          </div>
+          <div className="muted" style={{ fontSize: 11 }}>Индекс слева — прогноз для текущего плана в том же окне, что и у вариантов.</div>
+        </div>
       </div>
       <div className={s.compareGrid} data-n={plans.length}>
         {plans.map((p) => (
@@ -55,7 +67,7 @@ export default function PlanCompare() {
             stale={p.based_on_epoch !== snap.epoch || p.run_id !== snap.run_id}
             canCmd={conn === 'online' && role !== 'viewer' && !pending}
             onPreview={() => setPreview(previewId === p.id ? null : p.id)}
-            onApply={() => apply(p.id)} onReplan={() => requestReplan()} identical={replan.identical} />
+            onApply={() => apply(p.id)} onReplan={() => requestReplan()} identical={replan.identical} baseline={replan.baseline} />
         ))}
       </div>
     </div>
@@ -63,7 +75,7 @@ export default function PlanCompare() {
 }
 
 function PlanCard(props: {
-  p: Plan; best: boolean; previewing: boolean; stale: boolean; canCmd: boolean; identical: boolean
+  p: Plan; best: boolean; previewing: boolean; stale: boolean; canCmd: boolean; identical: boolean; baseline: StationIndex | null
   onPreview: () => void; onApply: () => void; onReplan: () => void
 }) {
   const { p } = props
@@ -82,13 +94,27 @@ function PlanCard(props: {
           <div className="muted mono" style={{ fontSize: 11 }}>{p.id} · расчёт {p.calc_ms} мс</div>
         </div>
         <div className={s.chips}>
-          {props.best && <span className="chip chip-ok">лучше</span>}
+          {props.best && <span className="chip chip-info">рекомендуем</span>}
           <span className={p.status === 'feasible' ? 'chip chip-ok' : 'chip chip-bad'}>
             {p.status === 'feasible' ? 'допустимый' : p.status === 'partial' ? 'неполный' : p.status}
           </span>
           {p.timed_out && <span className="chip chip-wait">по тайм-ауту</span>}
         </div>
       </div>
+      {p.index_forecast && (
+        <div className={s.planIdx}>
+          <IndexGauge idx={p.index_forecast} size={84} />
+          <div>
+            <div className="eyebrow">Индекс · прогноз</div>
+            {props.baseline && (
+              <div className={`mono ${s.delta}`} data-sign={Math.sign(p.index_forecast.value - props.baseline.value)}>
+                {p.index_forecast.value - props.baseline.value >= 0 ? '+' : '−'}{Math.abs(p.index_forecast.value - props.baseline.value)} к текущему плану
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {p.index_forecast && <Factors idx={p.index_forecast} compare={props.baseline} />}
       <div className={s.metrics}>
         <Metric label="Суммарная задержка" value={fmtDur(m.total_delay_s)} />
         <Metric label="Макс. задержка" value={fmtDur(m.max_delay_s)} />
@@ -96,12 +122,12 @@ function PlanCard(props: {
         <Metric label="Переназначений" value={String(m.changed_count)} />
       </div>
       {p.unassigned.length > 0 && (
-        <ul className={s.unassigned}>{p.unassigned.map((u) => <li key={u.train_id}>⚠ {u.message}</li>)}</ul>
+        <ul className={s.unassigned}>{p.unassigned.map((u) => <li key={u.train_id}>{u.message}</li>)}</ul>
       )}
       {p.violations.length > 0 && (
-        <ul className={s.unassigned}>{p.violations.slice(0, 4).map((v, i) => <li key={i}>✕ {v.message}</li>)}</ul>
+        <ul className={s.unassigned}>{p.violations.slice(0, 4).map((v, i) => <li key={i}>{v.message}</li>)}</ul>
       )}
-      <h4 className={s.h4}>Почему так</h4>
+      <h4 className={`${s.h4} eyebrow`}>Что меняется и почему</h4>
       {p.explanations.length === 0 ? <p className={s.empty}>Будущие назначения не изменились</p> : (
         <ul className={s.expl}>
           {expl.map((e) => (
@@ -116,13 +142,13 @@ function PlanCard(props: {
       )}
       <div className={s.planFoot}>
         <button className={props.previewing ? 'btn btn-sm ' + s.previewOn : 'btn btn-sm'} onClick={props.onPreview}>
-          {props.previewing ? '◉ На схеме' : '◌ Показать на схеме'}
+          <Icon name="eye" size={14} />{props.previewing ? 'Показано на схеме' : 'Показать на схеме'}
         </button>
         {props.stale ? (
-          <button className="btn btn-sm" onClick={props.onReplan}>⟳ Пересчитать</button>
+          <button className="btn btn-sm" onClick={props.onReplan}><Icon name="replan" size={14} />Пересчитать</button>
         ) : (
           <button className="btn btn-primary btn-sm" disabled={reasons.length > 0} onClick={props.onApply}
-            title={reasons.join('. ')}>Принять план</button>
+            title={reasons.join('. ')}><Icon name="check" size={14} />Принять план</button>
         )}
       </div>
       {reasons.length > 0 && <div className={s.reasons}>{reasons.join(' · ')}</div>}

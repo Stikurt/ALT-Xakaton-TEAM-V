@@ -63,7 +63,7 @@ export interface Plan {
   strategy: 'passenger_first' | 'earliest_departure'; status: PlanStatus; timed_out: boolean
   assignments: Assignment[]; unassigned: { train_id: string; code: string; message: string }[]
   metrics: PlanMetrics; explanations: Explanation[]; violations: { code: string; message: string }[]
-  calc_ms: number; identical_to_other?: boolean
+  calc_ms: number; identical_to_other?: boolean; index_forecast: StationIndex | null
 }
 export interface Conflict {
   id: string; code: ConflictCode; severity: 'high' | 'medium' | 'low'; kind: 'execution' | 'plan'

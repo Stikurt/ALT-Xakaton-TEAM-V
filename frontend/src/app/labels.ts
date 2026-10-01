@@ -50,6 +50,7 @@ export function fmtDur(s: number): string {
 /** Модельное время, оценённое в браузере, с перерисовкой через requestAnimationFrame. */
 export function useSimNow(maxFps = 60): number {
   const clock = useStore((s) => s.clock)
+  const histAt = useStore((s) => (s.history ? s.history.at_s : null))
   const [now, setNow] = useState(() => estimateSim(clock, performance.now()))
   useEffect(() => {
     let raf = 0
@@ -65,5 +66,5 @@ export function useSimNow(maxFps = 60): number {
     raf = requestAnimationFrame(frame)
     return () => cancelAnimationFrame(raf)
   }, [clock, maxFps])
-  return now
+  return histAt ?? now
 }

@@ -1,7 +1,7 @@
 // Временная диаграмма (Гант) по путям, горловинам и ресурсам. Один масштаб и общие модельные часы.
 // Факт — сплошные полосы, прогноз по плану — контур. Вариант плана — фиолетовый контур.
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { selectPreviewPlan, useStore } from '../app/store'
+import { selectPreviewPlan, selectView, useStore } from '../app/store'
 import { fmtT, OP_KIND, useSimNow } from '../app/labels'
 import type { Assignment, Operation, Train } from '../api/types'
 import s from './Timeline.module.css'
@@ -14,7 +14,7 @@ const AFTER = 45 * 60
 interface Bar { row: string; train: string; start: number; end: number; factUntil: number | null; label: string; wait: boolean; preview: boolean; kind: Train['kind'] }
 
 export default function Timeline() {
-  const snap = useStore((x) => x.snapshot)!
+  const snap = useStore(selectView)!
   const topo = useStore((x) => x.topology)!
   const sel = useStore((x) => x.selection)
   const select = useStore((x) => x.select)
@@ -65,10 +65,10 @@ export default function Timeline() {
       <svg width={width} height={H} className={s.svg}>
         <defs>
           <pattern id="tlHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(239,68,68,.55)" strokeWidth="2" />
+            <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,77,94,.6)" strokeWidth="2" />
           </pattern>
           <pattern id="tlPlan" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(148,163,184,.25)" strokeWidth="2" />
+            <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(166,176,205,.16)" strokeWidth="2" />
           </pattern>
         </defs>
         {/* шкала */}
@@ -123,7 +123,7 @@ export default function Timeline() {
         })}
         {/* текущее время */}
         <line x1={x(now)} x2={x(now)} y1={14} y2={H} className={s.now} />
-        <rect x={x(now) - 22} y={1} width={44} height={14} rx={3} className={s.nowTag} />
+        <rect x={x(now) - 23} y={1} width={46} height={14} rx={2} className={s.nowTag} />
         <text x={x(now)} y={11.5} textAnchor="middle" className={s.nowText}>{fmtT(now)}</text>
       </svg>
       <div className={s.legend}>

@@ -1,34 +1,40 @@
+/* Пульт диспетчера «Узел 12»: тёмный щит управления, неон только на том, что движется или требует внимания.
+   Сознательно одна тёмная тема (видеостена диспетчерской). */
 :root {
-  --bg: #0d1117;
-  --bg-2: #11161d;
-  --panel: #161b22;
-  --panel-2: #1c2330;
-  --border: #2a3240;
-  --border-strong: #3a4454;
-  --text: #e6edf3;
-  --text-2: #b4bfcc;
-  --muted: #7d8896;
+  --bg: #070913;
+  --bg-2: #0a0e1b;
+  --panel: #0d1222;
+  --panel-2: #131a2e;
+  --border: #1c2440;
+  --border-strong: #2a3458;
+  --text: #e3e8f6;
+  --text-2: #a6b0cd;
+  --muted: #6a7597;
 
-  --free: #4b5563;
-  --occupied: #3b82f6;
-  --occupied-soft: rgba(59, 130, 246, 0.18);
-  --wait: #f59e0b;
-  --wait-soft: rgba(245, 158, 11, 0.16);
-  --closed: #ef4444;
-  --closed-soft: rgba(239, 68, 68, 0.16);
-  --ok: #22c55e;
-  --ok-soft: rgba(34, 197, 94, 0.15);
-  --preview: #c084fc;
-  --preview-soft: rgba(192, 132, 252, 0.16);
-  --select: #f8fafc;
+  --free: #33406a;
+  --occupied: #2ee6ff;
+  --occupied-soft: rgba(46, 230, 255, 0.12);
+  --wait: #ffb53b;
+  --wait-soft: rgba(255, 181, 59, 0.13);
+  --closed: #ff4d5e;
+  --closed-soft: rgba(255, 77, 94, 0.14);
+  --ok: #6dffb0;
+  --ok-soft: rgba(109, 255, 176, 0.11);
+  --preview: #ff3ea5;
+  --preview-soft: rgba(255, 62, 165, 0.13);
+  --select: #ffffff;
 
-  --k-passenger: #60a5fa;
-  --k-transit: #38bdf8;
-  --k-local: #818cf8;
+  --k-passenger: #2ee6ff;
+  --k-transit: #5f86ff;
+  --k-local: #b18cff;
 
-  --radius: 8px;
-  --radius-sm: 5px;
-  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --glow-cyan: 0 0 0 1px rgba(46, 230, 255, 0.45), 0 0 18px rgba(46, 230, 255, 0.25);
+  --glow-pink: 0 0 0 1px rgba(255, 62, 165, 0.5), 0 0 18px rgba(255, 62, 165, 0.25);
+
+  --radius: 6px;
+  --radius-sm: 4px;
+  --font: 'Golos Text', 'Segoe UI', system-ui, sans-serif;
+  --display: 'Tektur', 'Golos Text', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   color-scheme: dark;
 }
@@ -38,7 +44,7 @@ html, body, #root { height: 100%; margin: 0; }
 body {
   background: var(--bg);
   color: var(--text);
-  font: 13px/1.4 var(--font);
+  font: 13px/1.45 var(--font);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
@@ -52,14 +58,16 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 .btn {
   display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px;
   border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--panel-2);
-  cursor: pointer; white-space: nowrap; font-weight: 500;
+  cursor: pointer; white-space: nowrap; font-weight: 500; transition: background .15s, box-shadow .15s, border-color .15s;
 }
-.btn:hover:not(:disabled) { background: #232c3b; }
+.btn:hover:not(:disabled) { background: #1a2340; border-color: #3a4673; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn-primary { background: #1f6feb; border-color: #388bfd; color: #fff; }
-.btn-primary:hover:not(:disabled) { background: #2f7cf6; }
-.btn-danger { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.5); color: #fecaca; }
-.btn-danger:hover:not(:disabled) { background: rgba(239, 68, 68, 0.25); }
+.btn-primary { background: var(--occupied); border-color: var(--occupied); color: #04121a; font-weight: 700; }
+.btn-primary:hover:not(:disabled) { background: #7af0ff; box-shadow: var(--glow-cyan); }
+.btn-danger { background: transparent; border-color: rgba(255, 77, 94, 0.6); color: #ff8c97; }
+.btn-danger:hover:not(:disabled) { background: var(--closed-soft); box-shadow: 0 0 14px rgba(255, 77, 94, .25); }
+.btn-accent { background: transparent; border-color: var(--preview); color: #ff8fca; }
+.btn-accent:hover:not(:disabled) { background: var(--preview-soft); box-shadow: var(--glow-pink); }
 .btn-ghost { background: transparent; border-color: transparent; }
 .btn-ghost:hover:not(:disabled) { background: var(--panel-2); }
 .btn-sm { height: 26px; padding: 0 8px; font-size: 12px; }
@@ -67,12 +75,17 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .muted { color: var(--muted); }
 .chip {
-  display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 999px;
-  font-size: 11px; font-weight: 600; border: 1px solid var(--border); white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border-radius: 3px;
+  font: 600 11px var(--mono); letter-spacing: .02em; border: 1px solid var(--border); white-space: nowrap;
 }
-.chip-ok { color: #86efac; border-color: rgba(34, 197, 94, 0.4); background: var(--ok-soft); }
-.chip-wait { color: #fcd34d; border-color: rgba(245, 158, 11, 0.45); background: var(--wait-soft); }
-.chip-bad { color: #fca5a5; border-color: rgba(239, 68, 68, 0.45); background: var(--closed-soft); }
-.chip-info { color: #93c5fd; border-color: rgba(59, 130, 246, 0.45); background: var(--occupied-soft); }
-.chip-preview { color: #e9d5ff; border-color: rgba(192, 132, 252, 0.5); background: var(--preview-soft); }
+.chip-ok { color: var(--ok); border-color: rgba(109, 255, 176, 0.35); background: var(--ok-soft); }
+.chip-wait { color: var(--wait); border-color: rgba(255, 181, 59, 0.4); background: var(--wait-soft); }
+.chip-bad { color: #ff8c97; border-color: rgba(255, 77, 94, 0.45); background: var(--closed-soft); }
+.chip-info { color: var(--occupied); border-color: rgba(46, 230, 255, 0.4); background: var(--occupied-soft); }
+.chip-preview { color: #ff8fca; border-color: rgba(255, 62, 165, 0.5); background: var(--preview-soft); }
 .chip-muted { color: var(--muted); }
+
+.kbd { font: 600 10.5px var(--mono); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border-strong); color: var(--text-2); background: var(--bg-2); }
+.eyebrow { font: 600 10.5px var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+@media (max-width: 760px) { body { overflow: auto; } }

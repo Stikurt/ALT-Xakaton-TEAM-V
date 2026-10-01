@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import StationView from '../station/StationView'
-import { estimateSim, selectPreviewPlan, useStore } from './store'
+import { estimateSim, selectPreviewPlan, selectView, useStore } from './store'
 import TopBar from '../panels/TopBar'
 import LeftNav from '../panels/LeftNav'
 import RightPanel from '../panels/RightPanel'
@@ -8,79 +8,101 @@ import IncidentDialog from '../panels/IncidentDialog'
 import PlanCompare from '../panels/PlanCompare'
 import SidePanel from '../panels/SidePanel'
 import Toasts from '../panels/Toasts'
+import LoginScreen from '../panels/LoginScreen'
+import HistoryBar from '../panels/HistoryBar'
+import { CsvDialog, HelpDialog } from '../panels/Dialogs'
 import Timeline from '../timeline/Timeline'
+import { useHotkeys } from './useHotkeys'
 import s from './App.module.css'
 
 export default function App() {
-  const init = useStore((x) => x.init)
-  useEffect(() => init(), [init])
+  const boot = useStore((x) => x.boot)
+  useEffect(() => boot(), [boot])
+  const auth = useStore((x) => x.auth)
 
-  const snapshot = useStore((x) => x.snapshot)
+  if (auth === 'checking') return <Splash text="Проверка сессии…" />
+  if (auth === 'anonymous') return <LoginScreen />
+  return <Workspace />
+}
+
+function Splash({ text, error }: { text: string; error?: string | null }) {
+  return (
+    <div className={s.loading}>
+      <div className={s.loadingCard}>
+        <div className={s.logo}>УЗЕЛ 12</div>
+        <p className={error ? s.loadErr : 'muted'}>{error ? 'Не удалось получить состояние станции' : text}</p>
+        {error && <p className="muted mono" style={{ fontSize: 11 }}>{error}</p>}
+        {error && <p className="muted">Повторное подключение идёт автоматически.</p>}
+      </div>
+    </div>
+  )
+}
+
+function Workspace() {
+  const online = useStore((x) => x.snapshot)
+  const view = useStore(selectView)
   const topology = useStore((x) => x.topology)
   const loadError = useStore((x) => x.loadError)
   const conn = useStore((x) => x.conn)
   const selection = useStore((x) => x.selection)
   const select = useStore((x) => x.select)
   const nav = useStore((x) => x.nav)
+  const history = useStore((x) => x.history)
   const previewPlan = useStore(selectPreviewPlan)
   const [timelineOpen, setTimelineOpen] = useState(true)
+  useHotkeys()
 
-  const getSimTime = useCallback(() => estimateSim(useStore.getState().clock, performance.now()), [])
+  const histAt = history?.at_s
+  const getSimTime = useCallback(
+    () => (histAt !== undefined ? histAt : estimateSim(useStore.getState().clock, performance.now())),
+    [histAt],
+  )
 
   const highlightIds = useMemo(() => {
-    if (selection?.type !== 'conflict' || !snapshot) return []
-    const c = snapshot.conflicts.find((x) => x.id === selection.id)
+    if (selection?.type !== 'conflict' || !view) return []
+    const c = view.conflicts.find((x) => x.id === selection.id)
     return c ? c.entity_ids : []
-  }, [selection, snapshot])
+  }, [selection, view])
 
-  if (!snapshot || !topology) {
-    return (
-      <div className={s.loading}>
-        <div className={s.loadingCard}>
-          <div className={s.logo}>УЗЕЛ 12</div>
-          {loadError ? (
-            <>
-              <p>Не удалось получить состояние станции.</p>
-              <p className="muted mono">{loadError}</p>
-              <p className="muted">Проверьте, что сервер запущен. Повторное подключение идёт автоматически.</p>
-            </>
-          ) : (
-            <p className="muted">Загрузка состояния станции…</p>
-          )}
-        </div>
-      </div>
-    )
-  }
+  if (!online || !view || !topology) return <Splash text="Загрузка состояния станции…" error={loadError} />
 
+  const mode = history ? 'history' : previewPlan ? 'preview' : 'online'
   return (
-    <div className={s.app} data-timeline={timelineOpen ? 'open' : 'closed'}>
+    <div className={s.app} data-timeline={timelineOpen ? 'open' : 'closed'} data-mode={mode}>
       <TopBar />
       <LeftNav />
       <main className={s.center}>
-        {nav !== 'overview' && <SidePanel />}
+        {nav !== 'overview' && nav !== 'history' && <SidePanel />}
         <div className={s.station}>
-          <StationView
-            snapshot={snapshot}
-            topology={topology}
-            selection={selection}
-            previewPlan={previewPlan}
-            viewMode={previewPlan ? 'preview' : 'online'}
-            highlightIds={highlightIds}
-            frozen={conn !== 'online'}
-            getSimTime={getSimTime}
-            onSelect={select}
-          />
+          {history && <HistoryBar />}
+          <div className={s.stationInner}>
+            <StationView
+              snapshot={view}
+              topology={topology}
+              selection={selection}
+              previewPlan={previewPlan}
+              viewMode={mode}
+              highlightIds={highlightIds}
+              frozen={!history && conn !== 'online'}
+              getSimTime={getSimTime}
+              onSelect={select}
+            />
+          </div>
         </div>
       </main>
       <RightPanel />
       <section className={s.bottom}>
-        <button className={s.bottomToggle} onClick={() => setTimelineOpen((v) => !v)}>
-          {timelineOpen ? '▾' : '▸'} Диаграмма операций
+        <button className={s.bottomToggle} onClick={() => setTimelineOpen((v) => !v)} aria-expanded={timelineOpen}>
+          <span className={s.caret} data-open={timelineOpen} />
+          <span className="eyebrow">Диаграмма операций</span>
+          <span className="muted">пути · горловины · ресурсы</span>
         </button>
         {timelineOpen && <Timeline />}
       </section>
       <IncidentDialog />
       <PlanCompare />
+      <CsvDialog />
+      <HelpDialog />
       <Toasts />
     </div>
   )

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../app/store'
+import Icon from '../app/Icon'
 import { fmtT } from '../app/labels'
 import type { IncidentKind } from '../api/types'
 import s from './panels.module.css'
@@ -69,7 +70,7 @@ export default function IncidentDialog() {
       <form className={s.modal} onClick={(e) => e.stopPropagation()} onSubmit={submit}>
         <div className={s.cardHead}>
           <h3 className={s.h3}>Внести нештатную ситуацию</h3>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(false)}>✕</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setOpen(false)} aria-label="Закрыть"><Icon name="close" /></button>
         </div>
         <div className={s.tabs}>
           {KINDS.map((x) => (
@@ -79,19 +80,19 @@ export default function IncidentDialog() {
         <p className={s.hint}>{k.hint}</p>
         <label className={s.field}>
           <span>{kind === 'close_track' ? 'Путь' : kind === 'delay' ? 'Поезд' : 'Локомотив'}</span>
-          <select value={target} onChange={(e) => setTarget(e.target.value)}>
+          <select id="incident-target" value={target} onChange={(e) => setTarget(e.target.value)}>
             {options.length === 0 && <option value="">Нет подходящих объектов</option>}
             {options.map((o) => <option key={o.id} value={o.id} disabled={o.disabled}>{o.label}</option>)}
           </select>
         </label>
         <label className={s.field}>
           <span>{kind === 'delay' ? 'Опоздание, модельных секунд' : 'Длительность, модельных секунд'}</span>
-          <input type="number" min={60} max={7200} step={60} value={dur} onChange={(e) => setDur(Number(e.target.value))} />
+          <input id="incident-duration" type="number" min={60} max={7200} step={60} value={dur} onChange={(e) => setDur(Number(e.target.value))} />
           <small className="muted">≈ {Math.round(dur / 60)} мин. Сейчас {fmtT(snap.sim_time_s)}{kind !== 'delay' ? `, до ${fmtT(snap.sim_time_s + dur)}` : ''}</small>
         </label>
         <div className={s.modalFoot}>
           <span className="muted">После внесения автоматически начнётся пересчёт плана.</span>
-          <button type="submit" className="btn btn-danger" disabled={invalid || !!pending}>Внести сбой</button>
+          <button type="submit" className="btn btn-danger" disabled={invalid || !!pending}><Icon name="alert" size={14} />Внести сбой</button>
         </div>
       </form>
     </div>

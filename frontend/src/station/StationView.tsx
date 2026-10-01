@@ -5,6 +5,7 @@ import type { Assignment, Plan, Pt, Snapshot, Topology, Train } from '../api/typ
 import { fmtT, TRAIN_KIND_SHORT } from '../app/labels'
 import { headingAt, poly, pointAt, subPath, toPath, trainPx } from './geometry'
 import s from './StationView.module.css'
+import Icon from '../app/Icon'
 
 export type StationSelection = { type: 'train' | 'track' | 'resource' | 'conflict'; id: string } | null
 export type ViewMode = 'online' | 'history' | 'preview'
@@ -141,13 +142,14 @@ export default function StationView(p: StationViewProps) {
     <div className={s.wrap}>
       <div className={s.toolbar}>
         <Legend />
-        {snap.paused && p.viewMode !== 'history' && <span className={s.pauseBadge}>⏸ ПАУЗА</span>}
+        {p.viewMode === 'history' && <span className={s.historyBadge}>ИСТОРИЯ · {fmtT(snap.sim_time_s)}</span>}
+        {snap.paused && p.viewMode !== 'history' && <span className={s.pauseBadge}>ПАУЗА</span>}
         {p.viewMode === 'preview' && <span className={s.previewBadge}>ПРОСМОТР ВАРИАНТА · ПРОГНОЗ</span>}
         {p.frozen && <span className={s.frozenBadge}>Нет связи — последнее подтверждённое состояние</span>}
         <div className={s.toolbarRight}>
-          <button className="btn btn-sm" onClick={() => zoom(1 / 1.25)} aria-label="Приблизить">＋</button>
-          <button className="btn btn-sm" onClick={() => zoom(1.25)} aria-label="Отдалить">－</button>
-          <button className="btn btn-sm" onClick={() => setVb(fit)}>Вся станция</button>
+          <button className="btn btn-sm" onClick={() => zoom(1 / 1.25)} aria-label="Приблизить"><Icon name="plus" size={14} /></button>
+          <button className="btn btn-sm" onClick={() => zoom(1.25)} aria-label="Отдалить"><Icon name="minus" size={14} /></button>
+          <button className="btn btn-sm" onClick={() => setVb(fit)}><Icon name="fit" size={14} />Вся станция</button>
         </div>
       </div>
       <div className={s.svgBox}>
@@ -172,8 +174,16 @@ export default function StationView(p: StationViewProps) {
             <line x1="0" y1="0" x2="0" y2="5" stroke="#ef4444" strokeWidth="2" />
           </pattern>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M40 0H0V40" fill="none" stroke="rgba(255,255,255,0.025)" />
+            <path d="M40 0H0V40" fill="none" stroke="rgba(120,140,220,0.05)" />
           </pattern>
+          <filter id="glow" filterUnits="userSpaceOnUse" x="-500" y="-500" width="2600" height="2000">
+            <feGaussianBlur stdDeviation="4" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <filter id="glowSoft" filterUnits="userSpaceOnUse" x="-500" y="-500" width="2600" height="2000">
+            <feGaussianBlur stdDeviation="2.5" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
         </defs>
         <rect x={-1000} y={-1000} width={3400} height={2900} fill="url(#grid)" />
 
@@ -219,12 +229,12 @@ export default function StationView(p: StationViewProps) {
               {previewTracks.has(t.id) && (
                 <rect x={t.geometry.x1 - 4} y={y - 10} width={t.geometry.x2 - t.geometry.x1 + 8} height={20} rx={5} className={s.previewRect} />
               )}
-              <line x1={t.geometry.x1} y1={y} x2={t.geometry.x2} y2={y} className={cls} />
+              <line x1={t.geometry.x1} y1={y} x2={t.geometry.x2} y2={y} className={cls} filter={closed || occ ? 'url(#glowSoft)' : undefined} />
               {closed && <rect x={t.geometry.x1} y={y - 7} width={t.geometry.x2 - t.geometry.x1} height={14} fill="url(#hatch)" rx={2} />}
               <rect x={t.geometry.x1 - 2} y={y - 12} width={48} height={24} rx={5} className={s.trackChip} />
               <text x={t.geometry.x1 + 22} y={y + 6} textAnchor="middle" className={s.trackLabel}>{t.id}</text>
               <text x={t.geometry.x2 + 12} y={y + 4} className={closed ? s.trackNoteBad : s.trackNote}>
-                {closed ? `⛔ закрыт до ${fmtT(st.closed_until_s)}` : `${t.usable_length_m} м`}
+                {closed ? `ЗАКРЫТ до ${fmtT(st.closed_until_s)}` : `${t.usable_length_m} м`}
               </text>
             </g>
           )
@@ -282,7 +292,7 @@ export default function StationView(p: StationViewProps) {
               <g key={t.id} transform={`translate(14, ${512 + i * 38})`} className={s.queueChip} onClick={click({ type: 'train', id: t.id })}>
                 <rect width={160} height={32} rx={6} className={waitingReason ? s.qWait : s.qOk} strokeWidth={sel ? 2.5 : 1} stroke={sel ? 'var(--select)' : undefined} />
                 <text x={8} y={21} className={s.qText}>{t.id}</text>
-                <text x={48} y={21} className={s.qSub}>{waitingReason ? `⏸ ${waitingReason}`.slice(0, 15) : 'вход по плану'}</text>
+                <text x={48} y={21} className={s.qSub}>{waitingReason ? `ждёт: ${waitingReason}`.slice(0, 16) : 'вход по плану'}</text>
               </g>
             )
           })}
@@ -420,7 +430,7 @@ const TrainsLayer = memo(function TrainsLayer(p: TLProps) {
             {trace && <path d={toPath(trace)} className={s.routeActual} />}
             <path d={d} className={s.trainHit} />
             {(sel || hl) && <path d={d} className={hl ? s.trainHl : s.trainSel} />}
-            <path d={d} className={s.trainBody} style={{ stroke: color }} />
+            <path d={d} className={s.trainBody} style={{ stroke: color }} filter="url(#glow)" />
             <path d={d} className={s.trainCars} />
             <g transform={`translate(${head[0]},${head[1]}) rotate(${(ang * 180) / Math.PI})`}>
               <path d="M-2,-6 L8,0 L-2,6 Z" fill={color} />
@@ -438,7 +448,7 @@ const TrainsLayer = memo(function TrainsLayer(p: TLProps) {
               </g>
             )}
             {waiting && (
-              <text x={center[0]} y={center[1] + 28} textAnchor="middle" className={s.waitText}>⏸ {t.wait_reason}</text>
+              <text x={center[0]} y={center[1] + 30} textAnchor="middle" className={s.waitText}>ждёт: {t.wait_reason}</text>
             )}
           </g>
         )
