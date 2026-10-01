@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 
 from app.domain.models import StateResponse
 from app.main import create_app
-from app.settings import Settings
 from app.storage.repository import NotInitialized
+from auth_support import MemorySessionStore, auth_settings, login
 
 
 class FakeRepository:
@@ -26,17 +26,18 @@ class FakeRepository:
 
 
 def client(error=None):
-    return TestClient(create_app(Settings(_env_file=None), FakeRepository(error)))
+    return TestClient(create_app(auth_settings(), FakeRepository(error), sessions=MemorySessionStore()))
 
 
 def test_health_state_and_openapi():
     with client() as c:
         assert c.get("/health").json()["database"] == "ready"
+        login(c, "viewer")
         state = c.get("/api/state")
         assert state.status_code == 200
         assert state.json()["snapshot"]["paused"] is True
         assert c.get("/docs").status_code == 200
-        assert set(c.get("/openapi.json").json()["paths"]) == {"/health", "/api/state", "/api/simulation/control", "/api/incidents", "/api/incidents/batch", "/api/replans", "/api/replans/{job_id}", "/api/plans/{plan_id}", "/api/plans/{plan_id}/apply", "/api/history", "/api/export.csv"}
+        assert set(c.get("/openapi.json").json()["paths"]) == {"/health", "/api/state", "/api/simulation/control", "/api/incidents", "/api/incidents/batch", "/api/replans", "/api/replans/{job_id}", "/api/plans/{plan_id}", "/api/plans/{plan_id}/apply", "/api/history", "/api/export.csv", "/api/login", "/api/logout", "/api/me"}
 
 
 @pytest.mark.parametrize("exc,code", [(NotInitialized(),"NOT_INITIALIZED"),
@@ -44,6 +45,8 @@ def test_health_state_and_openapi():
 @pytest.mark.parametrize("path", ["/health","/api/state"])
 def test_database_failure_is_visible_without_leaking_secrets(exc, code, path):
     with client(exc) as c:
+        if path == "/api/state":   # protected: the failure must surface for an authorised viewer
+            login(c, "viewer")
         r = c.get(path)
         assert r.status_code == 503
         assert r.json()["code"] == code

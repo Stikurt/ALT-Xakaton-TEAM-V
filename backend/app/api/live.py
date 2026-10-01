@@ -1,8 +1,9 @@
 import asyncio
 import anyio
 
-from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, Request, WebSocket, WebSocketDisconnect
 
+from app.auth import authorize_websocket, require_role
 from app.domain.models import ControlCommand, IncidentCommand, IncidentBatchCommand, CommandResult, ApiError
 from app.runtime.coordinator import RuntimeUnavailable
 
@@ -16,31 +17,30 @@ def runtime(request):
     return value
 
 
-def check_origin(request: Request):
-    origin = request.headers.get("origin")
-    if origin and origin not in request.app.state.allowed_origins:
-        from fastapi import HTTPException
-        raise HTTPException(403,"Origin не разрешён")
+# Stage 6: every command needs dispatcher/admin. require_role checks Origin (403),
+# session (401), the X-CSRF-Token header (403) and role (403) before the body is used.
+DISPATCHER = [Depends(require_role("dispatcher"))]
+GUARDED = {401:{"model":ApiError},403:{"model":ApiError}}
 
 
-@router.post("/api/simulation/control", response_model=CommandResult, responses={409:{"model":ApiError},503:{"model":ApiError}})
+@router.post("/api/simulation/control", response_model=CommandResult, dependencies=DISPATCHER,
+             responses={**GUARDED,409:{"model":ApiError},503:{"model":ApiError}})
 async def control(command: ControlCommand, request: Request):
-    check_origin(request)
     return await runtime(request).submit(command.model_dump(exclude_none=True))
 
 
-@router.post("/api/incidents", response_model=CommandResult, responses={409:{"model":ApiError},503:{"model":ApiError}})
+@router.post("/api/incidents", response_model=CommandResult, dependencies=DISPATCHER,
+             responses={**GUARDED,409:{"model":ApiError},503:{"model":ApiError}})
 async def incident(command: IncidentCommand, request: Request):
-    check_origin(request)
     return await runtime(request).submit({
         "command_id":command.command_id,"run_id":command.run_id,"action":"incident",
         "incident":command.model_dump(exclude={"command_id","run_id"},exclude_none=True),
     })
 
 
-@router.post("/api/incidents/batch", response_model=CommandResult, responses={409:{"model":ApiError},503:{"model":ApiError}})
+@router.post("/api/incidents/batch", response_model=CommandResult, dependencies=DISPATCHER,
+             responses={**GUARDED,409:{"model":ApiError},503:{"model":ApiError}})
 async def incidents(command: IncidentBatchCommand, request: Request):
-    check_origin(request)
     return await runtime(request).submit({
         "command_id":command.command_id,"run_id":command.run_id,"action":"incidents",
         "incidents":[item.model_dump(exclude_none=True) for item in command.incidents],
@@ -49,9 +49,9 @@ async def incidents(command: IncidentBatchCommand, request: Request):
 
 @router.websocket("/ws")
 async def websocket_stream(ws: WebSocket):
-    origin = ws.headers.get("origin")
-    if origin and origin not in ws.app.state.allowed_origins:
-        await ws.close(code=1008)
+    # Origin and session are verified before accept; failure closes with 1008.
+    principal = await authorize_websocket(ws)
+    if principal is None:
         return
     try:
         owner = runtime(ws)
@@ -61,6 +61,7 @@ async def websocket_stream(ws: WebSocket):
     subscriber = owner.broadcast.subscribe()
     first = owner.message("snapshot",owner.get_state().model_dump(mode="json"))
     tasks = []
+    close_code, close_reason = 1000, None
     try:
         await ws.accept()
         await asyncio.wait_for(ws.send_json(dict(first,ws_seq=1)),timeout=2)
@@ -84,8 +85,12 @@ async def websocket_stream(ws: WebSocket):
                 if message['type'] == 'websocket.disconnect':
                     return
 
-        tasks = [asyncio.create_task(send()),asyncio.create_task(receive())]
-        await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
+        # The third task ends when the session expires or is revoked (logout wakes it at once).
+        watch = asyncio.create_task(ws.app.state.auth.wait_session_end(principal))
+        tasks = [asyncio.create_task(send()),asyncio.create_task(receive()),watch]
+        done,_ = await asyncio.wait(tasks,return_when=asyncio.FIRST_COMPLETED)
+        if watch in done:
+            close_code, close_reason = watch.result()
     except (WebSocketDisconnect,asyncio.TimeoutError,asyncio.CancelledError):
         pass
     finally:
@@ -94,6 +99,6 @@ async def websocket_stream(ws: WebSocket):
             for task in tasks: task.cancel()
             if tasks: await asyncio.gather(*tasks,return_exceptions=True)
             try:
-                await ws.close()
+                await ws.close(code=close_code,reason=close_reason)
             except (RuntimeError,WebSocketDisconnect):
                 pass

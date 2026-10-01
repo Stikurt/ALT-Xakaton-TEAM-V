@@ -14,6 +14,7 @@ from app.api.routes import router
 from app.api.live import router as live_router
 from app.api.plans import router as plans_router
 from app.api.history import router as history_router
+from app.auth import CSRF_HEADER, PostgresSessionStore, install_auth
 from app.storage.history import HistoryError
 from app.runtime.planning import PlannerProcess
 from app.runtime.coordinator import Coordinator, RuntimeUnavailable
@@ -31,7 +32,8 @@ def error_response(status: int, code: str, message: str, details=None):
     ).model_dump(mode="json"))
 
 
-def create_app(settings: Settings | None = None, repository=None, coordinator=None) -> FastAPI:
+def create_app(settings: Settings | None = None, repository=None, coordinator=None,
+               sessions=None) -> FastAPI:
     settings = settings or Settings()
 
     @asynccontextmanager
@@ -41,6 +43,7 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
         app.state.allowed_origins = settings.allowed_origins
         if repository is not None:
             app.state.repository = repository
+            app.state.auth.store = sessions   # tests inject a double or a real PostgreSQL store
             if coordinator: await coordinator.start()
             yield
             if coordinator: await coordinator.stop()
@@ -53,6 +56,7 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
         )
         pool.open()
         app.state.repository = Repository(pool)
+        app.state.auth.store = PostgresSessionStore(pool)
         try:
             try:
                 await asyncio.to_thread(app.state.repository.claim_owner)
@@ -74,7 +78,9 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
     app = FastAPI(title="Узел 12 — Backend", version="0.5.0", lifespan=lifespan,
                   description="Этапы 4–5: фоновые планы, принятие, история и CSV.")
     app.add_middleware(CORSMiddleware, allow_origins=settings.allowed_origins,
-                       allow_credentials=True, allow_methods=["GET","POST"], allow_headers=["Content-Type"])
+                       allow_credentials=True, allow_methods=["GET","POST"],
+                       allow_headers=["Content-Type", CSRF_HEADER], expose_headers=["Retry-After"])
+    install_auth(app, settings)
 
     @app.exception_handler(RuntimeUnavailable)
     async def runtime_error(request: Request, exc: RuntimeUnavailable):

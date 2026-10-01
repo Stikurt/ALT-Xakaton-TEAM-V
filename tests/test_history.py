@@ -2,13 +2,12 @@ import asyncio
 import csv
 import io
 
-from fastapi.testclient import TestClient
 import pytest
 
 from app.api.history import csv_cell,export_csv
 from app.domain.models import HistoricalState
 from app.main import create_app
-from app.settings import Settings
+from auth_support import signed_in_client
 from app.storage.history import HistoryError
 from test_runtime import prepared,cmd
 
@@ -61,7 +60,7 @@ def test_history_and_export_api_are_read_only_and_return_common_errors():
         if at_s and at_s>0: raise HistoryError('HISTORY_IN_FUTURE','Нет такого времени')
         return HistoricalState(**owner.get_state().model_dump(),at_s=0)
     repo.history=read
-    with TestClient(create_app(Settings(_env_file=None),repo,owner)) as client:
+    with signed_in_client(repo,owner) as client:
         run=owner.state.run_id
         reply=client.get('/api/history',params=dict(run_id=run,at_s=0))
         assert reply.status_code==200 and reply.json()['read_only'] and reply.json()['view']=='history'

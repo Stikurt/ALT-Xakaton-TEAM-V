@@ -3,14 +3,13 @@ from copy import deepcopy
 import time
 from uuid import uuid4
 
-from fastapi.testclient import TestClient
 import pytest
 
 from app.main import create_app
 from app.runtime.coordinator import Coordinator, RuntimeUnavailable
 from app.runtime.planning import PlannerProcess, calculate_variants
 from app.runtime.state import encode_checkpoint
-from app.settings import Settings
+from auth_support import signed_in_client
 from app.simulation.engine import SimulationError
 from test_runtime import MemoryRepository, prepared, cmd
 
@@ -197,7 +196,7 @@ def test_new_requests_coalesce_and_reset_stops_child():
 
 def test_http_auto_replan_result_and_apply():
     owner,repo=planning_owner(planner=PlannerProcess())
-    with TestClient(create_app(Settings(_env_file=None),repo,owner)) as client:
+    with signed_in_client(repo,owner) as client:
         body=dict(command_id='delay',run_id=owner.state.run_id,kind='delay_train',target_id='T01',delay_s=120)
         assert client.post('/api/incidents',json=body).status_code==200
         deadline=time.monotonic()+6
@@ -232,7 +231,7 @@ def test_failed_apply_does_not_publish_or_change_plan():
 
 def test_clock_and_api_keep_working_while_planner_hangs():
     owner,repo=planning_owner(planner=PlannerProcess(timeout_s=1.5,worker_target=hanging_worker))
-    with TestClient(create_app(Settings(_env_file=None),repo,owner)) as client:
+    with signed_in_client(repo,owner) as client:
         with client.websocket_connect('/ws') as ws:
             assert ws.receive_json()['type']=='snapshot'
             reply=client.post('/api/replans',json=dict(command_id='hang',run_id=owner.state.run_id))

@@ -1,15 +1,13 @@
 import asyncio
 from copy import deepcopy
 
-from fastapi.testclient import TestClient
 import pytest
 
-from app.main import create_app
 from app.runtime.coordinator import Coordinator
 from app.runtime.state import decode_checkpoint
-from app.settings import Settings
 from app.simulation.engine import SimulationError
 from test_runtime import prepared, cmd
+from auth_support import signed_in_client
 
 
 CLOSE = dict(kind='close_track',target_id='P04',duration_s=600)
@@ -24,7 +22,7 @@ def incident(owner, spec, cid='incident'):
 @pytest.mark.parametrize('spec',[CLOSE,LOCO,DELAY])
 def test_incident_http_and_websocket(spec):
     owner,repo=prepared()
-    with TestClient(create_app(Settings(_env_file=None),repo,owner)) as client:
+    with signed_in_client(repo,owner) as client:
         with client.websocket_connect('/ws') as ws:
             first=ws.receive_json()
             body=dict(command_id='incident',run_id=owner.state.run_id,**spec)
@@ -96,7 +94,7 @@ def test_invalid_second_incident_rolls_back_first_and_caches_refusal():
 ])
 def test_unknown_or_wrong_entity_is_domain_conflict(spec):
     owner,repo=prepared()
-    with TestClient(create_app(Settings(_env_file=None),repo,owner)) as client:
+    with signed_in_client(repo,owner) as client:
         before=client.get('/api/state').json()
         body=dict(command_id='bad',run_id=owner.state.run_id,**spec)
         reply=client.post('/api/incidents',json=body)
@@ -112,7 +110,7 @@ def test_unknown_or_wrong_entity_is_domain_conflict(spec):
 ])
 def test_batch_validation_before_any_effect(items):
     owner,repo=prepared()
-    with TestClient(create_app(Settings(_env_file=None),repo,owner)) as client:
+    with signed_in_client(repo,owner) as client:
         reply=client.post('/api/incidents/batch',json=dict(command_id='bad',run_id=owner.state.run_id,incidents=items))
         assert reply.status_code==422
         assert not repo.saved and not repo.commands and not repo.pending
@@ -120,7 +118,7 @@ def test_batch_validation_before_any_effect(items):
 
 def test_batch_http_origin_stale_run_and_changed_payload():
     owner,repo=prepared()
-    with TestClient(create_app(Settings(_env_file=None),repo,owner)) as client:
+    with signed_in_client(repo,owner) as client:
         body=dict(command_id='batch',run_id=owner.state.run_id,incidents=[CLOSE,LOCO])
         assert client.post('/api/incidents/batch',json=body,headers={'Origin':'https://bad.example'}).status_code==403
         stale=client.post('/api/incidents/batch',json=dict(body,run_id='unknown-run'))
@@ -147,7 +145,7 @@ def test_simultaneous_batch_retries_execute_once():
 
 def test_storage_failure_leaves_no_incident_or_pending_request():
     owner,repo=prepared()
-    with TestClient(create_app(Settings(_env_file=None),repo,owner)) as client:
+    with signed_in_client(repo,owner) as client:
         before=owner.get_state().model_dump()
         repo.fail=True
         reply=client.post('/api/incidents',json=dict(command_id='failed',run_id=owner.state.run_id,**CLOSE))

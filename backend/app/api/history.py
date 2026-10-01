@@ -3,12 +3,14 @@ import csv
 import io
 import re
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import Response
 
+from app.auth import require_role
 from app.domain.models import HistoricalState
 
 router=APIRouter()
+VIEWER=[Depends(require_role('viewer'))]
 
 
 def csv_cell(value):
@@ -33,12 +35,12 @@ def export_csv(history):
     return '\ufeff'+out.getvalue()
 
 
-@router.get('/api/history',response_model=HistoricalState)
+@router.get('/api/history',response_model=HistoricalState,dependencies=VIEWER)
 async def history(request: Request,run_id: str=Query(min_length=1,max_length=128),at_s: int=Query(ge=0)):
     return await asyncio.to_thread(request.app.state.repository.history,run_id,at_s)
 
 
-@router.get('/api/export.csv',response_class=Response,responses={200:{'content':{'text/csv':{}}}})
+@router.get('/api/export.csv',response_class=Response,dependencies=VIEWER,responses={200:{'content':{'text/csv':{}}}})
 async def export(request: Request,run_id: str=Query(min_length=1,max_length=128),at_s: int | None=Query(default=None,ge=0)):
     value=await asyncio.to_thread(request.app.state.repository.history,run_id,at_s)
     filename='station-'+re.sub(r'[^A-Za-z0-9_.-]','_',run_id)+'.csv'

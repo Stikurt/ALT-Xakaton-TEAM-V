@@ -86,8 +86,11 @@ GET плана оборачивает Plan в `{plan,stale,applicable}`; GET з�
 Ошибка: `{code, message, details: []}`. Секреты, входные пароли, SQL и traceback
 в ответ не включаются. Доступны 503 DATABASE_UNAVAILABLE / NOT_INITIALIZED /
 SIMULATION_UNAVAILABLE, 409 ошибок движка и повторного ID с другим телом,
-422 валидации, единый формат 404/405. Пока 403 относится только к отклонённому
-Origin; роли ещё не реализованы.
+422 валидации, единый формат 404/405. Доступ (этап 6, `docs/auth.md`): 401
+AUTH_REQUIRED / SESSION_EXPIRED / INVALID_CREDENTIALS, 403 FORBIDDEN / CSRF_FAILED /
+ORIGIN_FORBIDDEN, 429 LOGIN_RATE_LIMITED. Команды (control, incidents, replans, apply)
+требуют роль dispatcher или admin и заголовок X-CSRF-Token; чтение состояния, планов,
+истории и CSV — роль viewer и выше. Тела команд и идемпотентность не менялись.
 
 ## Границы участников
 

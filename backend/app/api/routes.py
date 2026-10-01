@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
+
+from app.auth import require_role
 
 from app.domain.models import ApiError, Contract, StateResponse
 
@@ -24,7 +26,8 @@ def health(request: Request):
     return HealthResponse(status="ok", database="ready", stage="2-live" if owner else "1-foundation")
 
 
-@router.get("/api/state", response_model=StateResponse, responses={503: {"model": ApiError}})
+@router.get("/api/state", response_model=StateResponse, dependencies=[Depends(require_role("viewer"))],
+            responses={401: {"model": ApiError}, 503: {"model": ApiError}})
 def state(request: Request):
     """Full live snapshot; its dynamic state has already been committed to PostgreSQL."""
     owner = getattr(request.app.state,"runtime",None)

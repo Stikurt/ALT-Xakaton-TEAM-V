@@ -1,23 +1,24 @@
 import asyncio
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
-from app.api.live import check_origin, runtime
+from app.api.live import DISPATCHER, runtime
+from app.auth import require_role
 from app.domain.models import ApplyPlanCommand, CommandResult, PlanResponse, ReplanAccepted, ReplanCommand, ReplanJob
 from app.planner import RULES
 from app.runtime.planning import candidate_problem
 from app.simulation.engine import rules_context
 
 router=APIRouter()
+VIEWER=[Depends(require_role('viewer'))]
 
 
-@router.post('/api/replans',response_model=ReplanAccepted,status_code=202)
+@router.post('/api/replans',response_model=ReplanAccepted,status_code=202,dependencies=DISPATCHER)
 async def request_replan(command: ReplanCommand,request: Request):
-    check_origin(request)
     return await runtime(request).submit(dict(action='replan',**command.model_dump()))
 
 
-@router.get('/api/replans/{job_id}',response_model=ReplanJob)
+@router.get('/api/replans/{job_id}',response_model=ReplanJob,dependencies=VIEWER)
 async def get_job(job_id: str,request: Request):
     owner=runtime(request)
     job=await asyncio.to_thread(owner.repository.get_job,job_id)
@@ -30,7 +31,7 @@ async def get_job(job_id: str,request: Request):
     return job
 
 
-@router.get('/api/replans',response_model=list[ReplanJob])
+@router.get('/api/replans',response_model=list[ReplanJob],dependencies=VIEWER)
 async def list_jobs(request: Request,run_id: str=Query(min_length=1,max_length=128),limit: int=Query(default=20,ge=1,le=50)):
     owner=runtime(request)
     jobs=await asyncio.to_thread(owner.repository.list_jobs,run_id,limit)
@@ -43,7 +44,7 @@ async def list_jobs(request: Request,run_id: str=Query(min_length=1,max_length=1
     return jobs
 
 
-@router.get('/api/plans/{plan_id}',response_model=PlanResponse)
+@router.get('/api/plans/{plan_id}',response_model=PlanResponse,dependencies=VIEWER)
 async def get_plan(plan_id: str,request: Request):
     owner=runtime(request)
     candidate=await asyncio.to_thread(owner.repository.get_plan,plan_id)
@@ -53,7 +54,6 @@ async def get_plan(plan_id: str,request: Request):
                 applicable=problem is None and not RULES.validate_plan(rules_context(owner.state),candidate))
 
 
-@router.post('/api/plans/{plan_id}/apply',response_model=CommandResult)
+@router.post('/api/plans/{plan_id}/apply',response_model=CommandResult,dependencies=DISPATCHER)
 async def accept_plan(plan_id: str,command: ApplyPlanCommand,request: Request):
-    check_origin(request)
     return await runtime(request).submit(dict(action='apply_plan',plan_id=plan_id,**command.model_dump()))

@@ -28,9 +28,9 @@ Python 3.12, FastAPI, Pydantic, PostgreSQL 16, psycopg.
 зафиксированы в `docs/upstream-validation.md`. Поэтому SCENARIO_PATH по умолчанию
 указывает на shared/scenarios/one_train.json.
 
-Ещё не реализованы сессии/роли, изменение настроек через API и нагрузочная проверка
-в браузерах. До этапа доступа сервер предназначен для локальной разработки:
-команды открыты, проверяется Origin, запуск привязан к `127.0.0.1`.
+Ещё не реализованы изменение настроек через API и нагрузочная проверка в браузерах.
+Доступ (этап 6): вход по cookie-сессии в PostgreSQL, роли viewer/dispatcher/admin,
+CSRF и Origin — `docs/auth.md`. Запуск по-прежнему привязан к `127.0.0.1`.
 
 ## Запуск из корня репозитория, PowerShell
 
@@ -79,15 +79,22 @@ reset создаёт новый run_id, возвращает исходный п
 В другом окне PowerShell после запуска сервера:
 
 ```powershell
-$state = Invoke-RestMethod http://127.0.0.1:8000/api/state
+$B = 'http://127.0.0.1:8000'
+$pw = [Net.NetworkCredential]::new('', (Read-Host 'Пароль dispatcher' -AsSecureString)).Password
+$login = Invoke-RestMethod "$B/api/login" -Method Post -ContentType 'application/json' -SessionVariable s `
+  -Body (@{ username = 'dispatcher'; password = $pw } | ConvertTo-Json)
+$h = @{ 'X-CSRF-Token' = $login.csrf_token }
+$state = Invoke-RestMethod "$B/api/state" -WebSession $s
 $body = @{ command_id = [guid]::NewGuid().ToString(); run_id = $state.snapshot.run_id; action = 'start' } | ConvertTo-Json
-Invoke-RestMethod http://127.0.0.1:8000/api/simulation/control -Method Post -ContentType 'application/json' -Body $body
+Invoke-RestMethod "$B/api/simulation/control" -Method Post -ContentType 'application/json' -Body $body -Headers $h -WebSession $s
 ```
 
+Для входа сгенерируйте `SESSION_SECRET` и хеши паролей (`python -m app.auth ...`), см. `docs/auth.md`.
 Для паузы используйте action=pause, для сброса action=reset.
 Для ускорения — action=speed и дополнительное поле speed=10 (также 1 или 5).
 Новый command_id нужен для нового действия; для повтора запроса сохраняйте старый.
-События идут по `ws://127.0.0.1:8000/ws`. После reset заново прочитайте run_id.
+События идут по `ws://127.0.0.1:8000/ws` — нужны cookie сессии и разрешённый Origin.
+Без входа API отвечает 401, viewer на команды получает 403. После reset заново прочитайте run_id.
 
 ## Инциденты — этап 3
 

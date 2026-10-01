@@ -11,8 +11,8 @@ from app.main import create_app
 from app.runtime.broadcast import Broadcast
 from app.runtime.coordinator import Coordinator, RuntimeUnavailable
 from app.runtime.state import prepare_scenario, encode_checkpoint, decode_checkpoint, response
-from app.settings import Settings
 from app.simulation.engine import SimulationError
+from auth_support import ORIGIN, MemorySessionStore, auth_settings, login
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -144,33 +144,36 @@ def test_slow_subscriber_is_bounded_and_does_not_block_others():
 
 def test_http_and_websocket_share_one_state_and_reconnect_snapshot():
     owner,repo=prepared()
-    with TestClient(create_app(Settings(_env_file=None),repo,owner)) as client:
-        with client.websocket_connect('/ws') as ws:
+    with TestClient(create_app(auth_settings(),repo,owner,sessions=MemorySessionStore())) as client:
+        headers=login(client,'dispatcher')
+        with client.websocket_connect('/ws',headers={'Origin':ORIGIN}) as ws:
             first=ws.receive_json()
             assert first['type']=='snapshot' and first['ws_seq']==1
             body=cmd(owner,'speed',speed=10)
-            reply=client.post('/api/simulation/control',json=body)
+            reply=client.post('/api/simulation/control',json=body,headers=headers)
             assert reply.status_code==200
             updated=ws.receive_json()
             assert updated['type']=='state_updated' and updated['ws_seq']==2
             assert updated['payload']['snapshot']['speed']==10
             assert client.get('/api/state').json()['snapshot']['state_version']==updated['state_version']
-            assert client.post('/api/simulation/control',json=body).json()==reply.json()
-        with client.websocket_connect('/ws') as ws:
+            assert client.post('/api/simulation/control',json=body,headers=headers).json()==reply.json()
+        with client.websocket_connect('/ws',headers={'Origin':ORIGIN}) as ws:
             assert ws.receive_json()['payload']['snapshot']['speed']==10
 
 
 def test_bad_origin_and_bad_command_rejected():
     owner,repo=prepared()
-    with TestClient(create_app(Settings(_env_file=None),repo,owner)) as client:
-        assert client.post('/api/simulation/control',json=cmd(owner,'pause'),headers={'Origin':'https://bad.example'}).status_code==403
-        assert client.post('/api/simulation/control',json={'action':'start'}).status_code==422
+    with TestClient(create_app(auth_settings(),repo,owner,sessions=MemorySessionStore())) as client:
+        headers=login(client,'dispatcher')
+        assert client.post('/api/simulation/control',json=cmd(owner,'pause'),headers=dict(headers,Origin='https://bad.example')).status_code==403
+        assert client.post('/api/simulation/control',json={'action':'start'},headers=headers).status_code==422
 
 
 def test_clock_sync_runs_in_pause():
     owner,repo=prepared()
-    with TestClient(create_app(Settings(_env_file=None),repo,owner)) as client:
-        with client.websocket_connect('/ws') as ws:
+    with TestClient(create_app(auth_settings(),repo,owner,sessions=MemorySessionStore())) as client:
+        login(client,'viewer')
+        with client.websocket_connect('/ws',headers={'Origin':ORIGIN}) as ws:
             initial=ws.receive_json()
             clock=ws.receive_json()
             assert clock['type']=='clock_sync' and clock['payload']['paused']
