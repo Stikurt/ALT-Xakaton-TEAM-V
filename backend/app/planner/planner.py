@@ -379,7 +379,7 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
                         _route_requirements(config, snapshot, route_id)
                     )
 
-                if kind != "departure":
+                if kind in MOVING and kind != "departure":
                     requirements.append(
                         (
                             "tracks",
