@@ -1,13 +1,13 @@
 import json
 from pathlib import Path
 
-from backend.app.simulation import (
+from app.simulation import (
     apply_command,
     apply_plan,
     create_initial_state,
     snapshot,
 )
-from backend.app.planner import RULES, plan
+from app.planner import RULES, plan
 
 
 ROOT = Path(__file__).resolve().parents[2]
