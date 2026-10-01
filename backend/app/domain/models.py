@@ -173,6 +173,24 @@ class AssignmentChange(Contract):
     after: Assignment | None
 
 
+class IndexFactor(Contract):
+    id: Literal["delay", "on_time", "utilization", "conflicts", "idle"]
+    label: str
+    penalty: Annotated[float, Field(ge=0, le=1)] | None
+    weight: Annotated[float, Field(gt=0, le=1)]
+    contribution: Annotated[float, Field(ge=0, le=100)] | None
+    no_data: bool = False
+
+
+class StationIndex(Contract):
+    """I = 100 · (1 − Σ wᵢ·pᵢ); see app.runtime.efficiency."""
+    value: Annotated[int, Field(ge=0, le=100)]
+    category: Literal["norm", "attention", "critical"]
+    window_s: Seconds
+    factors: list[IndexFactor]
+    kind: Literal["fact", "forecast"]
+
+
 class Plan(Contract):
     id: Id
     run_id: Id
@@ -191,6 +209,7 @@ class Plan(Contract):
     changes: list[AssignmentChange] = Field(default_factory=list)
     # End of the planning window the planner used (app.topology.planning_horizon), model seconds.
     horizon_s: Seconds | None = None
+    index_forecast: StationIndex | None = None
 
     @model_validator(mode="after")
     def valid_assignments(self):
@@ -220,6 +239,7 @@ class Snapshot(Contract):
     active_plan_id: Id | None = None
     conflicts: list[Conflict] = Field(default_factory=list)
     replan_required: bool = False
+    index: StationIndex | None = None
 
     @model_validator(mode="after")
     def validate_references(self):

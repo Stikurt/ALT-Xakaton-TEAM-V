@@ -384,7 +384,8 @@
       ],
       "active_plan_id": "example-plan",
       "conflicts": [],
-      "replan_required": false
+      "replan_required": false,
+      "index": null
     }
   }
 }
