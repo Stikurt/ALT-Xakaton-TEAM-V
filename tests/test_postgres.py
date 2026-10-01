@@ -11,6 +11,8 @@ from psycopg.conninfo import make_conninfo
 from psycopg_pool import ConnectionPool
 
 from app.storage.bootstrap import bootstrap
+
+ONE_TRAIN = "shared/scenarios/one_train.json"  # small deterministic scenario; the default is the full station
 from app.storage.migrate import migrate
 from app.storage.repository import Repository
 from app.runtime.coordinator import Coordinator
@@ -31,8 +33,8 @@ def test_migrations_bootstrap_roundtrip_and_unique_events():
     try:
         migrate(isolated)
         migrate(isolated)
-        run_id = bootstrap(isolated)
-        assert bootstrap(isolated) == run_id
+        run_id = bootstrap(isolated, ONE_TRAIN)
+        assert bootstrap(isolated, ONE_TRAIN) == run_id
         with ConnectionPool(isolated,min_size=1,max_size=2) as pool:
             repo = Repository(pool)
             repo.check_ready()

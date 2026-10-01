@@ -583,7 +583,7 @@ def test_postgres_http_and_websocket_flow(pg_schema):
     from app.storage.migrate import migrate
     from app.storage.repository import Repository
     migrate(pg_schema)
-    bootstrap(pg_schema)
+    bootstrap(pg_schema, "shared/scenarios/one_train.json")
     with ConnectionPool(pg_schema, min_size=1, max_size=4) as pool:
         repo = Repository(pool)
         repo.claim_owner()

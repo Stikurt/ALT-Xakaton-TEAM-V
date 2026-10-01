@@ -15,7 +15,8 @@ class Settings(BaseSettings):
     allowed_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     db_pool_max_size: int = Field(default=4, ge=2, le=10)
     db_timeout_s: float = Field(default=3, gt=0, le=30)
-    scenario_path: str = "shared/scenarios/one_train.json"
+    # Full 15-train station; shared/scenarios/one_train.json is the small smoke scenario.
+    scenario_path: str = "shared/station.json"
     planner_timeout_s: float = Field(default=5, gt=0, le=30)
     planner_budget_s: float = Field(default=2, gt=0, le=10)
 

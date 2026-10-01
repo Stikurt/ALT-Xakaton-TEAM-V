@@ -82,6 +82,14 @@ class PlanningRepository:
             row=conn.execute('SELECT payload FROM plans WHERE id=%s',(plan_id,)).fetchone()
         return row[0] if row else None
 
+    def get_plans(self,plan_ids):
+        """Several plans in one query (job listings show every variant)."""
+        ids=list(dict.fromkeys(plan_ids))
+        if not ids: return {}
+        with self.pool.connection() as conn:
+            rows=conn.execute('SELECT id::text,payload FROM plans WHERE id::text = ANY(%s)',(ids,)).fetchall()
+        return {pid:payload for pid,payload in rows}
+
     def list_jobs(self,run_id,limit=20):
         with self.pool.connection() as conn:
             rows=conn.execute("""SELECT id,run_id,based_on_version,based_on_time_s,status,result

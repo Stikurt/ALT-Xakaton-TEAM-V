@@ -88,7 +88,7 @@ def generate():
         write(f"shared/examples/ws.{kind}.json",envelope.model_dump(mode="json"))
     schema = TypeAdapter(Union[StateResponse, Plan, Event, ControlCommand, IncidentCommand, IncidentBatchCommand, CommandResult,
                               ApplyPlanCommand, WsEnvelope,ReplanCommand,ReplanAccepted,ReplanJob,PlanResponse,HistoricalState]).json_schema()
-    write('shared/examples/history.json',HistoricalState(**moving.model_dump(),at_s=60).model_dump(mode='json'))
+    write('shared/examples/history.json',HistoricalState(**moving.model_dump(),at_s=60,available_from_s=0,available_to_s=60).model_dump(mode='json'))
     write('shared/examples/replan.accepted.json',ReplanAccepted(command_id='example-command',run_id='example-run',job_id='example-job').model_dump(mode='json'))
     write('shared/examples/replan.completed.json',ReplanJob(job_id='example-job',run_id='example-run',based_on_version=0,
         based_on_time_s=0,status='completed',plan_ids=['example-plan'],stale=True).model_dump(mode='json'))

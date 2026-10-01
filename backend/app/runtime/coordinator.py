@@ -110,7 +110,8 @@ class Coordinator:
             transition=advance_to(self.state,boundary,rules=RULES)
             transition.state.fractional_s=max(0.,total-whole) if boundary==target else 0.
             await self._commit(transition)
-            if boundary==target: break
+            # The engine pauses by itself when the run is complete (simulation_completed).
+            if boundary==target or self.state.paused: break
 
     async def execute(self, command):
         """Only called by the actor (or directly by deterministic unit tests)."""
