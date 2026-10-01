@@ -1,0 +1,1312 @@
+{
+  "$defs": {
+    "ApplyPlanCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "expected_state_version": {
+          "minimum": 0,
+          "title": "Expected State Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command_id",
+        "run_id",
+        "expected_state_version"
+      ],
+      "title": "ApplyPlanCommand",
+      "type": "object"
+    },
+    "Assignment": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "start_s": {
+          "minimum": 0,
+          "title": "Start S",
+          "type": "integer"
+        },
+        "end_s": {
+          "minimum": 0,
+          "title": "End S",
+          "type": "integer"
+        },
+        "track_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Track Id"
+        },
+        "route_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Route Id"
+        },
+        "resource_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "type": "string"
+          },
+          "title": "Resource Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "operation_id",
+        "start_s",
+        "end_s"
+      ],
+      "title": "Assignment",
+      "type": "object"
+    },
+    "Conflict": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "code": {
+          "enum": [
+            "TRACK_CLOSED",
+            "TRACK_OCCUPIED",
+            "ROUTE_BUSY",
+            "RESOURCE_UNAVAILABLE",
+            "PREDECESSOR_INCOMPLETE",
+            "NO_FEASIBLE_SLOT",
+            "STALE_PLAN"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "warning",
+            "error"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "entity_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "type": "string"
+          },
+          "title": "Entity Ids",
+          "type": "array"
+        },
+        "operation_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "type": "string"
+          },
+          "title": "Operation Ids",
+          "type": "array"
+        },
+        "start_s": {
+          "minimum": 0,
+          "title": "Start S",
+          "type": "integer"
+        },
+        "end_s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "End S"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "code",
+        "severity",
+        "entity_ids",
+        "operation_ids",
+        "start_s",
+        "end_s",
+        "message"
+      ],
+      "title": "Conflict",
+      "type": "object"
+    },
+    "ControlCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "action": {
+          "enum": [
+            "start",
+            "pause",
+            "speed",
+            "reset"
+          ],
+          "title": "Action",
+          "type": "string"
+        },
+        "speed": {
+          "anyOf": [
+            {
+              "enum": [
+                1,
+                5,
+                10
+              ],
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Speed"
+        }
+      },
+      "required": [
+        "command_id",
+        "run_id",
+        "action"
+      ],
+      "title": "ControlCommand",
+      "type": "object"
+    },
+    "Event": {
+      "additionalProperties": false,
+      "properties": {
+        "sim_time_s": {
+          "minimum": 0,
+          "title": "Sim Time S",
+          "type": "integer"
+        },
+        "type": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Type",
+          "type": "string"
+        },
+        "entity_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entity Id"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "title": "Payload",
+          "type": "object"
+        },
+        "event_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Event Id",
+          "type": "string"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "seq": {
+          "exclusiveMinimum": 0,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "recorded_at": {
+          "format": "date-time",
+          "title": "Recorded At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sim_time_s",
+        "type",
+        "payload",
+        "event_id",
+        "run_id",
+        "seq",
+        "recorded_at"
+      ],
+      "title": "Event",
+      "type": "object"
+    },
+    "IncidentCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "delay_train",
+            "close_track",
+            "locomotive_unavailable"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "target_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Target Id",
+          "type": "string"
+        },
+        "duration_s": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Duration S"
+        },
+        "delay_s": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delay S"
+        }
+      },
+      "required": [
+        "command_id",
+        "run_id",
+        "kind",
+        "target_id"
+      ],
+      "title": "IncidentCommand",
+      "type": "object"
+    },
+    "Movement": {
+      "additionalProperties": false,
+      "properties": {
+        "route_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Route Id",
+          "type": "string"
+        },
+        "started_at_s": {
+          "minimum": 0,
+          "title": "Started At S",
+          "type": "integer"
+        },
+        "expected_end_at_s": {
+          "minimum": 0,
+          "title": "Expected End At S",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "route_id",
+        "started_at_s",
+        "expected_end_at_s"
+      ],
+      "title": "Movement",
+      "type": "object"
+    },
+    "Operation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "train_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Train Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "arrival",
+            "dwell",
+            "inspection",
+            "shunt_to_cargo",
+            "shunt_to_storage",
+            "shunt_to_departure",
+            "cargo",
+            "formation",
+            "preparation",
+            "departure"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "title": "Duration S",
+          "type": "integer"
+        },
+        "predecessor_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "type": "string"
+          },
+          "title": "Predecessor Ids",
+          "type": "array"
+        },
+        "status": {
+          "default": "pending",
+          "enum": [
+            "pending",
+            "running",
+            "completed",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "actual_start_s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actual Start S"
+        },
+        "actual_end_s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actual End S"
+        },
+        "wait_reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WaitReason"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "train_id",
+        "kind",
+        "duration_s",
+        "predecessor_ids"
+      ],
+      "title": "Operation",
+      "type": "object"
+    },
+    "Plan": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "based_on_version": {
+          "minimum": 0,
+          "title": "Based On Version",
+          "type": "integer"
+        },
+        "strategy": {
+          "enum": [
+            "passenger_first",
+            "earliest_departure"
+          ],
+          "title": "Strategy",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "feasible",
+            "partial",
+            "infeasible",
+            "timeout"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "assignments": {
+          "items": {
+            "$ref": "#/$defs/Assignment"
+          },
+          "title": "Assignments",
+          "type": "array"
+        },
+        "unassigned": {
+          "items": {
+            "$ref": "#/$defs/Unassigned"
+          },
+          "title": "Unassigned",
+          "type": "array"
+        },
+        "metrics": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": "Metrics",
+          "type": "object"
+        },
+        "explanations": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Explanations",
+          "type": "array"
+        },
+        "timed_out": {
+          "default": false,
+          "title": "Timed Out",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "run_id",
+        "based_on_version",
+        "strategy",
+        "status",
+        "assignments",
+        "unassigned"
+      ],
+      "title": "Plan",
+      "type": "object"
+    },
+    "Resource": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "locomotive",
+            "crew",
+            "cargo_front"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "capabilities": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "type": "string"
+          },
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "availability": {
+          "default": "available",
+          "enum": [
+            "available",
+            "unavailable"
+          ],
+          "title": "Availability",
+          "type": "string"
+        },
+        "unavailable_until_s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unavailable Until S"
+        },
+        "active_operation_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Active Operation Id"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "capabilities"
+      ],
+      "title": "Resource",
+      "type": "object"
+    },
+    "Route": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "from_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "From Id",
+          "type": "string"
+        },
+        "to_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "To Id",
+          "type": "string"
+        },
+        "conflict_zone_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "type": "string"
+          },
+          "title": "Conflict Zone Ids",
+          "type": "array"
+        },
+        "duration_s": {
+          "exclusiveMinimum": 0,
+          "title": "Duration S",
+          "type": "integer"
+        },
+        "polyline": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          "minItems": 2,
+          "title": "Polyline",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "from_id",
+        "to_id",
+        "conflict_zone_ids",
+        "duration_s",
+        "polyline"
+      ],
+      "title": "Route",
+      "type": "object"
+    },
+    "Snapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "state_version": {
+          "minimum": 0,
+          "title": "State Version",
+          "type": "integer"
+        },
+        "last_seq": {
+          "minimum": 0,
+          "title": "Last Seq",
+          "type": "integer"
+        },
+        "sim_time_s": {
+          "minimum": 0,
+          "title": "Sim Time S",
+          "type": "integer"
+        },
+        "speed": {
+          "enum": [
+            1,
+            5,
+            10
+          ],
+          "title": "Speed",
+          "type": "integer"
+        },
+        "paused": {
+          "title": "Paused",
+          "type": "boolean"
+        },
+        "trains": {
+          "items": {
+            "$ref": "#/$defs/Train"
+          },
+          "title": "Trains",
+          "type": "array"
+        },
+        "tracks": {
+          "items": {
+            "$ref": "#/$defs/Track"
+          },
+          "title": "Tracks",
+          "type": "array"
+        },
+        "resources": {
+          "items": {
+            "$ref": "#/$defs/Resource"
+          },
+          "title": "Resources",
+          "type": "array"
+        },
+        "operations": {
+          "items": {
+            "$ref": "#/$defs/Operation"
+          },
+          "title": "Operations",
+          "type": "array"
+        },
+        "active_plan_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Active Plan Id"
+        },
+        "conflicts": {
+          "items": {
+            "$ref": "#/$defs/Conflict"
+          },
+          "title": "Conflicts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "run_id",
+        "state_version",
+        "last_seq",
+        "sim_time_s",
+        "speed",
+        "paused",
+        "trains",
+        "tracks",
+        "resources",
+        "operations"
+      ],
+      "title": "Snapshot",
+      "type": "object"
+    },
+    "StateResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/Snapshot"
+        },
+        "topology": {
+          "$ref": "#/$defs/Topology"
+        }
+      },
+      "required": [
+        "snapshot",
+        "topology"
+      ],
+      "title": "StateResponse",
+      "type": "object"
+    },
+    "Topology": {
+      "additionalProperties": false,
+      "properties": {
+        "station_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Station Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "view_box": {
+          "maxItems": 4,
+          "minItems": 4,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "View Box",
+          "type": "array"
+        },
+        "boundary_nodes": {
+          "patternProperties": {
+            "^[A-Za-z0-9_.:-]+$": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            }
+          },
+          "propertyNames": {
+            "maxLength": 128,
+            "minLength": 1
+          },
+          "title": "Boundary Nodes",
+          "type": "object"
+        },
+        "conflict_zones": {
+          "patternProperties": {
+            "^[A-Za-z0-9_.:-]+$": {
+              "maxItems": 2,
+              "minItems": 2,
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "type": "array"
+            }
+          },
+          "propertyNames": {
+            "maxLength": 128,
+            "minLength": 1
+          },
+          "title": "Conflict Zones",
+          "type": "object"
+        },
+        "routes": {
+          "items": {
+            "$ref": "#/$defs/Route"
+          },
+          "title": "Routes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "station_id",
+        "name",
+        "view_box",
+        "boundary_nodes",
+        "conflict_zones",
+        "routes"
+      ],
+      "title": "Topology",
+      "type": "object"
+    },
+    "Track": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "passenger",
+            "freight",
+            "storage",
+            "cargo",
+            "locomotive"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "usable_length_m": {
+          "exclusiveMinimum": 0,
+          "title": "Usable Length M",
+          "type": "integer"
+        },
+        "geometry": {
+          "items": {
+            "maxItems": 2,
+            "minItems": 2,
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array"
+          },
+          "minItems": 2,
+          "title": "Geometry",
+          "type": "array"
+        },
+        "availability": {
+          "default": "open",
+          "enum": [
+            "open",
+            "closed"
+          ],
+          "title": "Availability",
+          "type": "string"
+        },
+        "closed_until_s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Closed Until S"
+        },
+        "occupant_train_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Occupant Train Id"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "usable_length_m",
+        "geometry"
+      ],
+      "title": "Track",
+      "type": "object"
+    },
+    "Train": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "passenger",
+            "transit",
+            "local"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "length_m": {
+          "exclusiveMinimum": 0,
+          "title": "Length M",
+          "type": "integer"
+        },
+        "priority": {
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "scheduled_arrival_s": {
+          "minimum": 0,
+          "title": "Scheduled Arrival S",
+          "type": "integer"
+        },
+        "expected_arrival_s": {
+          "minimum": 0,
+          "title": "Expected Arrival S",
+          "type": "integer"
+        },
+        "scheduled_departure_s": {
+          "minimum": 0,
+          "title": "Scheduled Departure S",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "scheduled",
+            "waiting_entry",
+            "moving",
+            "on_track",
+            "departed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "track_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Track Id"
+        },
+        "movement": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Movement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "length_m",
+        "priority",
+        "scheduled_arrival_s",
+        "expected_arrival_s",
+        "scheduled_departure_s",
+        "status"
+      ],
+      "title": "Train",
+      "type": "object"
+    },
+    "Unassigned": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "code": {
+          "enum": [
+            "TRACK_CLOSED",
+            "TRACK_OCCUPIED",
+            "ROUTE_BUSY",
+            "RESOURCE_UNAVAILABLE",
+            "PREDECESSOR_INCOMPLETE",
+            "NO_FEASIBLE_SLOT",
+            "STALE_PLAN"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "operation_id",
+        "code",
+        "message"
+      ],
+      "title": "Unassigned",
+      "type": "object"
+    },
+    "WaitReason": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "WaitReason",
+      "type": "object"
+    },
+    "WsEnvelope": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "ws_seq": {
+          "exclusiveMinimum": 0,
+          "title": "Ws Seq",
+          "type": "integer"
+        },
+        "state_version": {
+          "minimum": 0,
+          "title": "State Version",
+          "type": "integer"
+        },
+        "type": {
+          "enum": [
+            "snapshot",
+            "state_updated",
+            "clock_sync",
+            "replan_started",
+            "replan_finished",
+            "replan_failed",
+            "simulation_error"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "title": "Payload",
+          "type": "object"
+        }
+      },
+      "required": [
+        "run_id",
+        "ws_seq",
+        "state_version",
+        "type",
+        "payload"
+      ],
+      "title": "WsEnvelope",
+      "type": "object"
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/StateResponse"
+    },
+    {
+      "$ref": "#/$defs/Plan"
+    },
+    {
+      "$ref": "#/$defs/Event"
+    },
+    {
+      "$ref": "#/$defs/ControlCommand"
+    },
+    {
+      "$ref": "#/$defs/IncidentCommand"
+    },
+    {
+      "$ref": "#/$defs/ApplyPlanCommand"
+    },
+    {
+      "$ref": "#/$defs/WsEnvelope"
+    }
+  ]
+}
