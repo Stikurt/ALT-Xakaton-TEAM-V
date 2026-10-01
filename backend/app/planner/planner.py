@@ -136,31 +136,62 @@ def topological_operations(operations):
     return result
 
 
+def _train_ordinal(snapshot, train, kind):
+    peers = sorted(
+        [
+            t for t in get_value(snapshot, "trains", [])
+            if get_value(t, "kind") == kind
+        ],
+        key=lambda t: get_value(t, "id", ""),
+    )
+    train_id = get_value(train, "id")
+    for index, peer in enumerate(peers):
+        if get_value(peer, "id") == train_id:
+            return index
+    return 0
+
+
 def _candidate_tracks(snapshot, train, operation):
+    """Preferred station-role tracks with deterministic fallbacks."""
     kind = get_value(operation, "kind", "")
     train_kind = get_value(train, "kind", "")
     tracks = _track_map(snapshot)
 
     if kind == "arrival":
-        expected = "passenger" if train_kind == "passenger" else "freight"
+        if train_kind == "passenger":
+            idx = _train_ordinal(snapshot, train, "passenger")
+            preferred = ["P01", "P02"] if idx % 2 == 0 else ["P02", "P01"]
+        elif train_kind == "transit":
+            idx = _train_ordinal(snapshot, train, "transit")
+            preferred = ["P05", "P06"] if idx % 2 == 0 else ["P06", "P05"]
+            preferred += ["P03", "P04"]
+        elif train_kind == "local":
+            preferred = ["P03", "P04"]
+        else:
+            preferred = []
     elif kind == "shunt_to_cargo":
-        expected = "cargo"
+        idx = _train_ordinal(snapshot, train, "local")
+        preferred = ["P10", "P11"] if idx % 2 == 0 else ["P11", "P10"]
     elif kind == "shunt_to_storage":
-        expected = "storage"
+        idx = _train_ordinal(snapshot, train, "local")
+        first = ["P07", "P08", "P09"][idx % 3]
+        preferred = [first] + [p for p in ["P07", "P08", "P09"] if p != first]
     elif kind == "shunt_to_departure":
-        expected = "freight"
+        preferred = ["P04", "P03"]
     else:
         return []
 
     result = []
-    for track in tracks.values():
-        if get_value(track, "kind") != expected:
+    for track_id in preferred:
+        track = tracks.get(track_id)
+        if track is None:
             continue
         if get_value(track, "usable_length_m", 0) < get_value(train, "length_m", 0):
             continue
-        result.append(get_value(track, "id"))
+        if track_id not in result:
+            result.append(track_id)
 
-    return sorted(result)
+    return result
 
 
 def _route_id(config, snapshot, from_id, to_id):
@@ -184,35 +215,48 @@ def _matching_resources(snapshot, kind, capability, *, track_id=None):
     return sorted(result)
 
 
-def _resource_options(snapshot, operation_kind, track_id):
-    specs = []
+def _resource_options(snapshot, train, operation_kind, track_id):
+    train_kind = get_value(train, "kind", "")
+
     if operation_kind.startswith("shunt_"):
-        specs = [("locomotive", "shunt"), ("crew", "shunt")]
-    elif operation_kind == "inspection":
-        specs = [("crew", "inspection")]
-    elif operation_kind == "preparation":
-        specs = [("crew", "preparation")]
-    elif operation_kind == "formation":
-        specs = [("crew", "formation")]
-    elif operation_kind == "cargo":
-        specs = [("cargo_front", "cargo")]
-
-    if not specs:
-        return [()]
-
-    groups = []
-    for resource_kind, capability in specs:
-        matches = _matching_resources(
-            snapshot,
-            resource_kind,
-            capability,
-            track_id=track_id,
+        idx = _train_ordinal(snapshot, train, "local")
+        primary = (
+            ("L01", "B01") if idx % 2 == 0
+            else ("L02", "B02")
         )
-        if not matches:
-            return []
-        groups.append(matches)
+        secondary = (
+            ("L02", "B02") if idx % 2 == 0
+            else ("L01", "B01")
+        )
+        available = []
+        resources = _resource_map(snapshot)
+        for option in (primary, secondary):
+            if all(rid in resources for rid in option):
+                available.append(option)
+        return available
 
-    return list(itertools.product(*groups))
+    if operation_kind == "formation":
+        idx = _train_ordinal(snapshot, train, "local")
+        preferred = "B01" if idx % 2 == 0 else "B02"
+        alternate = "B02" if preferred == "B01" else "B01"
+        resources = _resource_map(snapshot)
+        return [(rid,) for rid in (preferred, alternate) if rid in resources]
+
+    if operation_kind in ("inspection", "preparation"):
+        resources = _resource_map(snapshot)
+        if train_kind == "transit":
+            order = ("B04", "B03")
+        elif train_kind == "local":
+            order = ("B03", "B04")
+        else:
+            return [()]
+        return [(rid,) for rid in order if rid in resources]
+
+    if operation_kind == "cargo":
+        rid = f"F{track_id[1:]}"
+        return [(rid,)] if rid in _resource_map(snapshot) else []
+
+    return [()]
 
 
 def _common_slot(calendars, requirements, earliest_s, duration_s, horizon_s):
@@ -382,7 +426,7 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
         # Evaluate all deterministic alternatives and choose the earliest
         # feasible start. Do not pick the first path merely because it has
         # some slot later in the horizon.
-        for track_id in track_candidates:
+        for track_rank, track_id in enumerate(track_candidates):
             if not track_id:
                 continue
 
@@ -398,7 +442,9 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
             if kind in MOVING and route_id is None:
                 continue
 
-            for resources in _resource_options(snapshot, kind, track_id):
+            for resource_rank, resources in enumerate(
+                _resource_options(snapshot, train, kind, track_id)
+            ):
                 requirements = [("resources", rid) for rid in resources]
 
                 if kind in MOVING:
@@ -438,7 +484,9 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
                     continue
 
                 choice_key = (
+                    track_rank,
                     start_s,
+                    resource_rank,
                     track_id,
                     tuple(resources),
                     route_id or "",
