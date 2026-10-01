@@ -28,4 +28,6 @@ jobs:
         run: python -m pytest tests -v
 
       - name: Planner + simulation integration tests
+        env:
+          PYTHONPATH: backend
         run: python -m pytest tests/integration/test_planner_simulation.py -v
