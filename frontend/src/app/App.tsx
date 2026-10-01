@@ -13,6 +13,7 @@ import HistoryBar from '../panels/HistoryBar'
 import { CsvDialog, HelpDialog } from '../panels/Dialogs'
 import Timeline from '../timeline/Timeline'
 import { useHotkeys } from './useHotkeys'
+import { startAutopilot } from './autopilot'
 import s from './App.module.css'
 
 export default function App() {
@@ -52,6 +53,7 @@ function Workspace() {
   const httpPolling = useStore((x) => x.httpPolling)
   const [timelineOpen, setTimelineOpen] = useState(true)
   useHotkeys()
+  useEffect(() => startAutopilot(), [])
 
   const histAt = history?.at_s
   const getSimTime = useCallback(

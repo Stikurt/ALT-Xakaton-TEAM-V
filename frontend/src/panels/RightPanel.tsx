@@ -3,12 +3,14 @@ import { CONFLICT, fmtT, INDEX_CAT } from '../app/labels'
 import type { StationIndex } from '../api/types'
 import Icon from '../app/Icon'
 import SelectionCard from './SelectionCard'
+import AutopilotCard from './AutopilotCard'
 import s from './panels.module.css'
 
 export default function RightPanel() {
   return (
     <aside className={s.right}>
       <IndexCard />
+      <AutopilotCard />
       <ConflictsCard />
       <SelectionCard />
     </aside>

@@ -9,6 +9,7 @@ export const HOTKEYS: [string, string][] = [
   ['R', 'Пересчитать план'],
   ['C', 'Сравнение вариантов'],
   ['H', 'История'],
+  ['A', 'ИИ-диспетчер: включить / выключить'],
   ['Esc', 'Закрыть окно, снять выбор, выйти из истории'],
   ['?', 'Эта справка'],
 ]
@@ -46,6 +47,7 @@ export function useHotkeys() {
         if (st.history) st.closeHistory()
         else st.openHistory()
       }
+      else if (k === 'a' || k === 'A' || k === 'ф' || k === 'Ф') st.setAutopilot(!st.autopilot.enabled)
       else if (k === '?' || k === ',') st.setHelpOpen(!st.helpOpen)
     }
     window.addEventListener('keydown', onKey)

@@ -20,6 +20,8 @@ export default function TopBar() {
   const setHelpOpen = useStore((x) => x.setHelpOpen)
   const openCsv = useStore((x) => x.openCsv)
   const logout = useStore((x) => x.logout)
+  const ap = useStore((x) => x.autopilot)
+  const setAutopilot = useStore((x) => x.setAutopilot)
   const httpPolling = useStore((x) => x.httpPolling)
   const noAuth = useStore((x) => x.noAuthBackend)
   const now = useSimNow(10)
@@ -85,6 +87,10 @@ export default function TopBar() {
         <button className="btn btn-danger" disabled={!canCmd || !started} onClick={() => setIncidentOpen(true)}
           title={!started ? 'Сначала запустите симуляцию' : 'S'}>
           <Icon name="alert" size={14} /> Внести сбой
+        </button>
+        <button className={`btn ${ap.enabled ? s.apOn : s.apOff}`} onClick={() => setAutopilot(!ap.enabled)} disabled={role === 'viewer'}
+          aria-pressed={ap.enabled} title="ИИ-диспетчер сам пересчитывает и принимает план (A)">
+          <span className={s.apDot} /> ИИ-диспетчер{ap.enabled ? ': вкл' : ''}
         </button>
         <button className="btn btn-ghost" onClick={() => openCsv()} disabled={offline} title="Отчёт по запуску (CSV)">
           <Icon name="download" size={14} /> CSV

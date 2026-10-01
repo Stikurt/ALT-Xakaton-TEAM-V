@@ -34,6 +34,23 @@ export interface HistoryView {
   error: string | null
 }
 
+export interface ApDecision {
+  id: number
+  at_sim: number
+  at_real: number
+  kind: 'apply' | 'keep' | 'skip' | 'replan' | 'error' | 'info'
+  title: string
+  reasons: string[]
+  plan_id?: string
+}
+export interface AutopilotState {
+  enabled: boolean
+  status: 'off' | 'watching' | 'replanning' | 'deciding' | 'applying' | 'paused'
+  note: string
+  log: ApDecision[]
+  applied: number
+}
+
 interface ClockBase { sim: number; perf: number; speed: number; paused: boolean }
 
 interface State {
@@ -60,6 +77,7 @@ interface State {
   pending: string | null
   toasts: Toast[]
   latency: { last_ms: number | null }
+  autopilot: AutopilotState
 
   boot: () => () => void
   login: (u: string, p: string) => Promise<void>
@@ -81,6 +99,9 @@ interface State {
   closeHistory: () => void
   toast: (kind: Toast['kind'], text: string) => void
   dismissToast: (id: number) => void
+  setAutopilot: (enabled: boolean) => void
+  apUpdate: (patch: Partial<AutopilotState>) => void
+  apLog: (d: Omit<ApDecision, 'id' | 'at_real' | 'at_sim'>) => void
 }
 
 const emptyReplan: ReplanState = {
@@ -233,7 +254,7 @@ export const useStore = create<State>((set, get) => {
               status: 'done', job_id: p.job_id, plans, identical, calc_ms: p.calc_ms ?? null, error: null,
               finished_at_epoch: p.stale ? -999 : plans[0]?.based_on_epoch ?? null, baseline: p.baseline_index ?? null,
             },
-            compareOpen: get().history ? get().compareOpen : true,
+            compareOpen: get().history || get().autopilot.enabled ? get().compareOpen : true,
           })
         })()
         break
@@ -323,6 +344,7 @@ export const useStore = create<State>((set, get) => {
     pending: null,
     toasts: [],
     latency: { last_ms: null },
+    autopilot: { enabled: false, status: 'off', note: '', log: [], applied: 0 },
 
     boot: () => {
       api.me().then(
@@ -440,6 +462,24 @@ export const useStore = create<State>((set, get) => {
       window.setTimeout(() => get().dismissToast(id), kind === 'error' ? 7000 : 4000)
     },
     dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+    setAutopilot: (enabled) => {
+      const { user, autopilot } = get()
+      if (enabled && user?.role === 'viewer') {
+        get().toast('error', 'Включить ИИ-диспетчера может только диспетчер или администратор.')
+        return
+      }
+      set({ autopilot: { ...autopilot, enabled, status: enabled ? 'watching' : 'off', note: enabled ? 'Слежу за конфликтами и сбоями' : '' } })
+      get().apLog({ kind: 'info', title: enabled ? 'ИИ-диспетчер включён' : 'ИИ-диспетчер выключен', reasons: enabled
+        ? ['Сам пересчитывает план при конфликте или сбое и принимает лучший допустимый вариант']
+        : ['Решения снова принимает диспетчер'] })
+    },
+    apUpdate: (patch) => set((s) => ({ autopilot: { ...s.autopilot, ...patch } })),
+    apLog: (d) => set((s) => ({
+      autopilot: {
+        ...s.autopilot,
+        log: [{ ...d, id: ++toastSeq, at_real: Date.now(), at_sim: s.snapshot?.sim_time_s ?? 0 }, ...s.autopilot.log].slice(0, 40),
+      },
+    })),
   }
 })
 
@@ -456,3 +496,6 @@ export const selectPreviewPlan = (s: State): Plan | null =>
 /** Снимок, который сейчас показывается: исторический (если выбран момент прошлого) или онлайн. */
 export const selectView = (s: State): Snapshot | null => (s.history ? s.history.snapshot ?? s.snapshot : s.snapshot)
 export const selectRole = (s: State): Role => s.user?.role ?? 'viewer'
+
+// Для отладки и e2e-проверок в dev-сборке
+if (import.meta.env.DEV) (window as unknown as { __store: typeof useStore }).__store = useStore

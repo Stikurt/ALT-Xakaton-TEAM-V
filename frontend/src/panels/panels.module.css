@@ -251,3 +251,30 @@ button.chip { cursor: pointer; background: transparent; }
   .idxMini > span:last-child { display: none; }
   .controls :global(.btn) { padding: 0 9px; }
 }
+
+/* ---------- ИИ-диспетчер ---------- */
+.apOff { background: transparent; border-color: var(--border-strong); color: var(--text-2); }
+.apOn { background: var(--preview-soft) !important; border-color: var(--preview) !important; color: #ffb3db; box-shadow: var(--glow-pink); }
+.apDot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.apOn .apDot { background: var(--preview); box-shadow: 0 0 8px var(--preview); animation: blink 1.6s infinite; }
+.apCardOn { background: linear-gradient(180deg, rgba(255, 62, 165, .07), transparent 70%); box-shadow: inset 2px 0 0 var(--preview); }
+.apStatus { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; color: var(--text-2); }
+.apStatus i { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex: none; }
+.apStatus[data-status='watching'] i { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.apStatus[data-status='replanning'] i, .apStatus[data-status='deciding'] i, .apStatus[data-status='applying'] i { background: var(--preview); box-shadow: 0 0 6px var(--preview); animation: blink 1s infinite; }
+.apStatus[data-status='paused'] i { background: var(--wait); }
+.switch { position: relative; width: 40px; height: 22px; border-radius: 11px; border: 1px solid var(--border-strong); background: var(--panel-2); cursor: pointer; flex: none; padding: 0; }
+.switch span { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--text-2); transition: left .15s, background .15s; }
+.switch[data-on='true'] { border-color: var(--preview); background: var(--preview-soft); box-shadow: 0 0 12px rgba(255, 62, 165, .3); }
+.switch[data-on='true'] span { left: 20px; background: var(--preview); }
+.switch:disabled { opacity: .45; cursor: not-allowed; }
+.apStat { font-size: 12px; color: var(--text-2); margin-bottom: 8px; }
+.apLog { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 240px; overflow-y: auto; }
+.apRow { width: 100%; display: grid; grid-template-columns: 44px 62px minmax(0, 1fr); gap: 8px; align-items: baseline; text-align: left; background: transparent; border: 0; padding: 4px 4px; border-radius: 3px; cursor: pointer; font-size: 12px; }
+.apRow:hover { background: var(--panel); }
+.apKind { font: 600 10px var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.apLog li[data-kind='apply'] .apKind { color: #ff8fca; }
+.apLog li[data-kind='error'] .apKind, .apLog li[data-kind='skip'] .apKind { color: #ff8c97; }
+.apLog li[data-kind='keep'] .apKind { color: var(--ok); }
+.apTitle { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.apReasons { margin: 2px 0 6px 56px; padding-left: 14px; font-size: 11.5px; color: var(--text-2); display: grid; gap: 3px; line-height: 1.45; }
