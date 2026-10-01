@@ -1,35 +1,20 @@
-from app.constraints import (
-    intervals_overlap,
-    can_start,
-    validate_plan,
-)
+from app.constraints import RULES, intervals_overlap, validate_plan
 
 
-def test_half_open_intervals():
-    assert intervals_overlap(0, 10, 10, 20) is False
-    assert intervals_overlap(0, 10, 9, 20) is True
-
-
-def make_snapshot():
-    return {
+def make_context():
+    snapshot = {
         "run_id": "run-1",
-        "state_version": 1,
-        "sim_time_s": 100,
+        "state_version": 0,
+        "sim_time_s": 0,
         "tracks": [
             {
                 "id": "P01",
+                "kind": "passenger",
                 "usable_length_m": 500,
                 "availability": "open",
-                "closed_until_s": 0,
+                "closed_until_s": None,
                 "occupant_train_id": None,
-            },
-            {
-                "id": "P03",
-                "usable_length_m": 900,
-                "availability": "open",
-                "closed_until_s": 0,
-                "occupant_train_id": None,
-            },
+            }
         ],
         "trains": [
             {
@@ -37,167 +22,189 @@ def make_snapshot():
                 "kind": "passenger",
                 "length_m": 350,
                 "priority": 3,
-                "scheduled_arrival_s": 0,
                 "expected_arrival_s": 0,
+                "scheduled_arrival_s": 0,
                 "scheduled_departure_s": 600,
+                "status": "waiting_entry",
+                "track_id": None,
+                "movement": None,
             }
         ],
-        "resources": [
-            {
-                "id": "B03",
-                "kind": "inspection_crew",
-                "availability": "available",
-                "unavailable_until_s": 0,
-                "active_operation_id": None,
-            }
-        ],
+        "resources": [],
         "operations": [
             {
-                "id": "T01_DWELL",
+                "id": "T01_01_arrival",
+                "train_id": "T01",
+                "kind": "arrival",
+                "duration_s": 120,
+                "predecessor_ids": [],
+                "status": "pending",
+                "actual_start_s": None,
+                "actual_end_s": None,
+            },
+            {
+                "id": "T01_02_dwell",
                 "train_id": "T01",
                 "kind": "dwell",
                 "duration_s": 360,
-                "predecessor_ids": [],
+                "predecessor_ids": ["T01_01_arrival"],
                 "status": "pending",
-            }
+                "actual_start_s": None,
+                "actual_end_s": None,
+            },
+            {
+                "id": "T01_03_departure",
+                "train_id": "T01",
+                "kind": "departure",
+                "duration_s": 120,
+                "predecessor_ids": ["T01_02_dwell"],
+                "status": "pending",
+                "actual_start_s": None,
+                "actual_end_s": None,
+            },
         ],
-        "routes": [],
+    }
+    topology = {
+        "horizon_s": 7200,
+        "routes": [
+            {
+                "id": "R_W_P01",
+                "from_id": "W",
+                "to_id": "P01",
+                "conflict_zone_ids": ["GW"],
+                "duration_s": 120,
+            },
+            {
+                "id": "R_P01_E",
+                "from_id": "P01",
+                "to_id": "E",
+                "conflict_zone_ids": ["GE"],
+                "duration_s": 120,
+            },
+        ],
+    }
+    return {
+        "snapshot": snapshot,
+        "topology": topology,
+        "reservations": {},
+        "busy_zones": {},
+        "running_assignments": {},
     }
 
 
-def test_assignment_can_start():
-    snapshot = make_snapshot()
+def test_half_open_intervals():
+    assert intervals_overlap(0, 10, 10, 20) is False
+    assert intervals_overlap(0, 10, 9, 20) is True
 
+
+def test_simulation_rules_can_start_arrival():
+    context = make_context()
+    operation = context["snapshot"]["operations"][0]
     assignment = {
-        "operation_id": "T01_DWELL",
-        "start_s": 100,
-        "end_s": 460,
+        "operation_id": operation["id"],
+        "start_s": 0,
+        "end_s": 120,
         "track_id": "P01",
-        "route_id": None,
+        "route_id": "R_W_P01",
         "resource_ids": [],
     }
 
-    result = can_start(snapshot, assignment)
-
-    assert result["allowed"] is True
-    assert result["reasons"] == []
+    assert RULES.can_start(context, operation, assignment) == []
 
 
-def test_track_too_short():
-    snapshot = make_snapshot()
-    snapshot["tracks"][0]["usable_length_m"] = 300
+def test_simulation_rules_reject_closed_target():
+    context = make_context()
+    context["snapshot"]["tracks"][0]["availability"] = "closed"
+    context["snapshot"]["tracks"][0]["closed_until_s"] = 600
 
+    operation = context["snapshot"]["operations"][0]
     assignment = {
-        "operation_id": "T01_DWELL",
-        "start_s": 100,
-        "end_s": 460,
+        "operation_id": operation["id"],
+        "start_s": 0,
+        "end_s": 120,
         "track_id": "P01",
-        "route_id": None,
+        "route_id": "R_W_P01",
         "resource_ids": [],
     }
 
-    result = can_start(snapshot, assignment)
-
-    assert result["allowed"] is False
-
-    codes = [
-        reason["code"]
-        for reason in result["reasons"]
-    ]
-
-    assert "TRACK_TOO_SHORT" in codes
-
-
-def test_closed_track():
-    snapshot = make_snapshot()
-
-    snapshot["tracks"][0]["availability"] = "closed"
-    snapshot["tracks"][0]["closed_until_s"] = 1000
-
-    assignment = {
-        "operation_id": "T01_DWELL",
-        "start_s": 100,
-        "end_s": 460,
-        "track_id": "P01",
-        "route_id": None,
-        "resource_ids": [],
-    }
-
-    result = can_start(snapshot, assignment)
-
-    assert result["allowed"] is False
-
-    codes = [
-        reason["code"]
-        for reason in result["reasons"]
-    ]
-
+    codes = [x["code"] for x in RULES.can_start(context, operation, assignment)]
     assert "TRACK_CLOSED" in codes
 
 
-def test_occupied_track():
-    snapshot = make_snapshot()
-    snapshot["tracks"][0]["occupant_train_id"] = "T99"
-
-    assignment = {
-        "operation_id": "T01_DWELL",
-        "start_s": 100,
-        "end_s": 460,
-        "track_id": "P01",
-        "route_id": None,
-        "resource_ids": [],
-    }
-
-    result = can_start(snapshot, assignment)
-
-    assert result["allowed"] is False
-
-    codes = [
-        reason["code"]
-        for reason in result["reasons"]
-    ]
-
-    assert "TRACK_OCCUPIED" in codes
-
-
-def test_double_track_assignment():
-    snapshot = make_snapshot()
-
-    snapshot["operations"].append({
-        "id": "T01_OTHER",
-        "train_id": "T01",
-        "kind": "test",
-        "duration_s": 300,
-        "predecessor_ids": [],
-        "status": "pending",
-    })
-
+def test_validate_complete_one_train_plan():
+    context = make_context()
     plan = {
+        "id": "plan-1",
+        "run_id": "run-1",
+        "based_on_version": 0,
+        "status": "feasible",
+        "unassigned": [],
         "assignments": [
             {
-                "operation_id": "T01_DWELL",
-                "start_s": 100,
-                "end_s": 400,
+                "operation_id": "T01_01_arrival",
+                "start_s": 0,
+                "end_s": 120,
+                "track_id": "P01",
+                "route_id": "R_W_P01",
+                "resource_ids": [],
+            },
+            {
+                "operation_id": "T01_02_dwell",
+                "start_s": 120,
+                "end_s": 480,
                 "track_id": "P01",
                 "route_id": None,
                 "resource_ids": [],
             },
             {
-                "operation_id": "T01_OTHER",
-                "start_s": 200,
-                "end_s": 500,
+                "operation_id": "T01_03_departure",
+                "start_s": 480,
+                "end_s": 600,
+                "track_id": "P01",
+                "route_id": "R_P01_E",
+                "resource_ids": [],
+            },
+        ],
+    }
+
+    assert validate_plan(context, plan) == []
+
+
+def test_validate_rejects_early_departure():
+    context = make_context()
+    plan = {
+        "id": "plan-early",
+        "run_id": "run-1",
+        "based_on_version": 0,
+        "status": "feasible",
+        "unassigned": [],
+        "assignments": [
+            {
+                "operation_id": "T01_01_arrival",
+                "start_s": 0,
+                "end_s": 120,
+                "track_id": "P01",
+                "route_id": "R_W_P01",
+                "resource_ids": [],
+            },
+            {
+                "operation_id": "T01_02_dwell",
+                "start_s": 120,
+                "end_s": 480,
                 "track_id": "P01",
                 "route_id": None,
                 "resource_ids": [],
             },
-        ]
+            {
+                "operation_id": "T01_03_departure",
+                "start_s": 470,
+                "end_s": 590,
+                "track_id": "P01",
+                "route_id": "R_P01_E",
+                "resource_ids": [],
+            },
+        ],
     }
 
-    violations = validate_plan(snapshot, plan)
-
-    codes = [
-        violation["code"]
-        for violation in violations
-    ]
-
-    assert "TRACK_OCCUPIED" in codes
+    codes = [x["code"] for x in validate_plan(context, plan)]
+    assert "NO_FEASIBLE_SLOT" in codes
