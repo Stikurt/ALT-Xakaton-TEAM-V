@@ -244,8 +244,6 @@ def _reserve(calendars, requirements, start_s, end_s, owner):
     operation_duration = end_s - start_s
     for requirement in requirements:
         group, ident = requirement[0], requirement[1]
-        if group == "tracks":
-            continue
         span_s = requirement[2] if len(requirement) > 2 else operation_duration
         calendars[group][ident].reserve(start_s, start_s + span_s, owner)
 
@@ -315,7 +313,7 @@ def _restore_train_placeholder(calendars, snapshot, config, train):
 
 def schedule_train(snapshot, config, train, calendars, horizon_s):
     train_id = get_value(train, "id")
-    train_owner = f"train:{train_id}"
+    _remove_train_placeholder(calendars, train_id)
 
     operations = get_train_operations(snapshot, train_id)
     operations = [o for o in operations if get_value(o, "status") == "pending"]
@@ -327,7 +325,6 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
     )
 
     current_track = get_value(train, "track_id")
-    hold_start = now if current_track else None
     raw_assignments = []
     trial = {
         group: {ident: cal.clone() for ident, cal in values.items()}
@@ -383,7 +380,13 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
                     )
 
                 if kind in MOVING and kind != "departure":
-                    requirements.append(("tracks", track_id))
+                    requirements.append(
+                        (
+                            "tracks",
+                            track_id,
+                            _target_hold_span(operations, operation_index),
+                        )
+                    )
 
                 earliest = current_s
 
@@ -450,43 +453,31 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
         raw_assignments.append(scheduled)
         current_s = scheduled["end_s"]
 
-        if kind in MOVING:
-            # The source path remains occupied until the movement completes.
-            if current_track is not None:
-                source_calendar = trial["tracks"][current_track]
-                source_calendar.remove_owner(train_owner)
-                source_calendar.reserve(
-                    hold_start if hold_start is not None else now,
-                    scheduled["end_s"],
-                    train_owner,
-                )
+        if kind == "arrival" or kind.startswith("shunt_"):
+            current_track = scheduled["track_id"]
+        elif kind == "departure":
+            current_track = None
 
-            if kind == "departure":
-                current_track = None
-                hold_start = None
-            else:
-                # The target is reserved immediately on movement start and
-                # remains held until a later movement releases it.
-                target_track = scheduled["track_id"]
-                target_calendar = trial["tracks"][target_track]
-                if not target_calendar.is_free(
-                    scheduled["start_s"],
-                    horizon_s,
-                ):
-                    _restore_train_placeholder(calendars, snapshot, config, train)
-                    return None, {
-                        "train_id": train_id,
-                        "operation_id": oid,
-                        "reason": "TRACK_OCCUPIED",
-                        "track_id": target_track,
-                    }
-                target_calendar.reserve(
-                    scheduled["start_s"],
-                    horizon_s,
-                    train_owner,
-                )
-                current_track = target_track
-                hold_start = scheduled["start_s"]
+    # Temporary target-track reservations were used to find conflict-free
+    # movement slots. Replace them with the train's continuous hold interval.
+    for assignment in raw_assignments:
+        if assignment["_kind"] != "departure":
+            trial["tracks"][assignment["track_id"]].remove_owner(
+                assignment["operation_id"]
+            )
+
+    # Reserve the whole path-holding intervals required by the model.
+    occupancy = _occupancy_intervals(snapshot, config, train, raw_assignments)
+    for track_id, start_s, end_s in occupancy:
+        cal = trial["tracks"][track_id]
+        if not cal.is_free(start_s, end_s):
+            _restore_train_placeholder(calendars, snapshot, config, train)
+            return None, {
+                "train_id": train_id,
+                "reason": "TRACK_OCCUPIED",
+                "track_id": track_id,
+            }
+        cal.reserve(start_s, end_s, f"train:{train_id}")
 
     assignments = [
         {k: v for k, v in a.items() if k != "_kind"}
