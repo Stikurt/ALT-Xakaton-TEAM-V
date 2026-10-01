@@ -13,6 +13,22 @@ router=APIRouter()
 VIEWER=[Depends(require_role('viewer'))]
 
 
+def _plans(repository,plan_ids):
+    """One query for all variants of the listed jobs (no N+1)."""
+    batch=getattr(repository,'get_plans',None)
+    if batch is not None: return batch(plan_ids)
+    return {pid:repository.get_plan(pid) for pid in plan_ids}
+
+
+def _mark_stale(state,job,plans):
+    job['stale']=job['run_id']!=state.run_id or job['based_on_version']!=state.state_version
+    for plan_id in job.get('plan_ids',[]):
+        candidate=plans.get(plan_id)
+        if candidate is None: continue
+        problem=candidate_problem(state,candidate)
+        job['stale'] |= problem is not None and problem.code=='STALE_PLAN'
+
+
 @router.post('/api/replans',response_model=ReplanAccepted,status_code=202,dependencies=DISPATCHER)
 async def request_replan(command: ReplanCommand,request: Request):
     return await runtime(request).submit(dict(action='replan',**command.model_dump()))
@@ -23,11 +39,8 @@ async def get_job(job_id: str,request: Request):
     owner=runtime(request)
     job=await asyncio.to_thread(owner.repository.get_job,job_id)
     if not job: raise HTTPException(404,'Расчёт не найден')
-    job['stale']=job['run_id']!=owner.state.run_id or job['based_on_version']!=owner.state.state_version
-    for plan_id in job.get('plan_ids',[]):
-        candidate=await asyncio.to_thread(owner.repository.get_plan,plan_id)
-        problem=candidate_problem(owner.state,candidate)
-        job['stale'] |= problem is not None and problem.code=='STALE_PLAN'
+    plans=await asyncio.to_thread(_plans,owner.repository,job.get('plan_ids',[]))
+    _mark_stale(owner.state,job,plans)
     return job
 
 
@@ -35,12 +48,9 @@ async def get_job(job_id: str,request: Request):
 async def list_jobs(request: Request,run_id: str=Query(min_length=1,max_length=128),limit: int=Query(default=20,ge=1,le=50)):
     owner=runtime(request)
     jobs=await asyncio.to_thread(owner.repository.list_jobs,run_id,limit)
+    plans=await asyncio.to_thread(_plans,owner.repository,[p for job in jobs for p in job.get('plan_ids',[])])
     for job in jobs:
-        job['stale']=job['run_id']!=owner.state.run_id or job['based_on_version']!=owner.state.state_version
-        for plan_id in job.get('plan_ids',[]):
-            candidate=await asyncio.to_thread(owner.repository.get_plan,plan_id)
-            problem=candidate_problem(owner.state,candidate)
-            job['stale'] |= problem is not None and problem.code=='STALE_PLAN'
+        _mark_stale(owner.state,job,plans)
     return jobs
 
 

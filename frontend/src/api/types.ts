@@ -20,7 +20,10 @@ export interface Route {
 }
 export interface Topology {
   schema_version: number; name: string; viewbox: [number, number, number, number]
+  /** Роли узлов схемы: W — вход, GW — горловина входа, GE — горловина выхода, E — выход. */
   nodes: Record<'W' | 'GW' | 'GE' | 'E', Pt>
+  /** Настоящие id этих узлов в данных станции (у backend — boundary/conflict zones из station.json). */
+  node_ids?: Partial<Record<'W' | 'GW' | 'GE' | 'E', string>>
   zones: { id: string; name: string }[]
   areas: { id: string; label: string; track_ids: string[] }[]
   tracks: TopoTrack[]; routes: Route[]; horizon_s: number
@@ -64,6 +67,8 @@ export interface Plan {
   assignments: Assignment[]; unassigned: { train_id: string; code: string; message: string }[]
   metrics: PlanMetrics; explanations: Explanation[]; violations: { code: string; message: string }[]
   calc_ms: number | null; identical_to_other?: boolean; index_forecast: StationIndex | null
+  /** Только из GET /api/plans/{id}: оценка сервера на момент запроса. */
+  stale?: boolean; applicable?: boolean
 }
 export interface Conflict {
   id: string; code: ConflictCode; severity: 'high' | 'medium' | 'low'; kind: 'execution' | 'plan'

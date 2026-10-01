@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../app/store'
 import { fmtDur, STRATEGY } from '../app/labels'
 import type { Plan, StationIndex } from '../api/types'
+import { currentDelays, planIsStale } from '../api/adapt'
 import Icon from '../app/Icon'
 import { selectRole } from '../app/store'
 import { Factors, IndexGauge } from './RightPanel'
@@ -30,8 +31,7 @@ export default function PlanCompare() {
 
   const plans = replan.identical ? replan.plans.slice(0, 1) : replan.plans
   const best = plans.length > 1 ? (better(plans[1], plans[0]) ? plans[1].id : plans[0].id) : plans[0]?.id
-  const curTotal = snap.trains.reduce((acc, t) => acc + (t.status === 'departed' ? 0 : t.delay_s), 0)
-  const curMax = Math.max(0, ...snap.trains.filter((t) => t.status !== 'departed').map((t) => t.delay_s))
+  const { total: curTotal, max: curMax } = currentDelays(snap)
 
   return (
     <div className={s.drawer} role="dialog" aria-label="Сравнение вариантов плана">
@@ -64,7 +64,7 @@ export default function PlanCompare() {
       <div className={s.compareGrid} data-n={plans.length}>
         {plans.map((p) => (
           <PlanCard key={p.id} p={p} best={plans.length > 1 && p.id === best} previewing={previewId === p.id}
-            stale={p.based_on_epoch !== snap.epoch || p.run_id !== snap.run_id}
+            stale={!!p.stale || planIsStale(p, snap)}
             canCmd={conn === 'online' && role !== 'viewer' && !pending}
             onPreview={() => setPreview(previewId === p.id ? null : p.id)}
             onApply={() => apply(p.id)} onReplan={() => requestReplan()} identical={replan.identical} baseline={replan.baseline} />

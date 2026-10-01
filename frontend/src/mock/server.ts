@@ -20,6 +20,7 @@ class Hub {
   lastPub = -1
   history: Snap[] = []
   user: { username: string; role: string } | null = null
+  csrf: string | null = null
   jobRunning = false
   jobPending = false
   lastTick = performance.now()
@@ -122,7 +123,7 @@ function need(role: string): Res | null {
   return null
 }
 
-function route(method: string, path: string, body: Dict<any>): Res { // eslint-disable-line @typescript-eslint/no-explicit-any
+function route(method: string, path: string, body: Dict<any>, headers: Dict<string> = {}): Res { // eslint-disable-line @typescript-eslint/no-explicit-any
   const hub = H(), st = hub.st
   const [p, qs] = path.split('?')
   const q = Object.fromEntries(new URLSearchParams(qs ?? ''))
@@ -134,14 +135,18 @@ function route(method: string, path: string, body: Dict<any>): Res { // eslint-d
   }
   const checkRun = () => (body?.run_id !== st.run_id ? err(409, 'STALE_RUN', 'Команда относится к другому запуску', { current_run_id: st.run_id }) : null)
 
+  const session = () => ({ ...hub.user, csrf_token: hub.csrf })
   if (p === '/api/login' && method === 'POST') {
     const u = USERS[String(body.username ?? '')]
     if (!u || u.pw !== String(body.password ?? '')) return err(401, 'BAD_CREDENTIALS', 'Неверное имя пользователя или пароль')
     hub.user = { username: body.username, role: u.role }
-    return json(200, hub.user)
+    hub.csrf = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)
+    return json(200, session())
   }
-  if (p === '/api/logout') { hub.user = null; return json(200, { ok: true }) }
-  if (p === '/api/me') return hub.user ? json(200, hub.user) : err(401, 'UNAUTHORIZED', 'Нужен вход в систему')
+  // как backend (auth/service.check_csrf): изменяющие запросы сессии требуют X-CSRF-Token
+  if (method !== 'GET' && hub.user && headers['X-CSRF-Token'] !== hub.csrf) return err(403, 'CSRF_FAILED', 'Отсутствует или неверен заголовок X-CSRF-Token.')
+  if (p === '/api/logout') { hub.user = null; hub.csrf = null; return { status: 204, text: '' } }
+  if (p === '/api/me') return hub.user ? json(200, session()) : err(401, 'UNAUTHORIZED', 'Нужен вход в систему')
   if (p === '/health') return json(200, { status: 'ok', db: 'browser demo', run_id: st.run_id })
   let e: Res | null
   if (p === '/api/state') {
@@ -187,10 +192,13 @@ function route(method: string, path: string, body: Dict<any>): Res { // eslint-d
     hub.publish()
     return remember(200, { ok: true, run_id: st.run_id, state_version: st.state_version })
   }
-  if (p === '/api/incidents') {
+  if (p === '/api/incidents' || p === '/api/incidents/batch') {
     if ((e = need('dispatcher')) || (e = checkRun())) return e
-    // пакет сбоев (ТЗ разд. 4): применить все валидные команды, затем один пересчёт
-    const items: Dict<any>[] = Array.isArray(body.batch) && body.batch.length ? body.batch : [body] // eslint-disable-line @typescript-eslint/no-explicit-any
+    // контракт backend: одиночный сбой — /api/incidents, пакет — /api/incidents/batch {incidents: [...]}, один пересчёт
+    const batch = p === '/api/incidents/batch'
+    if (batch && (!Array.isArray(body.incidents) || !body.incidents.length || body.incidents.length > 50))
+      return err(422, 'VALIDATION_ERROR', 'Пакет: поле incidents, от 1 до 50 сбоев')
+    const items: Dict<any>[] = batch ? body.incidents : [body] // eslint-disable-line @typescript-eslint/no-explicit-any
     const results = items.map((it) => {
       const [status, code, message] = st.incident(it.kind, it.target_id, Number(it.duration_s || 600), Number(it.delay_s || 300))
       return { status, code, message, target_id: it.target_id }
@@ -200,7 +208,7 @@ function route(method: string, path: string, body: Dict<any>): Res { // eslint-d
     hub.remember()
     const job = hub.requestReplan()
     hub.publish()
-    return remember(200, { ok: true, results, job_id: job, state_version: st.state_version })
+    return remember(200, { command_id: body.command_id, run_id: st.run_id, state_version: st.state_version, replan_required: true, results, job_id: job })
   }
   if (p === '/api/replans') {
     if ((e = need('dispatcher')) || (e = checkRun())) return e
@@ -222,7 +230,12 @@ function route(method: string, path: string, body: Dict<any>): Res { // eslint-d
     return remember(200, { ok: true, active_plan_id: pl.id, state_version: st.state_version })
   }
   const mPlan = p.match(/^\/api\/plans\/([^/]+)$/)
-  if (mPlan) return st.plans[mPlan[1]] ? json(200, st.plans[mPlan[1]]) : err(404, 'NOT_FOUND', 'План не найден')
+  if (mPlan) {
+    const pl = st.plans[mPlan[1]]
+    if (!pl) return err(404, 'NOT_FOUND', 'План не найден')
+    const stale = pl.run_id !== st.run_id || pl.based_on_epoch !== st.epoch
+    return json(200, { plan: pl, stale, applicable: !stale && pl.status === 'feasible' }) // как PlanResponse backend
+  }
   return err(404, 'NOT_FOUND', 'Нет такого маршрута')
 }
 
@@ -255,9 +268,9 @@ class FakeSocket implements SocketLike {
 
 export const demoTransport: Transport = {
   demo: true,
-  request: async (method, path, body) => {
+  request: async (method, path, body, headers) => {
     await new Promise((r) => setTimeout(r, 15))
-    return route(method, path, (body ?? {}) as Dict)
+    return route(method, path, (body ?? {}) as Dict, headers ?? {})
   },
   socket: () => new FakeSocket(),
 }

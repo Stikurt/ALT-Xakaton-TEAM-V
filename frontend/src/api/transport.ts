@@ -7,18 +7,20 @@ export interface SocketLike {
   close: () => void
 }
 export interface Transport {
-  request: (method: string, path: string, body?: unknown) => Promise<{ status: number; text: string; headers?: Record<string, string> }>
+  request: (method: string, path: string, body?: unknown, headers?: Record<string, string>) => Promise<{ status: number; text: string; headers?: Record<string, string> }>
   socket: (path: string) => SocketLike
   demo: boolean
 }
 
 const real: Transport = {
   demo: false,
-  request: async (method, path, body) => {
+  request: async (method, path, body, headers) => {
+    const h: Record<string, string> = { ...(headers ?? {}) }
+    if (body !== undefined) h['content-type'] = 'application/json'
     const r = await fetch(path, {
       method,
-      headers: body ? { 'content-type': 'application/json' } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
+      headers: Object.keys(h).length ? h : undefined,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
       credentials: 'include',
     })
     return { status: r.status, text: await r.text() }

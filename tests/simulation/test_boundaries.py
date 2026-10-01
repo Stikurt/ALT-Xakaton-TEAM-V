@@ -1,6 +1,6 @@
 from copy import deepcopy
 import unittest
-from backend.app.simulation import (advance_to,apply_plan,create_initial_state,schedule_incidents,SimulationError)
+from app.simulation import (advance_to,apply_plan,create_initial_state,schedule_incidents,SimulationError)
 from support import RULES,config,fixture_plan,command,prepared,started
 
 class BoundaryTests(unittest.TestCase):

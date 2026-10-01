@@ -4,6 +4,7 @@
 // и принимает его через тот же POST /api/plans/{id}/apply, что и человек. Сервер может отказать (409) — тогда повтор.
 // Работает в браузере диспетчера, пока вкладка открыта (серверный автопилот — вопрос к И, см. docs/decisions.md).
 import { api, HttpError } from '../api/client'
+import { currentDelays } from '../api/adapt'
 import type { Plan, Snapshot } from '../api/types'
 import { fmtDur, fmtT, STRATEGY } from './labels'
 import { useStore } from './store'
@@ -17,7 +18,7 @@ const MAX_RETRIES = 3
 /** Конфликты, на которые стоит реагировать: нарушения плана сразу, ожидания при исполнении — если длятся > 30 с модели. */
 const actionable = (s: Snapshot) => s.conflicts.filter((c) => c.kind === 'plan' || s.sim_time_s - c.start_s >= 30)
 const conflictSig = (s: Snapshot) => actionable(s).map((c) => c.id).sort().join('|')
-const curDelay = (s: Snapshot) => s.trains.filter((t) => t.status !== 'departed').reduce((a, t) => a + t.delay_s, 0)
+const curDelay = (s: Snapshot) => currentDelays(s).total
 
 export function startAutopilot(): () => void {
   let handledJob: string | null = null

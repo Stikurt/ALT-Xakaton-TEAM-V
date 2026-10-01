@@ -24,7 +24,7 @@ export default function IncidentDialog() {
 
   const options =
     kind === 'close_track'
-      ? snap.tracks.filter((t) => t.id !== 'P12').map((t) => ({
+      ? snap.tracks.filter((t) => t.kind !== 'loco').map((t) => ({
           id: t.id,
           label: `${t.id} · ${t.availability === 'closed' ? 'уже закрыт' : t.occupant_train_id ? `занят ${t.occupant_train_id}` : 'свободен'}`,
           disabled: t.availability === 'closed',

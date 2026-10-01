@@ -1,13 +1,37 @@
 {
   "schema_version": 1,
   "id": "uzel-12",
-  "horizon_s": 10800,
+  "name": "Узел 12",
+  "boundary": {
+    "entry": "W",
+    "exit": "E"
+  },
   "view_box": [
     0,
     0,
     1400,
     900
   ],
+  "node_positions": {
+    "W": [
+      40,
+      450
+    ],
+    "E": [
+      1360,
+      450
+    ]
+  },
+  "conflict_zone_positions": {
+    "GW": [
+      180,
+      450
+    ],
+    "GE": [
+      1220,
+      450
+    ]
+  },
   "assumptions": [
     "Учебная модель, не система управления реальной железной дорогой.",
     "Локомотивы между заданиями условно перемещаются без отдельного маршрута.",
@@ -2242,7 +2266,8 @@
       ],
       "availability": "available",
       "unavailable_until_s": null,
-      "active_operation_id": null
+      "active_operation_id": null,
+      "track_id": "P10"
     },
     {
       "id": "F11",
@@ -2252,7 +2277,8 @@
       ],
       "availability": "available",
       "unavailable_until_s": null,
-      "active_operation_id": null
+      "active_operation_id": null,
+      "track_id": "P11"
     }
   ],
   "trains": [

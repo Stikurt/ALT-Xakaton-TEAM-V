@@ -93,7 +93,8 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
     @app.exception_handler(SimulationError)
     async def simulation_error(request: Request, exc: SimulationError):
         details = exc.details if isinstance(exc.details,list) else []
-        return error_response(422 if exc.code == "INVALID_INPUT" else 409,exc.code,exc.message,details)
+        status = 422 if exc.code in ("INVALID_INPUT","INVALID_TIME") else 409
+        return error_response(status,exc.code,exc.message,details)
 
     @app.exception_handler(NotInitialized)
     async def not_initialized(request: Request, exc: NotInitialized):
@@ -114,9 +115,16 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
 
     @app.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException):
-        return error_response(exc.status_code, f"HTTP_{exc.status_code}", str(exc.detail))
+        code = {404: "NOT_FOUND", 405: "METHOD_NOT_ALLOWED"}.get(exc.status_code, f"HTTP_{exc.status_code}")
+        return error_response(exc.status_code, code, str(exc.detail))
 
-    errors={code:{'model':ApiError} for code in (403,404,409,422,503)}
+    @app.exception_handler(Exception)
+    async def internal_error(request: Request, exc: Exception):
+        # Unexpected failure: same ApiError shape as every other error, no traceback or data leak.
+        logger.error("internal_error path=%s error_type=%s", request.url.path, type(exc).__name__)
+        return error_response(500, "INTERNAL_ERROR", "Внутренняя ошибка сервера. Подробности — в журнале backend.")
+
+    errors={code:{'model':ApiError} for code in (401,403,404,409,422,500,503)}
     for api_router in (router,live_router,plans_router,history_router):
         app.include_router(api_router,responses=errors)
     return app

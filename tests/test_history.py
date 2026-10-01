@@ -45,9 +45,12 @@ def test_long_host_tick_keeps_event_instants_and_minute_boundaries():
         repo.save_transition=capture
         await owner.execute(cmd(owner,'start'))
         await owner.tick(1000)
-        assert {60*i for i in range(1,17)}<={item[0] for item in captures}
+        # One long host tick still stops at every model minute and at every event instant.
+        assert {60*i for i in range(1,11)}|{120,480,600}<={item[0] for item in captures}
         assert all(all(at==now for at in times) for now,times in captures)
-        assert owner.state.sim_time_s==1000
+        # The only train departs at 600 s: the run completes and the clock stops there.
+        assert owner.state.sim_time_s==600 and owner.state.paused
+        assert captures[-1]==(600,[600,600])
     asyncio.run(run())
 
 

@@ -1,36 +1,47 @@
-# Узел 12 — backend
+# Узел 12 — учебная цифровая станция
 
-Бэкенд учебной цифровой станции, этапы 1–5. Ветка разработки: `backend`.
-Python 3.12, FastAPI, Pydantic, PostgreSQL 16, psycopg.
+Диспетчерская панель (frontend) + backend + планировщик + общие ограничения + симуляция,
+собранные в ветке `develop`. Python 3.12, FastAPI, Pydantic, PostgreSQL 16, psycopg;
+React 19 + Vite 8, Node 22.
 
-## Что уже реализовано
+| Часть | Где | Что делает |
+| --- | --- | --- |
+| Frontend | `frontend/` | Схема станции, Гант, сравнение вариантов плана, сбои, история, ИИ-помощник |
+| Backend | `backend/app/{api,runtime,storage,auth}` | HTTP/WS API, единственный владелец состояния, PostgreSQL, вход и роли, CSRF |
+| Планировщик | `backend/app/planner` | Два варианта плана (passenger_first, earliest_departure) по данным станции |
+| Ограничения | `backend/app/constraints.py` | can_start / validate_plan — общие правила для планировщика и движка |
+| Топология | `backend/app/topology.py` | Вход/выход, грузовые фронты, окно планирования — только из `shared/station.json` |
+| Симуляция | `backend/app/simulation` | Детерминированный событийный движок, инциденты, завершение прогона |
+| Мок | `mock_backend/`, `frontend/src/mock` | Демо без PostgreSQL с тем же контрактом API |
 
-- Общие модели станции, состояния, операций, планов, команд и событий.
-- Примеры JSON и схемы для параллельной разработки команды.
-- FastAPI: `GET /health`, `GET /api/state`, `POST /api/simulation/control`, `/ws`, `/docs`.
-- PostgreSQL: миграции, ограниченный пул соединений и начальное заполнение.
-- Проверки контрактов, HTTP API и отдельный интеграционный тест PostgreSQL.
-- Настоящие движок В и планировщик Н; один поезд T01 от приёма до отправления.
-- Последовательные команды start/pause/speed/reset, постоянная идемпотентность.
-- WebSocket: snapshot, state_updated, clock_sync, simulation_error.
-- Сохранение очереди движка и восстановление после перезапуска в паузе.
-- Инциденты через `POST /api/incidents` и атомарные пакеты `POST /api/incidents/batch`.
-- Постоянные результаты принятых и отклонённых команд; одна ожидающая заявка
-  перепланирования на запуск, сохранённая вместе с эффектом инцидента.
-- Два варианта в отдельном процессе, тайм-аут с остановкой процесса, API задач
-  и планов, атомарное принятие с повторной проверкой времени и версии.
-- История по сохранённым снимкам/событиям, CSV фактических отправлений выбранного
-  запуска, просмотр архива после reset.
+Что работает: полная станция из 15 поездов (80 операций) — начальный план, запуск, пакет
+сбоев, два варианта пересчёта, принятие варианта из интерфейса, отправление всех поездов и
+автоматическое завершение прогона (`simulation_completed`, часы останавливаются). Окно
+планирования вычисляется по расписанию (`app.topology.planning_horizon`), фиксированного
+`horizon_s` нет. Идентификаторы путей, ресурсов и узлов в коде не зашиты.
 
-Сейчас работает **вертикальный сценарий одного поезда**. Начальный план реально
-рассчитывается Н в отдельном процессе во время bootstrap, проверяется и сохраняется
-до start. Полный сценарий 15 поездов пока не проходит валидатор Н; причины
-зафиксированы в `docs/upstream-validation.md`. Поэтому SCENARIO_PATH по умолчанию
-указывает на shared/scenarios/one_train.json.
+Доступ: вход по cookie-сессии в PostgreSQL, роли viewer/dispatcher/admin, CSRF
+(`X-CSRF-Token` из ответа `/api/login` и `/api/me`) и Origin — `docs/auth.md`.
+Запуск по-прежнему привязан к `127.0.0.1`.
 
-Ещё не реализованы изменение настроек через API и нагрузочная проверка в браузерах.
-Доступ (этап 6): вход по cookie-сессии в PostgreSQL, роли viewer/dispatcher/admin,
-CSRF и Origin — `docs/auth.md`. Запуск по-прежнему привязан к `127.0.0.1`.
+## Быстрый старт (Linux/macOS, bash)
+
+```bash
+python3.12 -m venv .venv && . .venv/bin/activate
+pip install -r backend/requirements-dev.txt
+cp .env.example .env            # заменить пароль в POSTGRES_PASSWORD и DATABASE_URL
+export PYTHONPATH=$PWD/backend
+python -m app.auth generate-secret            # -> SESSION_SECRET в .env
+python -m app.auth hash-password              # -> DISPATCHER_PASSWORD_HASH (и VIEWER_/ADMIN_)
+docker compose up -d db
+python -m app.storage.migrate
+python -m app.storage.bootstrap               # начальный план для shared/station.json
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1
+# второй терминал
+cd frontend && npm ci && npm run dev          # http://localhost:5173, прокси /api и /ws на :8000
+```
+
+Демо без backend: `cd frontend && npm run build:demo` — один HTML-файл с мок-сервером.
 
 ## Запуск из корня репозитория, PowerShell
 
@@ -74,7 +85,7 @@ reset создаёт новый run_id, возвращает исходный п
 блокировкой PostgreSQL. После аварии сохранения модель останавливается, а после
 перезапуска загружается checkpoint и включается пауза; продолжение — start.
 
-## Запустить один поезд
+## Запустить станцию через API
 
 В другом окне PowerShell после запуска сервера:
 
@@ -136,6 +147,18 @@ Invoke-RestMethod "$B/api/simulation/control" -Method Post -ContentType 'applica
 
 ## Проверки
 
+Все Python-тесты (backend, планировщик, ограничения, симуляция, mock_backend) — одной командой
+из корня; `pyproject.toml` задаёт пути импорта:
+
+```bash
+python -m pytest -q                                   # PostgreSQL-тесты skipped без TEST_DATABASE_URL
+TEST_DATABASE_URL=postgresql://user:password@localhost:5432/uzel12_test python -m pytest -q
+PYTHONPATH=backend python -m unittest discover -s tests/simulation -v
+cd frontend && npm test && npm run lint && npm run build
+```
+
+CI (`.github/workflows/`) запускает всё это на push и pull request в `develop` и `main`.
+
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 # Интеграционная проверка на отдельной тестовой базе PostgreSQL:
@@ -159,10 +182,10 @@ CREATE SCHEMA. Результаты фактических запусков — 
 - Формат обмена и разделение ответственности: `docs/contracts.md`.
 - Принятые решения и открытые вопросы: `docs/decisions.md`.
 - Источник типов: `backend/app/domain/models.py`.
-- Сигнатуры подключения В и Н: `backend/app/domain/ports.py`.
+- Сигнатуры подключения В и Н: `backend/app/domain/ports.py` (пока не используются кодом).
 - Данные для UI: `shared/examples/`.
 
 `shared/station.json` и реализация `backend/app/simulation` остаются за В;
 `backend/app/planner` и правила допустимости — за Н. Их код включён из командной
 ветки integration/planner-simulation; происхождение и одна интеграционная правка
-описаны в docs/upstream-validation.md. Ветка backend не содержит frontend.
+описаны в docs/upstream-validation.md. Frontend — `frontend/`, описание — `FRONTEND.md`.

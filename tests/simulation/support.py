@@ -1,7 +1,7 @@
 """Test-only fixtures. Never wire PermissiveRules into the application."""
 import json
 from pathlib import Path
-from backend.app.simulation import create_initial_state, apply_plan, apply_command
+from app.simulation import create_initial_state, apply_plan, apply_command
 ROOT = Path(__file__).resolve().parents[2]
 
 class PermissiveRules:

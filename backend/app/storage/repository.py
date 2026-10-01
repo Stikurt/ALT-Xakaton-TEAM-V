@@ -128,11 +128,14 @@ class Repository(PlanningRepository,HistoryRepository):
 
     def check_ready(self) -> None:
         with self.pool.connection() as conn:
+            # Every migration shipped with this code must be applied (not one file name hard-coded).
+            from app.storage.migrate import MIGRATIONS
+            expected = sorted(p.name for p in MIGRATIONS.glob("*.sql"))
             row = conn.execute("""
-                SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE name='004_planning_history.sql'),
+                SELECT (SELECT count(*) FROM schema_migrations WHERE name = ANY(%s)) = %s,
                        EXISTS(SELECT 1 FROM runs r JOIN snapshots s ON s.run_id=r.id
                               WHERE r.status='active')
-            """).fetchone()
+            """, (expected, len(expected))).fetchone()
             if not all(row):
                 raise NotInitialized("Run migrations and bootstrap first")
 

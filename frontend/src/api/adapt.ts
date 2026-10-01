@@ -3,7 +3,7 @@
 // Адаптер принимает и контракт backend, и расширенный формат мок-сервера, и ничего не вычисляет «за сервер»:
 // только переименовывает поля, выводит очевидное (тип маршрута по концам) и подставляет пустые значения.
 import type {
-  Assignment, Conflict, Explanation, Operation, OpKind, Plan, PlanMetrics, Pt, Resource, Route, Snapshot, Topology, Track, Train,
+  Assignment, Conflict, Explanation, IncidentCmd, Operation, OpKind, Plan, PlanMetrics, Pt, Resource, Route, Snapshot, Topology, Track, Train,
 } from './types'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -16,6 +16,14 @@ const OP_KIND: Record<string, OpKind> = {
 const TRACK_KIND: Record<string, string> = { storage: 'staging', locomotive: 'loco' }
 
 export const INCIDENT_TO_SERVER = { delay: 'delay_train', close_track: 'close_track', loco_unavailable: 'locomotive_unavailable' } as const
+
+/** IncidentSpec backend: delay_train несёт только delay_s, сбои ресурсов — только duration_s (лишнее поле → 422). */
+export function incidentToServer(c: IncidentCmd): { kind: string; target_id: string; delay_s?: number; duration_s?: number } {
+  const kind = INCIDENT_TO_SERVER[c.kind]
+  return kind === 'delay_train'
+    ? { kind, target_id: c.target_id, delay_s: Math.round(c.delay_s ?? c.duration_s ?? 0) }
+    : { kind, target_id: c.target_id, duration_s: Math.round(c.duration_s ?? c.delay_s ?? 0) }
+}
 
 function resKind(r: Raw): string {
   if (r.kind === 'locomotive') return 'shunting_loco'
@@ -64,8 +72,10 @@ export function normalizePlan(raw: Raw, ops?: Operation[]): Plan {
       : { ...u, train_id: u.train_id ?? (u.operation_id ? trainOf(u.operation_id) : '—') })
   const m = raw.metrics ?? {}
   const metrics: PlanMetrics = {
-    total_delay_s: m.total_delay_s ?? null, max_delay_s: m.max_delay_s ?? null, unassigned_count: m.unassigned_count ?? new Set(unassigned.map((u: Raw) => u.train_id)).size,
-    changed_count: m.changed_count ?? null, delayed_trains: m.delayed_trains ?? null, forecast_departures: m.forecast_departures ?? {}, delays: m.delays ?? {},
+    // backend: total_positive_delay_s / changed_future_assignments (PlanMetrics в domain/models.py); мок: total_delay_s / changed_count
+    total_delay_s: m.total_delay_s ?? m.total_positive_delay_s ?? null, max_delay_s: m.max_delay_s ?? null,
+    unassigned_count: m.unassigned_count ?? new Set(unassigned.map((u: Raw) => u.train_id)).size,
+    changed_count: m.changed_count ?? m.changed_future_assignments ?? null, delayed_trains: m.delayed_trains ?? null, forecast_departures: m.forecast_departures ?? {}, delays: m.delays ?? {},
   }
   const explanations: Explanation[] = (raw.explanations ?? []).map((e: Raw, i: number) =>
     typeof e === 'string' ? { train_id: `#${i + 1}`, code: 'NOTE', operation_ids: [], message: e } : e)
@@ -74,9 +84,24 @@ export function normalizePlan(raw: Raw, ops?: Operation[]): Plan {
     based_on_time_s: raw.based_on_time_s ?? 0, strategy: raw.strategy, status: raw.status, timed_out: !!raw.timed_out,
     assignments,
     unassigned,
-    metrics, explanations, violations: raw.violations ?? [], calc_ms: raw.calc_ms ?? null,
+    metrics, explanations, violations: raw.violations ?? [], calc_ms: raw.calc_ms ?? raw.calculation_time_ms ?? null,
     identical_to_other: raw.identical_to_other, index_forecast: raw.index_forecast ?? null,
+    stale: raw.stale, applicable: raw.applicable,
   }
+}
+
+/** GET /api/plans/{id}: backend отвечает PlanResponse {plan, stale, applicable}; мок — тем же конвертом. */
+export function normalizePlanResponse(raw: Raw, ops?: Operation[]): Plan {
+  if (raw && typeof raw === 'object' && raw.plan && typeof raw.plan === 'object') {
+    return normalizePlan({ ...raw.plan, stale: raw.stale, applicable: raw.applicable }, ops)
+  }
+  return normalizePlan(raw ?? {}, ops)
+}
+
+/** План устарел относительно текущего снимка. Мок ведёт epoch, backend — state_version (runtime/planning.candidate_problem). */
+export function planIsStale(p: Pick<Plan, 'run_id' | 'based_on_epoch' | 'based_on_version'>, snap: Pick<Snapshot, 'run_id' | 'epoch' | 'state_version'>): boolean {
+  if (p.run_id !== snap.run_id) return true
+  return snap.epoch >= 0 ? p.based_on_epoch !== snap.epoch : p.based_on_version !== snap.state_version
 }
 
 export function normalizeSnapshot(raw: Raw, topo?: Topology | null): Snapshot {
@@ -99,7 +124,7 @@ export function normalizeSnapshot(raw: Raw, topo?: Topology | null): Snapshot {
   if (!zones) {
     const routes = Object.fromEntries((topo?.routes ?? []).map((r) => [r.id, r]))
     const busy: Record<string, string | null> = {}
-    for (const z of topo?.zones ?? [{ id: 'GW' }, { id: 'GE' }]) busy[z.id] = null
+    for (const z of topo?.zones ?? []) busy[z.id] = null
     for (const t of trains) {
       if (!t.movement) continue
       const r = routes[t.movement.route_id]
@@ -131,23 +156,43 @@ export function normalizeTopology(raw: Raw, rawSnapshot?: Raw): Topology {
     const [a, b] = Array.isArray(g) ? [asPt(g[0]), asPt(g[g.length - 1])] : [[g.x1, g.y1], [g.x2, g.y2]]
     return { id: t.id, kind: TRACK_KIND[t.kind] ?? t.kind, usable_length_m: t.usable_length_m, geometry: { x1: a[0], y1: a[1], x2: b[0], y2: b[1] } }
   })
-  const bn = raw.boundary_nodes ?? {}
-  const cz = raw.conflict_zones ?? {}
-  const zoneNames: Record<string, string> = { GW: 'Западная горловина', GE: 'Восточная горловина' }
-  const routes: Route[] = (raw.routes ?? []).map((r: Raw) => ({
+  // Узлы и горловины берутся из данных станции, без зашитых id: вход — граничный узел, с которого
+  // начинаются маршруты, выход — на котором заканчиваются; горловины — по маршрутам приёма/отправления.
+  const bn: Record<string, Raw> = raw.boundary_nodes ?? {}
+  const cz: Record<string, Raw> = raw.conflict_zones ?? {}
+  const trackIds = new Set(tracks.map((t: Raw) => t.id))
+  const rawRoutes: Raw[] = raw.routes ?? []
+  const entryId = Object.keys(bn).find((id) => rawRoutes.some((r) => r.from_id === id)) ?? rawRoutes.find((r) => !trackIds.has(r.from_id))?.from_id
+  const exitId = Object.keys(bn).find((id) => rawRoutes.some((r) => r.to_id === id)) ?? rawRoutes.find((r) => !trackIds.has(r.to_id))?.to_id
+  const zoneOf = (pred: (r: Raw) => boolean) => rawRoutes.find((r) => pred(r) && (r.conflict_zone_ids ?? []).length)?.conflict_zone_ids[0]
+  const entryZone = zoneOf((r) => r.from_id === entryId) ?? Object.keys(cz)[0]
+  const exitZone = zoneOf((r) => r.to_id === exitId) ?? Object.keys(cz).at(-1)
+  const zoneName = (id: string) => (id === entryZone ? `Горловина входа (${id})` : id === exitZone ? `Горловина выхода (${id})` : `Горловина ${id}`)
+  const routes: Route[] = rawRoutes.map((r: Raw) => ({
     ...r, polyline: (r.polyline ?? []).map(asPt),
-    kind: r.kind ?? (r.from_id === 'W' ? 'arrival' : r.to_id === 'E' ? 'departure' : 'shunt'),
+    kind: r.kind ?? (r.from_id === entryId ? 'arrival' : r.to_id === exitId ? 'departure' : 'shunt'),
   }))
+  const firstPt = (id: string | undefined, end: boolean) => {
+    const r = rawRoutes.find((x) => (end ? x.to_id : x.from_id) === id && (x.polyline ?? []).length)
+    return r ? asPt(end ? r.polyline.at(-1) : r.polyline[0]) : null
+  }
+  const pt = (v: Raw, fallback: Pt | null, dflt: Pt): Pt => (v ? asPt(v) : fallback ?? dflt)
   const byKind = (k: string) => tracks.filter((t: Raw) => t.kind === k).map((t: Raw) => t.id)
   return {
     schema_version: 1, name: raw.name ?? 'Узел 12', viewbox: raw.view_box ?? [0, 0, 1400, 900],
-    nodes: { W: asPt(bn.W ?? [40, 450]), GW: asPt(cz.GW ?? [180, 450]), GE: asPt(cz.GE ?? [1220, 450]), E: asPt(bn.E ?? [1360, 450]) },
-    zones: Object.keys(cz).length ? Object.keys(cz).map((id) => ({ id, name: zoneNames[id] ?? id })) : [{ id: 'GW', name: zoneNames.GW }, { id: 'GE', name: zoneNames.GE }],
+    nodes: {
+      W: pt(entryId && bn[entryId], firstPt(entryId, false), [40, 450]),
+      GW: pt(entryZone && cz[entryZone], null, [180, 450]),
+      GE: pt(exitZone && cz[exitZone], null, [1220, 450]),
+      E: pt(exitId && bn[exitId], firstPt(exitId, true), [1360, 450]),
+    },
+    node_ids: { W: entryId, GW: entryZone, GE: exitZone, E: exitId },
+    zones: Object.keys(cz).map((id) => ({ id, name: zoneName(id) })),
     areas: [
       { id: 'platform', label: 'Платформы', track_ids: byKind('passenger') },
       { id: 'cargo', label: 'Грузовой фронт', track_ids: byKind('cargo') },
     ],
-    tracks, routes, horizon_s: raw.horizon_s ?? 7200,
+    tracks, routes, horizon_s: raw.horizon_s ?? 0, // 0 — сервер не сообщил окно планирования
     resources: (rawSnapshot?.resources ?? []).map((r: Raw) => ({ id: r.id, kind: resKind(r), capabilities: r.capabilities ?? [] })),
   }
 }
@@ -155,4 +200,20 @@ export function normalizeTopology(raw: Raw, rawSnapshot?: Raw): Topology {
 export function normalizeState(raw: Raw): { snapshot: Snapshot; topology: Topology } {
   const topology = normalizeTopology(raw.topology ?? {}, raw.snapshot)
   return { snapshot: normalizeSnapshot(raw.snapshot, topology), topology }
+}
+
+/** Задержки текущего плана по поездам, которые ещё не ушли (для сравнения с вариантами).
+ *  Мок присылает прогноз в trains[].delay_s; backend — нет, тогда прогноз берётся из принятого плана:
+ *  конец операции отправления минус плановое отправление (как planner.calculate_plan_metrics). */
+export function currentDelays(snap: Snapshot): { total: number; max: number } {
+  const live = snap.trains.filter((t) => t.status !== 'departed')
+  let values = live.map((t) => t.delay_s ?? 0)
+  const hasForecast = live.some((t) => t.forecast_departure_s !== null && t.forecast_departure_s !== undefined)
+  if (!hasForecast && snap.active_plan) {
+    const ops = Object.fromEntries(snap.operations.map((o) => [o.id, o]))
+    const end: Record<string, number> = {}
+    for (const a of snap.active_plan.assignments) if ((ops[a.operation_id]?.kind ?? a.kind) === 'departure') end[a.train_id] = a.end_s
+    values = live.map((t) => (end[t.id] === undefined ? 0 : Math.max(0, end[t.id] - t.scheduled_departure_s)))
+  }
+  return { total: values.reduce((a, b) => a + b, 0), max: values.length ? Math.max(0, ...values) : 0 }
 }

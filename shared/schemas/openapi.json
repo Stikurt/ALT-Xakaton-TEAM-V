@@ -159,6 +159,16 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -191,6 +201,16 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -228,6 +248,16 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -268,8 +298,8 @@
               }
             }
           },
-          "503": {
-            "description": "Service Unavailable",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -278,8 +308,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
+          "503": {
+            "description": "Service Unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -316,6 +346,16 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -356,8 +396,8 @@
               }
             }
           },
-          "503": {
-            "description": "Service Unavailable",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -366,8 +406,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
+          "503": {
+            "description": "Service Unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -404,6 +444,16 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -444,8 +494,8 @@
               }
             }
           },
-          "503": {
-            "description": "Service Unavailable",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -454,8 +504,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
+          "503": {
+            "description": "Service Unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -492,6 +542,16 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
           "403": {
             "description": "Forbidden",
             "content": {
@@ -532,8 +592,8 @@
               }
             }
           },
-          "503": {
-            "description": "Service Unavailable",
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/json": {
                 "schema": {
@@ -542,8 +602,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
+          "503": {
+            "description": "Service Unavailable",
             "content": {
               "application/json": {
                 "schema": {
@@ -579,6 +639,16 @@
                 }
               }
             }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
           },
           "403": {
             "content": {
@@ -619,6 +689,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "503": {
             "content": {
@@ -675,6 +755,16 @@
               }
             }
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "403": {
             "content": {
               "application/json": {
@@ -714,6 +804,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "503": {
             "content": {
@@ -754,6 +854,16 @@
               }
             }
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "403": {
             "content": {
               "application/json": {
@@ -793,6 +903,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "503": {
             "content": {
@@ -833,6 +953,16 @@
               }
             }
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "403": {
             "content": {
               "application/json": {
@@ -872,6 +1002,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "503": {
             "content": {
@@ -922,6 +1062,16 @@
               }
             }
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "403": {
             "content": {
               "application/json": {
@@ -961,6 +1111,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "503": {
             "content": {
@@ -1013,6 +1173,16 @@
               }
             }
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "403": {
             "content": {
               "application/json": {
@@ -1052,6 +1222,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "503": {
             "content": {
@@ -1107,6 +1287,16 @@
               "text/csv": {}
             }
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "403": {
             "content": {
               "application/json": {
@@ -1146,6 +1336,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            },
+            "description": "Internal Server Error"
           },
           "503": {
             "content": {
@@ -1568,6 +1768,24 @@
             "type": "integer",
             "minimum": 0.0,
             "title": "At S"
+          },
+          "available_from_s": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Available From S",
+            "default": 0
+          },
+          "available_to_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Available To S"
           }
         },
         "additionalProperties": false,
@@ -1997,6 +2215,18 @@
             },
             "type": "array",
             "title": "Changes"
+          },
+          "horizon_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Horizon S"
           }
         },
         "additionalProperties": false,
@@ -2264,6 +2494,20 @@
             },
             "type": "array",
             "title": "Capabilities"
+          },
+          "track_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9_.:-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Track Id"
           },
           "availability": {
             "type": "string",
@@ -2645,6 +2889,18 @@
             },
             "type": "array",
             "title": "Routes"
+          },
+          "horizon_s": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Horizon S"
           }
         },
         "additionalProperties": false,

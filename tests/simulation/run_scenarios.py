@@ -2,8 +2,8 @@
 import json
 from pathlib import Path
 import sys
-sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
-from backend.app.simulation import advance_to,apply_plan,create_initial_state
+sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'backend'))
+from app.simulation import advance_to,apply_plan,create_initial_state
 from support import ROOT,RULES,config,command,fixture_plan
 
 def main():

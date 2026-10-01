@@ -9,6 +9,8 @@ const ROLE_LABEL = { viewer: 'Наблюдатель', dispatcher: 'Диспет
 
 export default function TopBar() {
   const snap = useStore((x) => x.snapshot)!
+  // Окно планирования считает backend по расписанию (topology.horizon_s), фиксированного предела нет.
+  const horizon = useStore((x) => x.topology?.horizon_s ?? 0)
   const conn = useStore((x) => x.conn)
   const lastUpdate = useStore((x) => x.lastUpdate)
   const pending = useStore((x) => x.pending)
@@ -29,6 +31,8 @@ export default function TopBar() {
   const offline = conn !== 'online'
   const canCmd = !offline && role !== 'viewer' && !history
   const started = snap.sim_time_s > 0
+  // Прогон завершён (backend: simulation_completed) — продолжать нечего, только «Сброс».
+  const finished = started && snap.trains.length > 0 && snap.trains.every((t) => t.status === 'departed')
   const idx = snap.index
   const running = !snap.paused && !offline && !history
 
@@ -50,14 +54,14 @@ export default function TopBar() {
         title="Модельное время от начала сценария, не время суток">
         <span className="eyebrow">{history ? 'история' : 'модельное время'}</span>
         <span className={`mono ${s.clockValue}`}>{fmtT(now)}</span>
-        <span className={s.clockSub}>{history ? `онлайн ${fmtT(snap.sim_time_s)}` : `горизонт ${fmtT(7200)}`}</span>
+        <span className={s.clockSub}>{history ? `онлайн ${fmtT(snap.sim_time_s)}` : horizon > 0 ? `горизонт ${fmtT(horizon)}` : 'модельное время'}</span>
       </div>
 
       <div className={s.controls}>
         {snap.paused ? (
-          <button className="btn btn-primary" disabled={!canCmd || !!pending} onClick={() => control('start')}
-            title={canCmd ? 'Пробел' : ''}>
-            <Icon name="play" size={14} /> {started ? 'Продолжить' : 'Запустить'}
+          <button className="btn btn-primary" disabled={!canCmd || !!pending || finished} onClick={() => control('start')}
+            title={finished ? 'Все поезда отправлены. Новый прогон — «Сброс»' : canCmd ? 'Пробел' : ''}>
+            <Icon name="play" size={14} /> {finished ? 'Завершено' : started ? 'Продолжить' : 'Запустить'}
           </button>
         ) : (
           <button className="btn" disabled={!canCmd || !!pending} onClick={() => control('pause')} title="Пробел">

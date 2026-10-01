@@ -1,7 +1,7 @@
 from copy import deepcopy
 import json
 import unittest
-from backend.app.simulation import (SimulationError,advance_elapsed,advance_to,apply_command,apply_plan,create_initial_state,schedule_incidents,snapshot)
+from app.simulation import (SimulationError,advance_elapsed,advance_to,apply_command,apply_plan,create_initial_state,schedule_incidents,snapshot)
 from support import ROOT,RULES,PermissiveRules,command,config,fixture_plan,prepared,started
 
 def advance(s,at): return advance_to(s,at,rules=RULES)

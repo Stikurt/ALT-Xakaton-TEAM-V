@@ -11,13 +11,13 @@ from app.runtime.state import encode_checkpoint, prepare_scenario, response
 from app.settings import PROJECT_ROOT, Settings
 
 
-def bootstrap(database_url: str) -> str:
+def bootstrap(database_url: str, scenario_path: str | None = None) -> str:
     with psycopg.connect(database_url, connect_timeout=5) as conn:
         existing = conn.execute("SELECT r.id FROM runs r JOIN engine_checkpoints e ON r.id=e.run_id WHERE r.status='active'").fetchone()
         if existing:
             return existing[0]
     settings = Settings()
-    scenario = PROJECT_ROOT / settings.scenario_path
+    scenario = PROJECT_ROOT / (scenario_path or settings.scenario_path)
     station = json.loads(scenario.read_text(encoding="utf-8"))
     # Planning does not run in a write transaction or the HTTP process.
     with ProcessPoolExecutor(max_workers=1,mp_context=multiprocessing.get_context('spawn')) as executor:

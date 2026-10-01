@@ -37,7 +37,7 @@ def repository():
     isolated=make_conninfo(url,options=f'-c search_path={schema}')
     try:
         migrate(isolated)
-        bootstrap(isolated)
+        bootstrap(isolated, 'shared/scenarios/one_train.json')
         with ConnectionPool(isolated,min_size=1,max_size=4) as pool:
             repo=Repository(pool)
             repo.claim_owner()
@@ -60,10 +60,14 @@ def test_history_replays_events_between_snapshots_and_archive_csv(repository):
         await owner.execute(cmd(owner,'pause',cid='pause'))
         await owner.execute(cmd(owner,'start',cid='resume'))
         await owner.tick(965)
+        # The only train departs at 600 s; the run completes and its clock stops there.
+        assert owner.state.sim_time_s==600 and owner.state.paused
         before=deepcopy(repo.load_runtime()[0])
-        for at in (0,30,34,35,59,60,119,120,479,480,599,600,999,1000):
+        for at in (0,30,34,35,59,60,119,120,479,480,599,600):
             history=repo.history(old_run,at)
             assert history.snapshot.sim_time_s==at and history.read_only
+            # Bounds for the frontend history slider (store.ts: from_s/to_s).
+            assert history.available_from_s==0 and history.available_to_s==600
             train=history.snapshot.trains[0]
             expected='moving' if at<120 or 480<=at<600 else 'on_track' if at<480 else 'departed'
             assert train.status==expected
@@ -71,9 +75,9 @@ def test_history_replays_events_between_snapshots_and_archive_csv(repository):
         with repo.pool.connection() as conn:
             assert conn.execute('SELECT count(*) FROM snapshots WHERE run_id=%s AND sim_time_s=35',(old_run,)).fetchone()[0]==0
             points=[row[0] for row in conn.execute('SELECT sim_time_s FROM snapshots WHERE run_id=%s',(old_run,)).fetchall()]
-            assert set(range(60,961,60))<=set(points)
+            assert set(range(60,601,60))<=set(points)
         assert repo.load_runtime()[0]==before
-        with pytest.raises(HistoryError) as error: repo.history(old_run,1001)
+        with pytest.raises(HistoryError) as error: repo.history(old_run,601)
         assert error.value.code=='HISTORY_IN_FUTURE'
         await owner.execute(cmd(owner,'reset',cid='reset'))
         assert repo.history(old_run,600).snapshot.trains[0].status=='departed'
@@ -162,7 +166,9 @@ def test_http_incident_to_background_plan_to_departure_and_history(repository):
         assert client.get('/api/plans/'+plan_id).json()['applicable']
         body=dict(command_id='accept',run_id=run_id,expected_state_version=owner.state.state_version)
         assert client.post('/api/plans/'+plan_id+'/apply',json=body).status_code==200
-        assert client.get('/api/history',params=dict(run_id=run_id,at_s=0)).status_code==200
+        wire=client.get('/api/history',params=dict(run_id=run_id,at_s=0))
+        assert wire.status_code==200
+        assert wire.json()['available_from_s']==0 and wire.json()['available_to_s']>=wire.json()['at_s']
         assert client.get('/api/export.csv',params=dict(run_id=run_id)).status_code==200
     # Resume deterministically after the HTTP actor has stopped.
     async def finish():
