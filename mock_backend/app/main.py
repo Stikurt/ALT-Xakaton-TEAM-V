@@ -1,7 +1,10 @@
 """Мок-backend «Узел 12»: HTTP + WebSocket по контрактам ТЗ v1.0 (разд. 7).
 
-Только для разработки фронтенда. Без PostgreSQL и аутентификации — их делает И.
+Только для разработки фронтенда. Без PostgreSQL; вход упрощён, но контракт тот же, что у backend:
+сессия в cookie, csrf_token в /api/login и /api/me, заголовок X-CSRF-Token на изменяющих запросах,
+пакет сбоев — POST /api/incidents/batch {incidents}, план — GET /api/plans/{id} → {plan, stale, applicable}.
 Запуск: uvicorn app.main:app --port 8000   (из каталога mock_backend)
+     или uvicorn mock_backend.app.main:app --port 8000   (из корня репозитория)
 """
 from __future__ import annotations
 
@@ -203,6 +206,9 @@ def remember(body, status, content):
     return JSONResponse(status_code=status, content=content)
 
 
+CSRF_HEADER = "X-CSRF-Token"
+
+
 def session_of(conn) -> dict | None:
     tok = conn.cookies.get("session")
     return SESSIONS.get(tok) if tok else None
@@ -214,7 +220,14 @@ def need(request: Request, role: str):
         return err(401, "UNAUTHORIZED", "Нужен вход в систему")
     if ROLE_RANK[u["role"]] < ROLE_RANK[role]:
         return err(403, "FORBIDDEN", f"Недостаточно прав: нужна роль «{role}»")
+    if request.method not in ("GET", "HEAD", "OPTIONS") and not secrets.compare_digest(
+            request.headers.get(CSRF_HEADER, ""), u["csrf_token"]):
+        return err(403, "CSRF_FAILED", "Отсутствует или неверен заголовок X-CSRF-Token.")
     return None
+
+
+def session_info(u: dict) -> dict:
+    return {"username": u["username"], "role": u["role"], "csrf_token": u["csrf_token"]}
 
 
 def check_run(body):
@@ -234,16 +247,19 @@ async def login(body: dict):
     if not u or not secrets.compare_digest(u["hash"], _hash(str(body.get("password", "")))):
         return err(401, "BAD_CREDENTIALS", "Неверное имя пользователя или пароль")
     tok = secrets.token_urlsafe(24)
-    SESSIONS[tok] = {"username": body["username"], "role": u["role"]}
-    r = JSONResponse({"username": body["username"], "role": u["role"]})
+    SESSIONS[tok] = {"username": body["username"], "role": u["role"], "csrf_token": secrets.token_urlsafe(24)}
+    r = JSONResponse(session_info(SESSIONS[tok]))
     r.set_cookie("session", tok, httponly=True, samesite="lax", max_age=12 * 3600)
     return r
 
 
 @app.post("/api/logout")
 async def logout(request: Request):
+    u = session_of(request)
+    if u and not secrets.compare_digest(request.headers.get(CSRF_HEADER, ""), u["csrf_token"]):
+        return err(403, "CSRF_FAILED", "Отсутствует или неверен заголовок X-CSRF-Token.")
     SESSIONS.pop(request.cookies.get("session", ""), None)
-    r = JSONResponse({"ok": True})
+    r = Response(status_code=204)
     r.delete_cookie("session")
     return r
 
@@ -251,7 +267,7 @@ async def logout(request: Request):
 @app.get("/api/me")
 async def me(request: Request):
     u = session_of(request)
-    return u if u else err(401, "UNAUTHORIZED", "Нужен вход в систему")
+    return session_info(u) if u else err(401, "UNAUTHORIZED", "Нужен вход в систему")
 
 
 @app.get("/api/history")
@@ -346,13 +362,24 @@ async def control(body: dict, request: Request):
 
 @app.post("/api/incidents")
 async def incidents(body: dict, request: Request):
+    return await _incidents(body, request, [body])
+
+
+@app.post("/api/incidents/batch")
+async def incidents_batch(body: dict, request: Request):
+    items = body.get("incidents")
+    if not isinstance(items, list) or not 1 <= len(items) <= 50:
+        return err(422, "VALIDATION_ERROR", "Пакет: поле incidents, от 1 до 50 сбоев")
+    return await _incidents(body, request, items)
+
+
+async def _incidents(body: dict, request: Request, items: list):
     if (e := need(request, "dispatcher")):
         return e
     if (c := idem(body)):
         return JSONResponse(status_code=c[0], content=c[1])
     if (e := check_run(body)):
         return e
-    items = body.get("batch") or [body]
     results = []
     for it in items:
         status, code, msg = hub.st.incident(it.get("kind"), it.get("target_id"),
@@ -365,7 +392,9 @@ async def incidents(body: dict, request: Request):
     hub.remember_history()
     job = await hub.request_replan()  # один пересчёт на пакет
     await hub.publish_state()
-    return remember(body, 200, {"ok": True, "results": results, "job_id": job, "state_version": hub.st.state_version})
+    return remember(body, 200, {"command_id": body.get("command_id"), "run_id": hub.st.run_id,
+                                "state_version": hub.st.state_version, "replan_required": True,
+                                "results": results, "job_id": job})
 
 
 @app.post("/api/replans", status_code=202)
@@ -380,7 +409,10 @@ async def replans(body: dict, request: Request):
 @app.get("/api/plans/{pid}")
 async def get_plan(pid: str):
     p = hub.st.plans.get(pid)
-    return p if p else err(404, "NOT_FOUND", "План не найден")
+    if not p:
+        return err(404, "NOT_FOUND", "План не найден")
+    stale = p["run_id"] != hub.st.run_id or p["based_on_epoch"] != hub.st.epoch
+    return {"plan": p, "stale": stale, "applicable": not stale and p["status"] == "feasible"}  # как PlanResponse
 
 
 @app.post("/api/plans/{pid}/apply")
