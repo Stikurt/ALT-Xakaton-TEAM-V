@@ -211,11 +211,15 @@ def _common_slot(calendars, requirements, earliest_s, duration_s, horizon_s):
         next_candidate = candidate
         all_free = True
 
-        for group, ident in requirements:
+        for requirement in requirements:
+            group, ident = requirement[0], requirement[1]
+            span_s = requirement[2] if len(requirement) > 2 else duration_s
+            if candidate + span_s > horizon_s:
+                return None
             calendar = calendars[group].get(ident)
             if calendar is None:
                 return None
-            free_at = calendar.next_free_time(candidate, duration_s)
+            free_at = calendar.next_free_time(candidate, span_s)
             if free_at != candidate:
                 all_free = False
                 next_candidate = max(next_candidate, free_at)
@@ -237,8 +241,33 @@ def _route_requirements(config, snapshot, route_id):
 
 
 def _reserve(calendars, requirements, start_s, end_s, owner):
-    for group, ident in requirements:
-        calendars[group][ident].reserve(start_s, end_s, owner)
+    operation_duration = end_s - start_s
+    for requirement in requirements:
+        group, ident = requirement[0], requirement[1]
+        span_s = requirement[2] if len(requirement) > 2 else operation_duration
+        calendars[group][ident].reserve(start_s, start_s + span_s, owner)
+
+
+def _target_hold_span(operations, operation_index):
+    """Minimum time a target track must stay reserved after entering it.
+
+    The source track is held until the next movement completes, so a newly
+    entered track must remain unavailable through all stationary work and the
+    following outbound movement.
+    """
+    total = 0
+    current = operations[operation_index]
+    total += get_value(current, "duration_s", 0)
+
+    if get_value(current, "kind") == "departure":
+        return total
+
+    for following in operations[operation_index + 1:]:
+        total += get_value(following, "duration_s", 0)
+        if get_value(following, "kind") in MOVING:
+            break
+
+    return total
 
 
 def _occupancy_intervals(snapshot, config, train, assignments):
@@ -302,7 +331,7 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
         for group, values in calendars.items()
     }
 
-    for operation in operations:
+    for operation_index, operation in enumerate(operations):
         oid = get_value(operation, "id")
         kind = get_value(operation, "kind")
         duration = get_value(operation, "duration_s", 0)
@@ -351,7 +380,13 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
                     )
 
                 if kind != "departure":
-                    requirements.append(("tracks", track_id))
+                    requirements.append(
+                        (
+                            "tracks",
+                            track_id,
+                            _target_hold_span(operations, operation_index),
+                        )
+                    )
 
                 earliest = current_s
 
