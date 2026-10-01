@@ -62,3 +62,9 @@ def test_cors_is_explicit():
     with client() as c:
         assert c.get("/health",headers={"Origin":"http://localhost:5173"}).headers["access-control-allow-origin"] == "http://localhost:5173"
         assert "access-control-allow-origin" not in c.get("/health",headers={"Origin":"https://unknown.example"}).headers
+
+
+def test_project_paths_point_inside_checkout():
+    from app.settings import PROJECT_ROOT
+    assert (PROJECT_ROOT / "shared/examples/state.initial.json").is_file()
+    assert (PROJECT_ROOT / "backend/app/settings.py").is_file()
