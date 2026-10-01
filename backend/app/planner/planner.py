@@ -321,23 +321,23 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
             track_candidates = [current_track] if current_track else []
 
         scheduled = None
+        best_choice = None
 
+        # Evaluate all deterministic alternatives and choose the earliest
+        # feasible start. Do not pick the first path merely because it has
+        # some slot later in the horizon.
         for track_id in track_candidates:
             if not track_id:
                 continue
 
             if kind == "arrival":
                 route_id = _route_id(config, snapshot, "W", track_id)
-                from_id = "W"
             elif kind.startswith("shunt_"):
                 route_id = _route_id(config, snapshot, current_track, track_id)
-                from_id = current_track
             elif kind == "departure":
                 route_id = _route_id(config, snapshot, current_track, "E")
-                from_id = current_track
             else:
                 route_id = None
-                from_id = current_track
 
             if kind in MOVING and route_id is None:
                 continue
@@ -346,16 +346,20 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
                 requirements = [("resources", rid) for rid in resources]
 
                 if kind in MOVING:
-                    requirements.extend(_route_requirements(config, snapshot, route_id))
+                    requirements.extend(
+                        _route_requirements(config, snapshot, route_id)
+                    )
 
-                # Target track must be free while movement enters it.
                 if kind != "departure":
                     requirements.append(("tracks", track_id))
 
                 earliest = current_s
 
-                # Scheduled departure is the time the train reaches E.
-                if kind == "departure" and get_value(train, "kind") in ("passenger", "transit"):
+                # scheduled_departure_s is the moment the train reaches E.
+                if kind == "departure" and get_value(train, "kind") in (
+                    "passenger",
+                    "transit",
+                ):
                     earliest = max(
                         earliest,
                         get_value(train, "scheduled_departure_s", 0) - duration,
@@ -371,23 +375,37 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
                 if start_s is None:
                     continue
 
-                end_s = start_s + duration
+                choice_key = (
+                    start_s,
+                    track_id,
+                    tuple(resources),
+                    route_id or "",
+                )
 
-                scheduled = {
-                    "operation_id": oid,
-                    "start_s": start_s,
-                    "end_s": end_s,
-                    "track_id": track_id,
-                    "route_id": route_id,
-                    "resource_ids": list(resources),
-                    "_kind": kind,
-                }
+                if best_choice is None or choice_key < best_choice[0]:
+                    best_choice = (
+                        choice_key,
+                        {
+                            "operation_id": oid,
+                            "start_s": start_s,
+                            "end_s": start_s + duration,
+                            "track_id": track_id,
+                            "route_id": route_id,
+                            "resource_ids": list(resources),
+                            "_kind": kind,
+                        },
+                        list(requirements),
+                    )
 
-                _reserve(trial, requirements, start_s, end_s, oid)
-                break
-
-            if scheduled is not None:
-                break
+        if best_choice is not None:
+            _, scheduled, requirements = best_choice
+            _reserve(
+                trial,
+                requirements,
+                scheduled["start_s"],
+                scheduled["end_s"],
+                oid,
+            )
 
         if scheduled is None:
             _restore_train_placeholder(calendars, snapshot, config, train)
