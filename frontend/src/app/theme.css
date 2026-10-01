@@ -1,0 +1,92 @@
+/* Пульт диспетчера «Узел 12»: тёмный щит управления, неон только на том, что движется или требует внимания.
+   Сознательно одна тёмная тема (видеостена диспетчерской). */
+:root {
+  --bg: #070913;
+  --bg-2: #0a0e1b;
+  --panel: #0d1222;
+  --panel-2: #131a2e;
+  --border: #1c2440;
+  --border-strong: #2a3458;
+  --text: #e3e8f6;
+  --text-2: #a6b0cd;
+  --muted: #6a7597;
+
+  --free: #33406a;
+  --occupied: #2ee6ff;
+  --occupied-soft: rgba(46, 230, 255, 0.12);
+  --wait: #ffb53b;
+  --wait-soft: rgba(255, 181, 59, 0.13);
+  --closed: #ff4d5e;
+  --closed-soft: rgba(255, 77, 94, 0.14);
+  --ok: #6dffb0;
+  --ok-soft: rgba(109, 255, 176, 0.11);
+  --preview: #ff3ea5;
+  --preview-soft: rgba(255, 62, 165, 0.13);
+  --select: #ffffff;
+
+  --k-passenger: #2ee6ff;
+  --k-transit: #5f86ff;
+  --k-local: #b18cff;
+
+  --glow-cyan: 0 0 0 1px rgba(46, 230, 255, 0.45), 0 0 18px rgba(46, 230, 255, 0.25);
+  --glow-pink: 0 0 0 1px rgba(255, 62, 165, 0.5), 0 0 18px rgba(255, 62, 165, 0.25);
+
+  --radius: 6px;
+  --radius-sm: 4px;
+  --font: 'Golos Text', 'Segoe UI', system-ui, sans-serif;
+  --display: 'Tektur', 'Golos Text', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.45 var(--font);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; }
+input, select { font: inherit; color: var(--text); background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 8px; }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--occupied); outline-offset: 1px; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px;
+  border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--panel-2);
+  cursor: pointer; white-space: nowrap; font-weight: 500; transition: background .15s, box-shadow .15s, border-color .15s;
+}
+.btn:hover:not(:disabled) { background: #1a2340; border-color: #3a4673; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-primary { background: var(--occupied); border-color: var(--occupied); color: #04121a; font-weight: 700; }
+.btn-primary:hover:not(:disabled) { background: #7af0ff; }
+.btn-primary:disabled { background: var(--panel-2); border-color: var(--border-strong); color: var(--muted); opacity: 1; }
+.btn-danger { background: transparent; border-color: rgba(255, 77, 94, 0.6); color: #ff8c97; }
+.btn-danger:hover:not(:disabled) { background: var(--closed-soft); }
+.btn-accent { background: transparent; border-color: var(--preview); color: #ff8fca; }
+.btn-accent:hover:not(:disabled) { background: var(--preview-soft); }
+.btn-ghost { background: transparent; border-color: transparent; }
+.btn-ghost:hover:not(:disabled) { background: var(--panel-2); }
+.btn-sm { height: 26px; padding: 0 8px; font-size: 12px; }
+
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 2px;
+  font: 600 11px var(--font); letter-spacing: 0; border: 1px solid var(--border); white-space: nowrap;
+}
+.chip-ok { color: var(--ok); border-color: rgba(109, 255, 176, 0.35); background: var(--ok-soft); }
+.chip-wait { color: var(--wait); border-color: rgba(255, 181, 59, 0.4); background: var(--wait-soft); }
+.chip-bad { color: #ff8c97; border-color: rgba(255, 77, 94, 0.45); background: var(--closed-soft); }
+.chip-info { color: var(--occupied); border-color: rgba(46, 230, 255, 0.4); background: var(--occupied-soft); }
+.chip-preview { color: #ff8fca; border-color: rgba(255, 62, 165, 0.5); background: var(--preview-soft); }
+.chip-muted { color: var(--muted); }
+
+.kbd { font: 600 10.5px var(--mono); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--border-strong); color: var(--text-2); background: var(--bg-2); }
+.eyebrow { font: 600 12px var(--font); letter-spacing: 0; color: var(--text-2); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+@media (max-width: 760px) { body { overflow: auto; } }

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "run_id": "example-run",
+  "ws_seq": 2,
+  "state_version": 2,
+  "type": "replan_finished",
+  "payload": {
+    "job_id": "example-job",
+    "plan_ids": [
+      "example-plan"
+    ],
+    "based_on_version": 0,
+    "stale": true
+  }
+}
