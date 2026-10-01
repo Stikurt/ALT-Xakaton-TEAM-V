@@ -62,6 +62,30 @@ cd frontend && node scripts/build-demo.mjs   # → dist-demo/uzel12-demo.html (�
 жадный планировщик с ресурсными календарями (`passenger_first`, `earliest_departure`) и отдельным `validate_plan`.
 Без PostgreSQL и аутентификации. Примеры данных — `shared/examples/*.json` (сгенерированы моком).
 
+## Работа с настоящим backend И
+
+```bash
+VITE_BACKEND=http://127.0.0.1:8000 npm run dev
+```
+
+`src/api/adapt.ts` приводит контракт И (ветка `backend`, `backend/app/domain/models.py`) к внутренним типам интерфейса:
+геометрия путей из `snapshot.tracks`, `view_box/boundary_nodes/conflict_zones`, виды операций
+(`dwell`, `shunt_to_*`), ресурсов (`locomotive`, `crew`, `cargo_front`), `wait_reason {code,message}`,
+`severity error/warning`, объяснения-строки, неразмещённые операции, имена сбоев `delay_train`/`locomotive_unavailable`.
+Если backend прислал только `active_plan_id` или `replan_finished.plan_ids`, планы читаются через `GET /api/plans/{id}`.
+
+Пока у backend нет `/api/me` и `/ws` (этап 1), интерфейс входит без пароля как наблюдатель и читает снимок по HTTP
+раз в 2 с (индикатор «Только HTTP»), команды заблокированы. Проверено вживую на ветке `backend` (commit 45bf1b8) с PostgreSQL 16.
+
+## Проверки
+
+```bash
+cd frontend && npm test            # vitest: адаптер на примерах И, геометрия, демо-сервер (15 тестов)
+cd mock_backend && python -m pytest -q   # мок: план, сбои, роли, идемпотентность, история, CSV (5 тестов)
+```
+
+Шрифты (Tektur, Golos Text, JetBrains Mono) подключены локально через @fontsource — интернет на защите не нужен.
+
 ## Отклонения от ТЗ / вопросы к И и Н
 
 1. В `Snapshot` добавлены поля: `epoch`, `active_plan` (целиком), `conflicts`, `queue`, `index`, `incidents`;
