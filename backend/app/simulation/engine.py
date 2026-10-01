@@ -13,11 +13,31 @@ import math
 from typing import Any, Protocol
 from uuid import uuid4
 
+from ..topology import TopologyError, cargo_front_for, station_boundary
+
 Json = dict[str, Any]
 MOVING = {'arrival', 'departure', 'shunt_to_cargo', 'shunt_to_storage', 'shunt_to_departure'}
+# Default technological norms (ТЗ). A station may override them with "operation_durations_s".
 DURATIONS = {'arrival': 120, 'departure': 120, 'dwell': 360, 'inspection': 480,
              'preparation': 180, 'shunt_to_cargo': 180, 'cargo': 900,
              'shunt_to_storage': 180, 'formation': 300, 'shunt_to_departure': 180}
+
+
+def _durations(config: Json) -> dict[str, int]:
+    custom = config.get('operation_durations_s') or {}
+    if not isinstance(custom, dict) or any(k not in DURATIONS for k in custom):
+        raise SimulationError('INVALID_CONFIG', 'operation_durations_s: неизвестный тип операции')
+    for k, v in custom.items():
+        _integer(v, f'operation_durations_s.{k}', 1)
+    return {**DURATIONS, **custom}
+
+
+def _boundary(s: 'State') -> tuple[str, str]:
+    """(entry, exit) node ids derived from the station data (app.topology)."""
+    try:
+        return station_boundary(s.config, s.tracks)
+    except TopologyError as exc:
+        raise SimulationError('INVALID_CONFIG', str(exc)) from exc
 
 
 class SimulationError(ValueError):
@@ -87,15 +107,36 @@ def _schedule(s: State, at: int, phase: int, ident: str, kind: str, payload: Any
 
 
 def create_initial_state(config: Json, *, run_id: str | None = None) -> State:
-    """Create a paused run. Config is JSON from shared/station.json."""
+    """Create a paused run. Config is JSON from shared/station.json.
+
+    Incomplete or malformed configuration always raises SimulationError('INVALID_CONFIG'),
+    never a bare KeyError/TypeError."""
+    if not isinstance(config, dict):
+        raise SimulationError('INVALID_CONFIG', 'Конфигурация станции должна быть объектом')
+    try:
+        return _create_initial_state(config, run_id)
+    except SimulationError:
+        raise
+    except KeyError as exc:
+        raise SimulationError('INVALID_CONFIG', f'Нет обязательного поля: {exc.args[0]}') from exc
+    except (TypeError, AttributeError) as exc:
+        raise SimulationError('INVALID_CONFIG', f'Неверная структура конфигурации: {exc}') from exc
+
+
+def _create_initial_state(config: Json, run_id: str | None) -> State:
     c = deepcopy(config)
+    for key in ('trains', 'tracks', 'resources', 'operations', 'routes'):
+        if not isinstance(c.get(key), list):
+            raise SimulationError('INVALID_CONFIG', f'Нет списка {key}')
     s = State(c, run_id or str(uuid4()), *[_index(c[k], k) for k in
               ('trains', 'tracks', 'resources', 'operations')])
     routes = _index(c['routes'], 'routes')
+    entry, exit_ = _boundary(s)
     for r in routes.values():
-        if r['from_id'] not in {*s.tracks, 'W'} or r['to_id'] not in {*s.tracks, 'E'}:
+        if r['from_id'] not in {*s.tracks, entry} or r['to_id'] not in {*s.tracks, exit_}:
             raise SimulationError('INVALID_CONFIG', 'Неизвестный конец маршрута')
         _integer(r['duration_s'], 'duration_s', 1)
+    durations = _durations(c)
     for t in s.tracks.values():
         _integer(t['usable_length_m'], 'usable_length_m', 1)
         t.update(availability='open', closed_until_s=None, occupant_train_id=None)
@@ -109,9 +150,9 @@ def create_initial_state(config: Json, *, run_id: str | None = None) -> State:
                  expected_arrival_s=t['scheduled_arrival_s'])
         _schedule(s, t['expected_arrival_s'], 2, t['id'], 'arrival', t['expected_arrival_s'])
     for o in s.operations.values():
-        if o['train_id'] not in s.trains or o['kind'] not in DURATIONS:
+        if o['train_id'] not in s.trains or o['kind'] not in durations:
             raise SimulationError('INVALID_CONFIG', 'Неизвестный поезд/тип операции')
-        if o['duration_s'] != DURATIONS[o['kind']]:
+        if o['duration_s'] != durations[o['kind']]:
             raise SimulationError('INVALID_CONFIG', 'Длительность не соответствует модели')
         for pred in o['predecessor_ids']:
             if pred not in s.operations or s.operations[pred]['train_id'] != o['train_id']:
@@ -221,7 +262,15 @@ def _check_plan(s: State, plan: Json, rules: Rules) -> dict[str, Json]:
 
 def apply_plan(state: State, plan: Json, *, rules: Rules | None = None) -> Transition:
     """Apply future assignments only. Running completions are never removed."""
-    checked = _check_plan(state, plan, _rules(rules))
+    rules = _rules(rules)
+    if not isinstance(plan, dict):
+        raise SimulationError('INVALID_PLAN', 'План должен быть объектом')
+    try:
+        checked = _check_plan(state, plan, rules)
+    except SimulationError:
+        raise
+    except (KeyError, TypeError, AttributeError) as exc:
+        raise SimulationError('INVALID_PLAN', f'Неверная структура плана: {exc}') from exc
     s, events = deepcopy(state), []
     s.queue = [e for e in s.queue if e[4] != 'start']
     heapq.heapify(s.queue)
@@ -247,7 +296,7 @@ def _guard(s: State, o: Json, a: Json) -> tuple[str, str] | None:
         return 'RESOURCE_UNAVAILABLE', 'Поезд уже выполняет операцию'
     if o['kind'] == 'arrival':
         if t['status'] != 'waiting_entry' or s.sim_time_s < t['expected_arrival_s']:
-            return 'PREDECESSOR_INCOMPLETE', 'Поезд ещё не прибыл к W'
+            return 'PREDECESSOR_INCOMPLETE', 'Поезд ещё не прибыл ко входу станции'
     elif t['status'] != 'on_track':
         return 'PREDECESSOR_INCOMPLETE', 'Поезд не находится на станционном пути'
     if o['kind'] == 'departure' and t['kind'] in ('passenger', 'transit') and (
@@ -265,13 +314,14 @@ def _guard(s: State, o: Json, a: Json) -> tuple[str, str] | None:
         return 'NO_FEASIBLE_SLOT', 'Назначение пути несовместимо с операцией'
     if kind in MOVING:
         route = next(r for r in s.config['routes'] if r['id'] == a['route_id'])
-        if route['from_id'] != ('W' if kind == 'arrival' else t['track_id']):
+        entry, exit_ = _boundary(s)
+        if route['from_id'] != (entry if kind == 'arrival' else t['track_id']):
             return 'NO_FEASIBLE_SLOT', 'Маршрут не начинается в фактическом положении поезда'
-        if (kind == 'departure') != (route['to_id'] == 'E'):
+        if (kind == 'departure') != (route['to_id'] == exit_):
             return 'NO_FEASIBLE_SLOT', 'Неверное направление маршрута'
         if any(z in s.zones for z in route['conflict_zone_ids']):
             return 'ROUTE_BUSY', 'Горловина занята другим перемещением'
-        if route['to_id'] != 'E':
+        if route['to_id'] != exit_:
             if track['availability'] == 'closed':
                 return 'TRACK_CLOSED', 'Целевой путь закрыт для новых входов'
             if track['occupant_train_id'] not in (None, t['id']) or track['id'] in s.reservations:
@@ -289,7 +339,7 @@ def _guard(s: State, o: Json, a: Json) -> tuple[str, str] | None:
     for resource_kind, capability in needs:
         if not any(r['kind'] == resource_kind and capability in r['capabilities'] for r in selected):
             return 'RESOURCE_UNAVAILABLE', f'Не назначен ресурс {resource_kind}/{capability}'
-    if kind == 'cargo' and f'F{a["track_id"][1:]}' not in a['resource_ids']:
+    if kind == 'cargo' and cargo_front_for(a['track_id'], s.resources.values()) not in a['resource_ids']:
         return 'RESOURCE_UNAVAILABLE', 'Грузовой фронт не соответствует пути'
     return None
 
@@ -324,7 +374,7 @@ def _attempt(s: State, oid: str, events: list, rules: Rules):
         route = next(r for r in s.config['routes'] if r['id'] == a['route_id'])
         for z in route['conflict_zone_ids']:
             s.zones[z] = oid
-        if route['to_id'] != 'E':
+        if route['to_id'] in s.tracks:
             s.reservations[route['to_id']] = oid
         t.update(status='moving', movement=dict(route_id=route['id'],
             started_at_s=s.sim_time_s, expected_end_at_s=running['end_s']))
@@ -342,7 +392,7 @@ def _finish(s: State, oid: str, events: list):
             s.tracks[t['track_id']]['occupant_train_id'] = None
         for z in route['conflict_zone_ids']:
             del s.zones[z]
-        if route['to_id'] == 'E':
+        if route['to_id'] not in s.tracks:
             t.update(status='departed', track_id=None, movement=None)
         else:
             dest = route['to_id']
@@ -388,7 +438,19 @@ def _advance(s: State, target: int, events: list, rules: Rules):
         for oid, a in sorted(s.assignments.items()):
             if s.operations[oid]['status'] == 'pending' and a['start_s'] <= now:
                 _attempt(s, oid, events, rules)
+        if _finished(s) and not s.paused and not any(e[4] != 'start' for e in s.queue):
+            # Every train has left and no scheduled event (track reopening, resource return,
+            # planned incident) is still due: the run is over and the clock stops here.
+            s.paused = True
+            departures = [o['actual_end_s'] for o in s.operations.values() if o['kind'] == 'departure']
+            _emit(s, events, 'simulation_completed', s.run_id, {
+                'departed': len(s.trains), 'last_departure_s': max(departures, default=now)})
+            return
     s.sim_time_s = target
+
+
+def _finished(s: State) -> bool:
+    return bool(s.trains) and all(t['status'] == 'departed' for t in s.trains.values()) and not s.running
 
 
 def advance_to(state: State, target_s: int, *, rules: Rules | None = None) -> Transition:
@@ -467,6 +529,8 @@ def apply_command(state: State, command: Json, *, rules: Rules | None = None) ->
         validator = _rules(rules)
         if s.active_plan is None:
             raise SimulationError('PLAN_REQUIRED', 'Нельзя запускать без принятого допустимого плана')
+        if _finished(s):
+            raise SimulationError('SIMULATION_FINISHED', 'Все поезда отправлены. Для нового прогона выполните сброс')
         candidate = deepcopy(s.active_plan)
         # Revalidate remaining work against now; historical assignments are frozen.
         candidate['based_on_version'] = s.state_version

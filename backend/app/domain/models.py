@@ -75,6 +75,8 @@ class Resource(Contract):
     id: Id
     kind: Literal["locomotive", "crew", "cargo_front"]
     capabilities: list[Id]
+    # cargo_front only: the track this front serves (app.topology.cargo_front_for).
+    track_id: Id | None = None
     availability: Literal["available", "unavailable"] = "available"
     unavailable_until_s: Seconds | None = None
     active_operation_id: Id | None = None
@@ -187,6 +189,8 @@ class Plan(Contract):
     calculation_time_ms: Annotated[float, Field(ge=0)] = 0
     violations: list[PlanViolation] = Field(default_factory=list)
     changes: list[AssignmentChange] = Field(default_factory=list)
+    # End of the planning window the planner used (app.topology.planning_horizon), model seconds.
+    horizon_s: Seconds | None = None
 
     @model_validator(mode="after")
     def valid_assignments(self):
@@ -250,6 +254,8 @@ class Topology(Contract):
     boundary_nodes: dict[Id, Point]
     conflict_zones: dict[Id, Point]
     routes: list[Route]
+    # End of the planning window for the current state (app.topology.planning_horizon).
+    horizon_s: Seconds | None = None
 
 
 class StateResponse(Contract):
@@ -374,6 +380,17 @@ class HistoricalState(StateResponse):
     view: Literal["history"] = "history"
     read_only: Literal[True] = True
     at_s: Seconds
+    # Границы истории запуска: самый ранний сохранённый снимок и текущее модельное время.
+    available_from_s: Seconds = 0
+    available_to_s: Seconds | None = None
+
+    @model_validator(mode="after")
+    def history_bounds(self):
+        if self.available_to_s is None:
+            self.available_to_s = max(self.at_s, self.available_from_s)
+        if self.available_from_s > self.available_to_s:
+            raise ValueError("available_from_s must not exceed available_to_s")
+        return self
 
 
 class WsEnvelope(Contract):

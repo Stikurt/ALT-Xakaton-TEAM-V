@@ -7,19 +7,58 @@ from app.domain.models import StateResponse
 from app.planner import RULES, plan
 from app.simulation import apply_plan, create_initial_state, snapshot
 from app.simulation.engine import State
+from app.topology import planning_horizon, station_boundary
+
+
+def _positions(config: dict, key: str, ids: list[str], pick) -> dict:
+    """Coordinates of boundary nodes / conflict zones: from the station config when it has
+    them, otherwise read off the route polylines (``pick`` chooses the point)."""
+    declared = config.get(key) or {}
+    result = {}
+    for ident in ids:
+        if ident in declared:
+            result[ident] = tuple(declared[ident])
+            continue
+        point = pick(ident)
+        if point is not None:
+            result[ident] = tuple(point)
+    return result
+
+
+def topology_of(config: dict, snap: dict | None = None) -> dict:
+    routes = config["routes"]
+    entry, exit_ = station_boundary(config)
+    zones = sorted({z for r in routes for z in r.get("conflict_zone_ids", [])})
+
+    def node_point(node):
+        for r in routes:
+            if r.get("polyline") and r["from_id"] == node:
+                return r["polyline"][0]
+            if r.get("polyline") and r["to_id"] == node:
+                return r["polyline"][-1]
+        return None
+
+    def zone_point(zone):
+        for r in routes:
+            line = r.get("polyline") or []
+            if zone in r.get("conflict_zone_ids", []) and len(line) >= 2:
+                return line[1] if r["from_id"] == entry else line[-2]
+        return None
+
+    topology = {
+        "station_id": config["id"], "name": config.get("name") or config["id"],
+        "view_box": config["view_box"], "routes": routes,
+        "boundary_nodes": _positions(config, "node_positions", [entry, exit_], node_point),
+        "conflict_zones": _positions(config, "conflict_zone_positions", zones, zone_point),
+    }
+    if snap is not None:
+        topology["horizon_s"] = planning_horizon(snap, config)
+    return topology
 
 
 def response(state: State) -> StateResponse:
-    config = state.config
-    return StateResponse.model_validate({
-        "snapshot": snapshot(state),
-        "topology": {
-            "station_id": config["id"], "name": "Узел 12",
-            "view_box": config["view_box"], "routes": config["routes"],
-            "boundary_nodes": {"W": [40,450], "E": [1360,450]},
-            "conflict_zones": {"GW": [180,450], "GE": [1220,450]},
-        },
-    })
+    snap = snapshot(state)
+    return StateResponse.model_validate({"snapshot": snap, "topology": topology_of(state.config, snap)})
 
 
 def encode_checkpoint(state: State, initial_plan: dict) -> dict:
@@ -38,8 +77,12 @@ def decode_checkpoint(payload: dict) -> tuple[State, dict]:
 def prepare_scenario(config: dict) -> tuple[State, list[dict], dict]:
     """Called by the bootstrap CLI in a separate process, outside SQL transactions."""
     state = create_initial_state(config)
-    candidate = plan(snapshot(state), config, "passenger_first", 4.0)
-    if candidate["status"] != "feasible" or candidate["unassigned"] or candidate["violations"]:
+    candidate = None
+    for strategy in ("passenger_first", "earliest_departure"):
+        candidate = plan(snapshot(state), config, strategy, 4.0)
+        if candidate["status"] == "feasible" and not candidate["unassigned"] and not candidate["violations"]:
+            break
+    else:
         raise ValueError("Initial scenario has no feasible plan: " + str({
             "unassigned": candidate["unassigned"], "violations": candidate["violations"][:3]}))
     transition = apply_plan(state, candidate, rules=RULES)

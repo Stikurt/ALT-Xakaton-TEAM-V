@@ -25,7 +25,7 @@ def calculate_variants(checkpoint, budget_s):
         missing = [dict(operation_id=o['id'],code='NO_FEASIBLE_SLOT',
                         message=reasons.get(o['train_id'],'Операция не размещена'))
                    for o in state.operations.values() if o['status']=='pending' and o['id'] not in assigned]
-        violations = RULES.validate_plan(context,raw)
+        violations = RULES.validate_plan(context,raw,require_complete=False)
         changes = []
         future = {a['operation_id']:a for a in raw['assignments']}
         for oid,o in sorted(state.operations.items()):

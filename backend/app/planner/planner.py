@@ -4,13 +4,14 @@ import itertools
 import time
 import uuid
 
-from app.constraints import get_value, validate_plan
+from app.constraints import _expected_track_kind, _resource_need, get_value, make_violation, validate_plan
+from app.topology import MOVING, TopologyError, cargo_front_for, planning_horizon, station_boundary
 from .calendars import ResourceCalendar
 from .strategies import sort_trains
 
 
-DEFAULT_HORIZON_S = 7200
-MOVING = {"arrival", "departure", "shunt_to_cargo", "shunt_to_storage", "shunt_to_departure"}
+class PlannerInputError(ValueError):
+    """Input the planner cannot work with; plan() turns it into an infeasible plan with a reason."""
 
 
 def _routes(config, snapshot):
@@ -33,9 +34,20 @@ def _operation_map(snapshot):
     return {get_value(o, "id"): o for o in get_value(snapshot, "operations", [])}
 
 
-def build_calendars(snapshot, config):
+def _boundary(config, snapshot):
+    tracks = [get_value(t, "id") for t in get_value(snapshot, "tracks", []) or []]
+    routes = _routes(config, snapshot)
+    try:
+        return station_boundary({"routes": routes, "boundary": get_value(config, "boundary")}, tracks)
+    except TopologyError as exc:
+        raise PlannerInputError(str(exc)) from exc
+
+
+def build_calendars(snapshot, config, horizon=None):
     now = get_value(snapshot, "sim_time_s", 0)
-    horizon = now + get_value(config, "horizon_s", get_value(config, "planning_horizon_s", DEFAULT_HORIZON_S))
+    if horizon is None:
+        horizon = planning_horizon(snapshot, config)
+    _, exit_node = _boundary(config, snapshot)
 
     calendars = {
         "tracks": {},
@@ -94,7 +106,7 @@ def build_calendars(snapshot, config):
                     free_after=max(now,closed_until)
                     if free_after<end_s:
                         calendars['tracks'][source].reserve(free_after,end_s,f"running:{oid}",allow_same_owner=True)
-                if target in calendars['tracks']:
+                if target in calendars['tracks'] and target != exit_node:
                     calendars['tracks'][target].reserve(now,horizon,f"train:{train_id}",allow_same_owner=True)
                 for zone in get_value(route, "conflict_zone_ids", []) or []:
                     calendars["zones"].setdefault(zone, ResourceCalendar()).reserve(
@@ -137,6 +149,7 @@ def topological_operations(operations):
 
 
 def _train_ordinal(snapshot, train, kind):
+    """Position of the train among trains of the same kind (deterministic rotation key)."""
     peers = sorted(
         [
             t for t in get_value(snapshot, "trains", [])
@@ -151,46 +164,52 @@ def _train_ordinal(snapshot, train, kind):
     return 0
 
 
+def _rotate(items, offset):
+    items = list(items)
+    if not items:
+        return items
+    k = offset % len(items)
+    return items[k:] + items[:k]
+
+
+def _track_preference(track, train_kind):
+    """Optional station hint: tracks that list the train kind in ``preferred_train_kinds`` come
+    first, tracks that list other kinds only come last. Without hints all tracks rank equally."""
+    kinds = get_value(track, "preferred_train_kinds") or []
+    if not kinds:
+        return 1
+    return 0 if train_kind in kinds else 2
+
+
 def _candidate_tracks(snapshot, train, operation):
-    """Preferred station-role tracks with deterministic fallbacks."""
+    """Tracks suitable for the operation, taken from the station data.
+
+    The required track kind comes from the shared rule table (constraints._expected_track_kind);
+    tracks shorter than the train are skipped. Ordering is deterministic: station preference hint
+    (``preferred_train_kinds``), then a rotation by the train's ordinal among trains of its kind so
+    that consecutive trains spread over equivalent tracks, then station order.
+    """
     kind = get_value(operation, "kind", "")
-    train_kind = get_value(train, "kind", "")
-    tracks = _track_map(snapshot)
-
-    if kind == "arrival":
-        if train_kind == "passenger":
-            idx = _train_ordinal(snapshot, train, "passenger")
-            preferred = ["P01", "P02"] if idx % 2 == 0 else ["P02", "P01"]
-        elif train_kind == "transit":
-            idx = _train_ordinal(snapshot, train, "transit")
-            preferred = ["P05", "P06"] if idx % 2 == 0 else ["P06", "P05"]
-            preferred += ["P03", "P04"]
-        elif train_kind == "local":
-            preferred = ["P03", "P04"]
-        else:
-            preferred = []
-    elif kind == "shunt_to_cargo":
-        idx = _train_ordinal(snapshot, train, "local")
-        preferred = ["P10", "P11"] if idx % 2 == 0 else ["P11", "P10"]
-    elif kind == "shunt_to_storage":
-        idx = _train_ordinal(snapshot, train, "local")
-        first = ["P07", "P08", "P09"][idx % 3]
-        preferred = [first] + [p for p in ["P07", "P08", "P09"] if p != first]
-    elif kind == "shunt_to_departure":
-        preferred = ["P04", "P03"]
-    else:
+    if kind not in MOVING or kind == "departure":
         return []
-
+    train_kind = get_value(train, "kind", "")
+    expected = _expected_track_kind(train_kind, kind)
+    if expected is None:
+        return []
+    length = get_value(train, "length_m", 0)
+    if not isinstance(length, (int, float)) or isinstance(length, bool):
+        raise PlannerInputError(f"Поезд {get_value(train, 'id')}: length_m должен быть числом")
+    pool = [
+        get_value(t, "id") for t in get_value(snapshot, "tracks", []) or []
+        if get_value(t, "kind") == expected and (get_value(t, "usable_length_m", 0) or 0) >= length
+    ]
+    tracks = _track_map(snapshot)
+    ranks = sorted({_track_preference(tracks[tid], train_kind) for tid in pool})
+    ordinal = _train_ordinal(snapshot, train, train_kind)
     result = []
-    for track_id in preferred:
-        track = tracks.get(track_id)
-        if track is None:
-            continue
-        if get_value(track, "usable_length_m", 0) < get_value(train, "length_m", 0):
-            continue
-        if track_id not in result:
-            result.append(track_id)
-
+    for rank in ranks:
+        group = [tid for tid in pool if _track_preference(tracks[tid], train_kind) == rank]
+        result.extend(_rotate(group, ordinal))
     return result
 
 
@@ -201,62 +220,39 @@ def _route_id(config, snapshot, from_id, to_id):
     return None
 
 
-def _matching_resources(snapshot, kind, capability, *, track_id=None):
-    result = []
-    for resource in get_value(snapshot, "resources", []):
-        if get_value(resource, "kind") != kind:
-            continue
-        if capability not in (get_value(resource, "capabilities", []) or []):
-            continue
-        rid = get_value(resource, "id")
-        if kind == "cargo_front" and track_id is not None and rid != f"F{track_id[1:]}":
-            continue
-        result.append(rid)
-    return sorted(result)
+def _matching_resources(snapshot, kind, capability):
+    return [
+        get_value(r, "id") for r in get_value(snapshot, "resources", []) or []
+        if get_value(r, "kind") == kind and capability in (get_value(r, "capabilities", []) or [])
+    ]
 
 
 def _resource_options(snapshot, train, operation_kind, track_id):
-    train_kind = get_value(train, "kind", "")
+    """Resource sets that can serve the operation, from resource kinds and capabilities.
 
-    if operation_kind.startswith("shunt_"):
-        idx = _train_ordinal(snapshot, train, "local")
-        primary = (
-            ("L01", "B01") if idx % 2 == 0
-            else ("L02", "B02")
-        )
-        secondary = (
-            ("L02", "B02") if idx % 2 == 0
-            else ("L01", "B01")
-        )
-        available = []
-        resources = _resource_map(snapshot)
-        for option in (primary, secondary):
-            if all(rid in resources for rid in option):
-                available.append(option)
-        return available
-
-    if operation_kind == "formation":
-        idx = _train_ordinal(snapshot, train, "local")
-        preferred = "B01" if idx % 2 == 0 else "B02"
-        alternate = "B02" if preferred == "B01" else "B01"
-        resources = _resource_map(snapshot)
-        return [(rid,) for rid in (preferred, alternate) if rid in resources]
-
-    if operation_kind in ("inspection", "preparation"):
-        resources = _resource_map(snapshot)
-        if train_kind == "transit":
-            order = ("B04", "B03")
-        elif train_kind == "local":
-            order = ("B03", "B04")
-        else:
-            return [()]
-        return [(rid,) for rid in order if rid in resources]
-
+    The need per operation comes from the shared rule table (constraints._resource_need), e.g.
+    shunting = one locomotive + one crew with the ``shunt`` capability. Options are combinations
+    of matching resources; the k-th train of a kind starts from the k-th option, so equal work
+    is spread over equal resources deterministically. A cargo operation uses the cargo front that
+    serves the track (topology.cargo_front_for).
+    """
+    need = _resource_need(operation_kind)
+    if not need:
+        return [()]
     if operation_kind == "cargo":
-        rid = f"F{track_id[1:]}"
-        return [(rid,)] if rid in _resource_map(snapshot) else []
-
-    return [()]
+        rid = cargo_front_for(track_id, get_value(snapshot, "resources", []) or [])
+        return [(rid,)] if rid else []
+    pools = [sorted(_matching_resources(snapshot, kind, cap)) for kind, cap in need]
+    if any(not pool for pool in pools):
+        return []
+    ordinal = _train_ordinal(snapshot, train, get_value(train, "kind", ""))
+    if len(pools) == 1:
+        return [(rid,) for rid in _rotate(pools[0], ordinal)]
+    # Pair the i-th resource of each pool first (L1+B1, L2+B2, ...), then the remaining mixes.
+    width = max(len(pool) for pool in pools)
+    paired = [tuple(pool[i % len(pool)] for pool in pools) for i in range(width)]
+    rest = [combo for combo in itertools.product(*pools) if combo not in paired]
+    return _rotate(paired, ordinal) + rest
 
 
 def _common_slot(calendars, requirements, earliest_s, duration_s, horizon_s):
@@ -336,7 +332,7 @@ def _future_position(snapshot, config, train):
             route = routes.get(get_value(a,'route_id'))
             if route:
                 target=get_value(route,'to_id')
-                track = None if target=='E' else target
+                track = target if target in _track_map(snapshot) else None
     return now,track
 
 
@@ -372,12 +368,11 @@ def _remove_train_placeholder(calendars, train_id):
         calendar.remove_owner(owner)
 
 
-def _restore_train_placeholder(calendars, snapshot, config, train):
+def _restore_train_placeholder(calendars, snapshot, config, train, horizon):
     track_id = get_value(train, "track_id")
     if not track_id or track_id not in calendars["tracks"]:
         return
     now = get_value(snapshot, "sim_time_s", 0)
-    horizon = now + get_value(config, "horizon_s", get_value(config, "planning_horizon_s", DEFAULT_HORIZON_S))
     calendars["tracks"][track_id].reserve(now, horizon, f"train:{get_value(train, 'id')}")
 
 
@@ -396,6 +391,7 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
 
     available_s,current_track = _future_position(snapshot,config,train)
     current_s = max(current_s,available_s)
+    entry_node, exit_node = _boundary(config, snapshot)
     raw_assignments = []
     trial = {
         group: {ident: cal.clone() for ident, cal in values.items()}
@@ -407,8 +403,10 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
         kind = get_value(operation, "kind")
         duration = get_value(operation, "duration_s", 0)
 
+        if type(duration) is not int:
+            raise PlannerInputError(f"Операция {oid}: duration_s должен быть целым числом")
         if duration <= 0:
-            _restore_train_placeholder(calendars, snapshot, config, train)
+            _restore_train_placeholder(calendars, snapshot, config, train, horizon_s)
             return None, {"train_id": train_id, "operation_id": oid, "reason": "INVALID_DURATION"}
 
         if kind == "arrival":
@@ -431,11 +429,11 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
                 continue
 
             if kind == "arrival":
-                route_id = _route_id(config, snapshot, "W", track_id)
+                route_id = _route_id(config, snapshot, entry_node, track_id)
             elif kind.startswith("shunt_"):
                 route_id = _route_id(config, snapshot, current_track, track_id)
             elif kind == "departure":
-                route_id = _route_id(config, snapshot, current_track, "E")
+                route_id = _route_id(config, snapshot, current_track, exit_node)
             else:
                 route_id = None
 
@@ -518,7 +516,7 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
             )
 
         if scheduled is None:
-            _restore_train_placeholder(calendars, snapshot, config, train)
+            _restore_train_placeholder(calendars, snapshot, config, train, horizon_s)
             return None, {
                 "train_id": train_id,
                 "operation_id": oid,
@@ -546,7 +544,7 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
     for track_id, start_s, end_s in occupancy:
         cal = trial["tracks"][track_id]
         if not cal.is_free(start_s, end_s):
-            _restore_train_placeholder(calendars, snapshot, config, train)
+            _restore_train_placeholder(calendars, snapshot, config, train, horizon_s)
             return None, {
                 "train_id": train_id,
                 "reason": "TRACK_OCCUPIED",
@@ -585,60 +583,183 @@ def calculate_plan_metrics(snapshot, assignments, unassigned):
     }
 
 
+TRAIN_KINDS = {"passenger", "transit", "local"}
+
+
+def _is_int(value):
+    return type(value) is int
+
+
+def validate_input(snapshot, config):
+    """Structural checks of planner input. Returns a list of violations (empty = usable)."""
+    problems = []
+
+    def bad(message, *, entity_ids=None, operation_ids=None):
+        problems.append(make_violation("INVALID_INPUT", message, entity_ids=entity_ids, operation_ids=operation_ids))
+
+    if not isinstance(snapshot, dict):
+        bad("Снимок станции отсутствует или не является объектом")
+        return problems
+    if config is not None and not isinstance(config, dict):
+        bad("Конфигурация станции должна быть объектом")
+        return problems
+    for key in ("trains", "tracks", "operations"):
+        if not isinstance(snapshot.get(key), list):
+            bad(f"В снимке нет списка {key}")
+    if problems:
+        return problems
+    if not _is_int(snapshot.get("sim_time_s", 0)) or snapshot.get("sim_time_s", 0) < 0:
+        bad("sim_time_s должен быть целым неотрицательным числом")
+    if not _routes(config or {}, snapshot):
+        bad("В конфигурации станции нет маршрутов")
+    seen = set()
+    for train in snapshot["trains"]:
+        tid = get_value(train, "id")
+        if not isinstance(tid, str) or not tid:
+            bad("Поезд без id")
+            continue
+        if tid in seen:
+            bad(f"Повторный id поезда {tid}", entity_ids=[tid])
+        seen.add(tid)
+        if get_value(train, "kind") not in TRAIN_KINDS:
+            bad(f"Поезд {tid}: неизвестный тип {get_value(train, 'kind')!r}", entity_ids=[tid])
+        length = get_value(train, "length_m")
+        if not _is_int(length) or length <= 0:
+            bad(f"Поезд {tid}: length_m должен быть целым положительным числом", entity_ids=[tid])
+        arrival = get_value(train, "expected_arrival_s", get_value(train, "scheduled_arrival_s"))
+        departure = get_value(train, "scheduled_departure_s")
+        if not _is_int(get_value(train, "scheduled_arrival_s")) or not _is_int(departure) or not _is_int(arrival):
+            bad(f"Поезд {tid}: время прибытия/отправления должно быть целым числом", entity_ids=[tid])
+        elif departure < get_value(train, "scheduled_arrival_s"):
+            bad(f"Поезд {tid}: плановое отправление раньше планового прибытия", entity_ids=[tid])
+    op_ids = set()
+    by_train = {}
+    for op in snapshot["operations"]:
+        oid = get_value(op, "id")
+        if not isinstance(oid, str) or not oid or oid in op_ids:
+            bad(f"Пустой или повторный id операции {oid!r}")
+            continue
+        op_ids.add(oid)
+        if get_value(op, "train_id") not in seen:
+            bad(f"Операция {oid}: неизвестный поезд", operation_ids=[oid])
+        duration = get_value(op, "duration_s")
+        if not _is_int(duration) or duration <= 0:
+            bad(f"Операция {oid}: duration_s должен быть целым положительным числом", operation_ids=[oid])
+        if not isinstance(get_value(op, "predecessor_ids", []) or [], list):
+            bad(f"Операция {oid}: predecessor_ids должен быть списком", operation_ids=[oid])
+        by_train.setdefault(get_value(op, "train_id"), []).append(op)
+    for tid, ops in by_train.items():
+        try:
+            topological_operations(ops)
+        except ValueError:
+            bad(f"Поезд {tid}: цикл зависимостей операций", entity_ids=[tid] if tid else [])
+    for track in snapshot["tracks"]:
+        length = get_value(track, "usable_length_m")
+        if not _is_int(length) or length <= 0:
+            bad(f"Путь {get_value(track, 'id')}: usable_length_m должен быть целым положительным числом",
+                entity_ids=[get_value(track, "id")] if get_value(track, "id") else [])
+    if not problems:
+        try:
+            _boundary(config or {}, snapshot)
+        except PlannerInputError as exc:
+            bad(str(exc))
+    return problems
+
+
+def _rejected_plan(snapshot, strategy, violations, started_at):
+    snapshot = snapshot if isinstance(snapshot, dict) else {}
+    trains = [t for t in snapshot.get("trains") or [] if isinstance(t, dict)]
+    return {
+        "id": str(uuid.uuid4()),
+        "run_id": get_value(snapshot, "run_id", ""),
+        "based_on_version": get_value(snapshot, "state_version", 0),
+        "strategy": strategy,
+        "status": "infeasible",
+        "assignments": [],
+        "unassigned": [{"train_id": get_value(t, "id"), "reason": "INVALID_INPUT"} for t in trains if get_value(t, "id")],
+        "metrics": {"total_positive_delay_s": 0, "max_delay_s": 0, "unassigned_count": len(trains),
+                    "changed_future_assignments": 0},
+        "explanations": [{"train_id": None, "reason_code": "INVALID_INPUT", "message": v["message"]} for v in violations],
+        "timed_out": False,
+        "violations": violations,
+        "horizon_s": None,
+        "calculation_time_ms": round((time.monotonic() - started_at) * 1000, 2),
+    }
+
+
 def plan(snapshot, config, strategy: str, budget_s: float = 2.0):
+    """Build a complete plan for all pending operations.
+
+    Never raises on bad input: structural problems (missing lists, None or non-integer durations
+    and lengths, unknown train kinds, duplicate ids, dependency cycles, departure before arrival,
+    unknown strategy) come back as an ``infeasible`` plan with ``INVALID_INPUT`` violations.
+    Status: ``feasible`` = every pending operation placed and no rule violated; ``partial`` = some
+    trains could not be placed (``unassigned``) but everything placed obeys the rules;
+    ``infeasible`` = a rule violation or unusable input.
+    """
     started_at = time.monotonic()
-    now = get_value(snapshot, "sim_time_s", 0)
+    if strategy not in ("passenger_first", "earliest_departure"):
+        return _rejected_plan(snapshot, strategy, [make_violation(
+            "INVALID_INPUT", f"Неизвестная стратегия планировщика: {strategy}")], started_at)
+    problems = validate_input(snapshot, config)
+    if problems:
+        return _rejected_plan(snapshot, strategy, problems, started_at)
+    config = config or {}
     run_id = get_value(snapshot, "run_id", "")
     state_version = get_value(snapshot, "state_version", 0)
 
-    horizon_length = get_value(
-        config,
-        "horizon_s",
-        get_value(config, "planning_horizon_s", DEFAULT_HORIZON_S),
-    )
-    horizon_s = max(now, horizon_length if horizon_length > now else now + horizon_length)
-
-    calendars = build_calendars(snapshot, config)
+    horizon_s = planning_horizon(snapshot, config)
+    base_calendars = build_calendars(snapshot, config, horizon_s)
     trains = sort_trains(get_value(snapshot, "trains", []), strategy)
 
-    assignments = []
-    unassigned = []
-    timed_out = False
+    def greedy(order):
+        calendars = {g: {k: c.clone() for k, c in v.items()} for g, v in base_calendars.items()}
+        placed, failed, out_of_time = [], [], False
+        for train in order:
+            if time.monotonic() - started_at >= budget_s:
+                out_of_time = True
+                break
+            result, error = schedule_train(snapshot, config, train, calendars, horizon_s)
+            if error:
+                failed.append(error)
+                continue
+            train_assignments, calendars = result
+            placed.extend(train_assignments)
+        if out_of_time:
+            operations = _operation_map(snapshot)
+            done = {get_value(operations[a["operation_id"]], "train_id") for a in placed
+                    if a["operation_id"] in operations}
+            known = {x["train_id"] for x in failed}
+            failed.extend({"train_id": get_value(t, "id"), "reason": "TIMEOUT"} for t in order
+                          if get_value(t, "id") not in done and get_value(t, "id") not in known)
+        return placed, failed, out_of_time
 
-    for train in trains:
-        if time.monotonic() - started_at >= budget_s:
-            timed_out = True
+    def score(attempt):
+        placed, failed, _ = attempt
+        return (len(failed), calculate_plan_metrics(snapshot, placed, failed)["total_positive_delay_s"])
+
+    # Greedy pass in strategy order. Trains that could not be placed are moved to the front of
+    # the queue and the pass is repeated (bounded by the number of trains and by budget_s); the
+    # best attempt wins. Deterministic for the same input.
+    order = list(trains)
+    best = greedy(order)
+    tried = {tuple(get_value(t, "id") for t in order)}
+    for _ in range(len(trains)):
+        if not best[1] or best[2] or time.monotonic() - started_at >= budget_s:
             break
-
-        result, error = schedule_train(
-            snapshot,
-            config,
-            train,
-            calendars,
-            horizon_s,
-        )
-
-        if error:
-            unassigned.append(error)
-            continue
-
-        train_assignments, new_calendars = result
-        calendars = new_calendars
-        assignments.extend(train_assignments)
-
-    if timed_out:
-        assigned_ops = {a["operation_id"] for a in assignments}
-        operations = _operation_map(snapshot)
-        assigned_trains = {
-            get_value(operations[oid], "train_id")
-            for oid in assigned_ops
-            if oid in operations
-        }
-        known_unassigned = {x["train_id"] for x in unassigned}
-        for train in trains:
-            tid = get_value(train, "id")
-            if tid not in assigned_trains and tid not in known_unassigned:
-                unassigned.append({"train_id": tid, "reason": "TIMEOUT"})
+        failed_ids = [x["train_id"] for x in best[1] if x.get("reason") != "TIMEOUT"]
+        if not failed_ids:
+            break
+        front = [t for t in order if get_value(t, "id") in failed_ids]
+        order = front + [t for t in order if get_value(t, "id") not in failed_ids]
+        key = tuple(get_value(t, "id") for t in order)
+        if key in tried:
+            break
+        tried.add(key)
+        attempt = greedy(order)
+        if score(attempt) < score(best):
+            best = attempt
+    assignments, unassigned, timed_out = best
 
     metrics = calculate_plan_metrics(snapshot, assignments, unassigned)
 
@@ -659,6 +780,7 @@ def plan(snapshot, config, strategy: str, budget_s: float = 2.0):
             for item in unassigned
         ],
         "timed_out": timed_out,
+        "horizon_s": horizon_s,
     }
 
     context = {
@@ -669,7 +791,10 @@ def plan(snapshot, config, strategy: str, budget_s: float = 2.0):
         "running_assignments": get_value(snapshot, "running_assignments", {}) or {},
     }
 
-    violations = validate_plan(context, result)
+    # Rule violations make the plan infeasible. Operations that were simply not placed are
+    # reported in ``unassigned`` and make it partial (validate_plan(require_complete=True), used
+    # when a plan is accepted, still rejects anything but a complete plan).
+    violations = validate_plan(context, result, require_complete=False)
     result["violations"] = violations
 
     if violations:

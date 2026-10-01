@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.topology import MOVING, TopologyError, cargo_front_for, planning_horizon, station_boundary
+
 Json = dict[str, Any]
-MOVING = {"arrival", "departure", "shunt_to_cargo", "shunt_to_storage", "shunt_to_departure"}
 
 
 def get_value(obj: Any, name: str, default=None):
@@ -59,6 +60,20 @@ def _context(value: Json) -> tuple[Json, Json, Json, Json, Json]:
 
 def _index(items, key="id"):
     return {get_value(x, key): x for x in (items or []) if get_value(x, key) is not None}
+
+
+def _boundary(tracks: dict, topology: Json, routes: dict) -> tuple[str | None, str | None]:
+    """(entry, exit) node ids of the station; (None, None) when the topology is unusable."""
+    try:
+        return station_boundary({"routes": list(routes.values()), "boundary": get_value(topology, "boundary")},
+                                list(tracks))
+    except TopologyError:
+        return None, None
+
+
+def _cargo_front_ok(track_id, resource_ids, resources: dict) -> bool:
+    front = cargo_front_for(track_id, list(resources.values()))
+    return front is not None and front in resource_ids
 
 
 def _maps(context: Json):
@@ -136,7 +151,7 @@ def _can_start_conflicts(context: Json, operation: Json, assignment: Json) -> li
     if train is None:
         return [make_violation("NO_FEASIBLE_SLOT", f"Неизвестный поезд {tid}", operation_ids=[oid])]
 
-    if start_s is None or end_s is None or end_s <= start_s:
+    if type(start_s) is not int or type(end_s) is not int or end_s <= start_s:
         problems.append(make_violation("NO_FEASIBLE_SLOT", "Некорректный интервал назначения",
                                        operation_ids=[oid], start_s=start_s, end_s=end_s))
         return problems
@@ -172,7 +187,7 @@ def _can_start_conflicts(context: Json, operation: Json, assignment: Json) -> li
 
     if kind == "arrival":
         if get_value(train, "status") != "waiting_entry" or now < get_value(train, "expected_arrival_s", 0):
-            problems.append(make_violation("PREDECESSOR_INCOMPLETE", "Поезд ещё не прибыл к W",
+            problems.append(make_violation("PREDECESSOR_INCOMPLETE", "Поезд ещё не прибыл ко входу станции",
                                            entity_ids=[tid], operation_ids=[oid]))
     elif get_value(train, "status") != "on_track":
         problems.append(make_violation("PREDECESSOR_INCOMPLETE", "Поезд не находится на станционном пути",
@@ -189,12 +204,13 @@ def _can_start_conflicts(context: Json, operation: Json, assignment: Json) -> li
             problems.append(make_violation("NO_FEASIBLE_SLOT", "Неизвестный маршрут",
                                            entity_ids=[route_id], operation_ids=[oid]))
         else:
-            actual_from = "W" if kind == "arrival" else get_value(train, "track_id")
+            entry_node, exit_node = _boundary(tracks, topology, routes)
+            actual_from = entry_node if kind == "arrival" else get_value(train, "track_id")
             if get_value(route, "from_id") != actual_from:
                 problems.append(make_violation("NO_FEASIBLE_SLOT", "Маршрут не начинается в фактическом положении поезда",
                                                entity_ids=[route_id], operation_ids=[oid]))
             if kind == "departure":
-                if get_value(route, "to_id") != "E" or get_value(route, "from_id") != track_id:
+                if get_value(route, "to_id") != exit_node or get_value(route, "from_id") != track_id:
                     problems.append(make_violation("NO_FEASIBLE_SLOT", "Неверный маршрут отправления",
                                                    entity_ids=[route_id, track_id], operation_ids=[oid]))
             else:
@@ -255,7 +271,7 @@ def _can_start_conflicts(context: Json, operation: Json, assignment: Json) -> li
                 operation_ids=[oid],
             ))
 
-    if kind == "cargo" and f"F{track_id[1:]}" not in resource_ids:
+    if kind == "cargo" and not _cargo_front_ok(track_id, resource_ids, resources):
         problems.append(make_violation("RESOURCE_UNAVAILABLE", "Грузовой фронт не соответствует пути",
                                        entity_ids=[track_id], operation_ids=[oid]))
 
@@ -286,7 +302,10 @@ def can_start(context: Json, operation_or_assignment: Json, assignment: Json | N
     return _can_start_conflicts(context, operation_or_assignment, assignment)
 
 
-def validate_plan(context: Json, plan: Json) -> list[Json]:
+def validate_plan(context: Json, plan: Json, *, require_complete: bool = True) -> list[Json]:
+    """All plan-level rules. ``require_complete=False`` skips only the "every pending operation is
+    assigned" rule, so a planner can tell a partial plan (some trains not placed) from an
+    infeasible one; accepting a plan (engine.apply_plan) always uses the complete check."""
     (
         snapshot, topology, reservations, busy_zones, running,
         tracks, trains, resources, operations, routes,
@@ -295,15 +314,19 @@ def validate_plan(context: Json, plan: Json) -> list[Json]:
     problems: list[Json] = []
     now = get_value(snapshot, "sim_time_s", 0)
     assignments = get_value(plan, "assignments", []) or []
+    entry_node, exit_node = _boundary(tracks, topology, routes)
+    seen: set = set()
+    # Only assignments that passed the per-assignment checks take part in the cross checks below
+    # (predecessors, overlaps, track holds); a malformed one is reported once and never crashes them.
     by_operation: dict[str, Json] = {}
 
     for a in assignments:
         oid = get_value(a, "operation_id")
-        if oid in by_operation:
+        if oid in seen:
             problems.append(make_violation("NO_FEASIBLE_SLOT", f"Операция {oid} назначена дважды",
                                            operation_ids=[oid]))
             continue
-        by_operation[oid] = a
+        seen.add(oid)
 
         op = operations.get(oid)
         if op is None:
@@ -331,8 +354,10 @@ def validate_plan(context: Json, plan: Json) -> list[Json]:
         track = tracks.get(track_id)
         if train is None or track is None:
             problems.append(make_violation("NO_FEASIBLE_SLOT", "Неизвестный поезд или путь",
-                                           entity_ids=[tid, track_id], operation_ids=[oid]))
+                                           entity_ids=[x for x in (tid, track_id) if isinstance(x, str)],
+                                           operation_ids=[oid]))
             continue
+        by_operation[oid] = a
 
         if get_value(track, "usable_length_m", 0) < get_value(train, "length_m", 0):
             problems.append(make_violation("NO_FEASIBLE_SLOT", "Поезд длиннее полезной длины пути",
@@ -351,7 +376,7 @@ def validate_plan(context: Json, plan: Json) -> list[Json]:
                 problems.append(make_violation("NO_FEASIBLE_SLOT", "Неизвестный маршрут или неверная длительность",
                                                entity_ids=[route_id], operation_ids=[oid]))
             elif kind == "departure":
-                if get_value(route, "from_id") != track_id or get_value(route, "to_id") != "E":
+                if get_value(route, "from_id") != track_id or get_value(route, "to_id") != exit_node:
                     problems.append(make_violation("NO_FEASIBLE_SLOT", "Путь не соответствует маршруту отправления",
                                                    entity_ids=[route_id, track_id], operation_ids=[oid]))
             elif get_value(route, "to_id") != track_id:
@@ -391,7 +416,7 @@ def validate_plan(context: Json, plan: Json) -> list[Json]:
                                                f"Не назначен ресурс {resource_kind}/{capability}",
                                                operation_ids=[oid]))
 
-        if kind == "cargo" and f"F{track_id[1:]}" not in resource_ids:
+        if kind == "cargo" and not _cargo_front_ok(track_id, resource_ids, resources):
             problems.append(make_violation("RESOURCE_UNAVAILABLE", "Грузовой фронт не соответствует пути",
                                            entity_ids=[track_id], operation_ids=[oid]))
 
@@ -399,7 +424,7 @@ def validate_plan(context: Json, plan: Json) -> list[Json]:
         oid for oid, op in operations.items()
         if get_value(op, "status") == "pending"
     }
-    missing = sorted(required - set(by_operation))
+    missing = sorted(required - seen) if require_complete else []
     for oid in missing:
         problems.append(make_violation("NO_FEASIBLE_SLOT", "Будущая операция отсутствует в полном плане",
                                        operation_ids=[oid]))
@@ -476,12 +501,15 @@ def validate_plan(context: Json, plan: Json) -> list[Json]:
 
     # Track continuity + hold intervals between movements.
     occupancy: dict[str, list[tuple[int, int, str]]] = {}
-    horizon = get_value(topology, "horizon_s", now + 7200)
+    # A train still standing at the end of the plan holds its track to the end of the planning
+    # window. The window is computed from the schedule (app.topology.planning_horizon) and is
+    # always after now, so holds never become empty intervals late in a run.
+    horizon = planning_horizon(snapshot, topology)
 
     for tid, train in trains.items():
         pending_ops = [
             operations[oid] for oid in by_operation
-            if oid in operations and get_value(operations[oid], "train_id") == tid
+            if get_value(operations[oid], "train_id") == tid
             and get_value(operations[oid], "status") == "pending"
         ]
         ordered = _topological_for_train(pending_ops)
@@ -496,7 +524,7 @@ def validate_plan(context: Json, plan: Json) -> list[Json]:
                 rr = routes.get(get_value(ra, "route_id"))
                 if current_track:
                     occupancy.setdefault(current_track, []).append((now, get_value(ra, "end_s"), tid))
-                if rr and get_value(rr, "to_id") != "E":
+                if rr and get_value(rr, "to_id") in tracks:
                     current_track = get_value(rr, "to_id")
                     hold_start = now
                 else:
@@ -513,8 +541,8 @@ def validate_plan(context: Json, plan: Json) -> list[Json]:
                 if current_track is not None:
                     problems.append(make_violation("NO_FEASIBLE_SLOT", "Повторный приём поезда на путь",
                                                    entity_ids=[tid], operation_ids=[oid]))
-                if route and get_value(route, "from_id") != "W":
-                    problems.append(make_violation("NO_FEASIBLE_SLOT", "Маршрут приёма должен начинаться в W",
+                if route and get_value(route, "from_id") != entry_node:
+                    problems.append(make_violation("NO_FEASIBLE_SLOT", "Маршрут приёма должен начинаться на входе станции",
                                                    operation_ids=[oid]))
                 current_track, hold_start = track_id, a["start_s"]
 
@@ -575,8 +603,8 @@ class RulesAdapter:
     def can_start(self, context: Json, operation: Json, assignment: Json) -> list[Json]:
         return _can_start_conflicts(context, operation, assignment)
 
-    def validate_plan(self, context: Json, plan: Json) -> list[Json]:
-        return validate_plan(context, plan)
+    def validate_plan(self, context: Json, plan: Json, *, require_complete: bool = True) -> list[Json]:
+        return validate_plan(context, plan, require_complete=require_complete)
 
 
 RULES = RulesAdapter()
