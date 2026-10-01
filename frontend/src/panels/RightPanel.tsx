@@ -1,6 +1,7 @@
 import { selectRole, selectView, useStore } from '../app/store'
 import { CONFLICT, fmtT, INDEX_CAT } from '../app/labels'
 import type { StationIndex } from '../api/types'
+import { planIsStale } from '../api/adapt'
 import Icon from '../app/Icon'
 import SelectionCard from './SelectionCard'
 import AutopilotCard from './AutopilotCard'
@@ -112,7 +113,7 @@ function ConflictsCard() {
   const conn = useStore((x) => x.conn)
   const role = useStore(selectRole)
   const list = [...snap.conflicts].sort((a, b) => (a.severity === b.severity ? a.start_s - b.start_s : a.severity === 'high' ? -1 : 1))
-  const stale = replan.status === 'done' && replan.finished_at_epoch !== online.epoch
+  const stale = replan.status === 'done' && (replan.finished_at_epoch === -999 || replan.plans.some((p) => p.stale || planIsStale(p, online)))
   const canCmd = conn === 'online' && role !== 'viewer' && !history
   return (
     <section className={s.card}>

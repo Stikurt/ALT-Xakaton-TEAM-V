@@ -23,9 +23,8 @@ const fmtMin = (s: number) => {
   const sec = Math.round(s % 60)
   return m ? (sec ? `${m} мин ${sec} с` : `${m} мин`) : `${sec} с`
 }
-const TRACKS_FOR: Record<string, string[]> = {
-  passenger: ['P01', 'P02'], transit: ['P03', 'P04', 'P05', 'P06'], local: ['P03', 'P04', 'P05', 'P06'],
-}
+// Пути приёма по типу поезда — по kind пути из данных станции (как constraints._expected_track_kind).
+const ARRIVAL_TRACK_KIND = (trainKind: string) => (trainKind === 'passenger' ? 'passenger' : 'freight')
 const SEV = { bad: 0, warn: 1, info: 2 } as const
 
 /** Советы по текущему снимку. Только наблюдения по данным сервера, без собственного расчёта плана или индекса. */
@@ -34,18 +33,19 @@ export function computeTips(snap: Snapshot): Tip[] {
   const tips: Tip[] = []
   const track = Object.fromEntries(snap.tracks.map((t) => [t.id, t]))
   const freeOf = (ids: string[]) => ids.filter((id) => track[id] && track[id].availability === 'open' && !track[id].occupant_train_id)
+  const tracksOfKind = (kind: string) => snap.tracks.filter((t) => t.kind === kind).map((t) => t.id)
 
   // 1. Поезд долго ждёт у W, хотя подходящие пути свободны
   for (const t of snap.trains) {
     if (t.status !== 'waiting_entry') continue
     const waited = now - t.expected_arrival_s
     if (waited < 300) continue
-    const free = freeOf(TRACKS_FOR[t.kind] ?? [])
+    const free = freeOf(tracksOfKind(ARRIVAL_TRACK_KIND(t.kind)))
     tips.push({
       key: `wait-${t.id}`, severity: waited >= 900 ? 'bad' : 'warn',
       text: free.length
-        ? `${t.id} ждёт у W ${fmtMin(waited)}, а ${free.join(', ')} ${free.length > 1 ? 'свободны' : 'свободен'}. Пересчёт может сократить ожидание.`
-        : `${t.id} ждёт у W ${fmtMin(waited)}: все подходящие пути заняты.`,
+        ? `${t.id} ждёт у входа ${fmtMin(waited)}, а ${free.join(', ')} ${free.length > 1 ? 'свободны' : 'свободен'}. Пересчёт может сократить ожидание.`
+        : `${t.id} ждёт у входа ${fmtMin(waited)}: все подходящие пути заняты.`,
       action: free.length ? { kind: 'replan' } : { kind: 'select', target: { type: 'train', id: t.id } },
     })
   }
@@ -64,11 +64,11 @@ export function computeTips(snap: Snapshot): Tip[] {
       action: { kind: 'select', target: { type: 'train', id: t.id } } })
   }
   // 4. Все пути приёма грузовых заняты
-  const freight = ['P03', 'P04', 'P05', 'P06'].filter((id) => track[id])
+  const freight = tracksOfKind('freight')
   const soonFreight = snap.trains.filter((t) => t.kind !== 'passenger' && (t.status === 'scheduled' || t.status === 'waiting_entry') && t.expected_arrival_s - now < 600)
   if (freight.length && !freeOf(freight).length && soonFreight.length)
     tips.push({ key: 'freight-full', severity: 'warn',
-      text: `Пути P03–P06 заняты или закрыты, а в ближайшие 10 мин ${soonFreight.length === 1 ? 'подходит' : 'подходят'} ${soonFreight.map((t) => t.id).join(', ')}. Возможна очередь у W.` })
+      text: `Пути ${freight.join(', ')} заняты или закрыты, а в ближайшие 10 мин ${soonFreight.length === 1 ? 'подходит' : 'подходят'} ${soonFreight.map((t) => t.id).join(', ')}. Возможна очередь у входа.` })
   // 5. Скоро откроется путь или вернётся локомотив
   for (const t of snap.tracks) {
     if (t.closed_until_s && t.closed_until_s - now > 0 && t.closed_until_s - now <= 120)

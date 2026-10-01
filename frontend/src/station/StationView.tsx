@@ -33,6 +33,7 @@ export default function StationView(p: StationViewProps) {
 
   const routes = useMemo(() => Object.fromEntries(topo.routes.map((r) => [r.id, r])), [topo])
   const trackY = useMemo(() => Object.fromEntries(topo.tracks.map((t) => [t.id, t.geometry.y1])), [topo])
+  const locoTrack = topo.tracks.find((t) => t.kind === 'loco')?.id
   const stTracks = useMemo(() => Object.fromEntries(snap.tracks.map((t) => [t.id, t])), [snap.tracks])
   const zoneBusy = useMemo(() => Object.fromEntries(snap.zones.map((z) => [z.id, z.active_operation_id])), [snap.zones])
   const hl = useMemo(() => new Set(p.highlightIds ?? []), [p.highlightIds])
@@ -252,12 +253,13 @@ export default function StationView(p: StationViewProps) {
         {(['W', 'GW', 'GE', 'E'] as const).map((n) => {
           const [x, y] = topo.nodes[n]
           const zone = n === 'GW' || n === 'GE'
-          const busy = zone && !!zoneBusy[n]
+          const id = topo.node_ids?.[n] ?? n
+          const busy = zone && !!zoneBusy[id]
           return (
             <g key={n} className={zone ? s.zoneG : undefined}>
               {zone && <circle cx={x} cy={y} r={busy ? 15 : 11} className={busy ? s.zoneBusy : s.zoneFree} />}
               {!zone && <rect x={x - 7} y={y - 7} width={14} height={14} rx={3} className={s.border} />}
-              <text x={x} y={y + (zone ? 32 : 26)} textAnchor="middle" className={s.nodeLabel}>{n}</text>
+              <text x={x} y={y + (zone ? 32 : 26)} textAnchor="middle" className={s.nodeLabel}>{id}</text>
             </g>
           )
         })}
@@ -348,11 +350,11 @@ export default function StationView(p: StationViewProps) {
             )
           })}
         </g>
-        {/* P12 стоянка: свободные маневровые локомотивы */}
-        {['L01', 'L02'].map((id, i) => {
+        {/* локомотивное депо (путь kind=locomotive): свободные маневровые локомотивы */}
+        {locoTrack && snap.resources.filter((r) => r.kind === 'shunting_loco').map(({ id }, i) => {
           const r = resById[id]
           if (!r || r.active_operation_id) return null
-          const y = trackY['P12']
+          const y = trackY[locoTrack]
           return (
             <g key={id} className={s.queueChip} onClick={click({ type: 'resource', id })}>
               <rect x={600 + i * 100} y={y - 10} width={84} height={20} rx={4}

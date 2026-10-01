@@ -37,10 +37,10 @@ describe('советы ИИ-помощника', () => {
   it('на старте замечаний нет', () => {
     expect(computeTips(run(10))).toEqual([])
   })
-  it('сообщает о поезде, который долго ждёт у W', () => {
+  it('сообщает о поезде, который долго ждёт у входа станции', () => {
     const tips = computeTips(run(1500))
     const wait = tips.find((t) => t.key.startsWith('wait-'))
-    expect(wait?.text).toMatch(/ждёт у W/)
+    expect(wait?.text).toMatch(/ждёт у входа/)
   })
   it('предупреждает о скором открытии закрытого пути', () => {
     const tips = computeTips(run(560, (st) => st.incident('close_track', 'P09', 600)))

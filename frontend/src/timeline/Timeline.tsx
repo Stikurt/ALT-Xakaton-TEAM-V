@@ -33,7 +33,7 @@ export default function Timeline() {
 
   const rows = useMemo(
     () => [
-      ...topo.tracks.filter((t) => t.id !== 'P12').map((t) => ({ id: t.id, group: 'track' })),
+      ...topo.tracks.filter((t) => t.kind !== 'loco').map((t) => ({ id: t.id, group: 'track' })),
       ...topo.zones.map((z) => ({ id: z.id, group: 'zone' })),
       ...topo.resources.map((r) => ({ id: r.id, group: 'res' })),
     ],

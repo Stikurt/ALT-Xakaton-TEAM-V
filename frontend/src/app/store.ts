@@ -145,7 +145,7 @@ export const useStore = create<State>((set, get) => {
       if (cached) snap = { ...snap, active_plan: cached }
       else if (pendingPlanId !== snap.active_plan_id) {
         pendingPlanId = snap.active_plan_id
-        api.plan(snap.active_plan_id).then((p) => {
+        api.plan(snap.active_plan_id, snap.operations).then((p) => {
           activePlanCache = p
           const cur = get().snapshot
           if (cur && cur.active_plan_id === p.id) set({ snapshot: { ...cur, active_plan: p } })
@@ -267,7 +267,8 @@ export const useStore = create<State>((set, get) => {
           // backend И присылает только plan_ids — варианты читаются через GET /api/plans/{id}
           let plans: Plan[]
           try {
-            plans = p.plans ? p.plans.map((x) => normalizePlan(x, ops)) : await Promise.all(p.plan_ids.map((id) => api.plan(id)))
+            plans = p.plans ? p.plans.map((x) => normalizePlan(x, ops)) : await Promise.all(p.plan_ids.map((id) => api.plan(id, ops)))
+            if (!plans.length || plans.some((x) => !x.id)) throw new Error('empty plan variants')
           } catch {
             set((s) => ({ replan: { ...s.replan, status: 'failed', error: 'Не удалось получить варианты плана' } }))
             get().toast('error', 'Расчёт завершён, но варианты не загрузились. Нажмите «Пересчитать».')
@@ -431,8 +432,11 @@ export const useStore = create<State>((set, get) => {
     incident: async (cmd) => {
       const r = await guarded('incident', (run) => api.incident(run, cmd))
       if (r) {
-        const bad = r.results.filter((x) => x.status && x.status !== 200)
-        get().toast(bad.length ? 'info' : 'ok', r.results.map((x) => x.message).join('; ') + '. Идёт пересчёт плана.')
+        // backend возвращает CommandResult (без results); мок дополнительно присылает итог по каждому сбою
+        const n = Array.isArray(cmd) ? cmd.length : 1
+        const bad = (r.results ?? []).filter((x) => x.status && x.status !== 200)
+        const text = r.results?.length ? r.results.map((x) => x.message).join('; ') : n > 1 ? `Пакет из ${n} сбоев принят` : 'Сбой принят'
+        get().toast(bad.length ? 'info' : 'ok', text + (r.replan_required === false ? '.' : '. Идёт пересчёт плана.'))
       }
       return !!r
     },
