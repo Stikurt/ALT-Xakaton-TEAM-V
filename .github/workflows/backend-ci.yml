@@ -1,20 +1,20 @@
 name: Backend checks
+# Backend + planner + constraints + simulation + mock_backend, with a real PostgreSQL 16.
 on:
   push:
-    branches: [backend]
+    branches: [develop, main, backend]
   pull_request:
-    paths:
-      - 'backend/**'
-      - 'shared/**'
-      - 'tests/**'
-      - 'scripts/generate_contracts.py'
-      - '.github/workflows/backend-ci.yml'
-      - 'pyproject.toml'
+    branches: [develop, main]
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16
@@ -30,6 +30,7 @@ jobs:
           --health-timeout 3s
           --health-retries 10
     env:
+      # Disposable CI database only; never a real credential.
       TEST_DATABASE_URL: postgresql://test_user:ci_disposable_password@localhost:5432/uzel12_test
     steps:
       - uses: actions/checkout@v4
@@ -39,6 +40,19 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements-dev.txt
       - run: python -m pip install -r backend/requirements-dev.txt
-      - run: python scripts/generate_contracts.py
-      - run: git diff --exit-code -- shared
-      - run: python -m pytest -q
+      - name: Contracts are up to date
+        run: |
+          python scripts/generate_contracts.py
+          git diff --exit-code -- shared
+      - name: All Python tests (backend, planner, constraints, simulation, mock_backend, PostgreSQL)
+        run: python -m pytest -q
+      - name: Every PostgreSQL test actually ran
+        run: python -m pytest -q -m postgres -rs | tee postgres.txt && ! grep -q SKIPPED postgres.txt
+      - name: Simulation suite through unittest (documented command)
+        env:
+          PYTHONPATH: backend
+        run: python -m unittest discover -s tests/simulation -v
+      - name: Application module imports cleanly
+        env:
+          PYTHONPATH: backend
+        run: python -c "from app.main import app; print(app.title)"
