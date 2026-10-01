@@ -36,7 +36,7 @@ def test_health_state_and_openapi():
         assert state.status_code == 200
         assert state.json()["snapshot"]["paused"] is True
         assert c.get("/docs").status_code == 200
-        assert set(c.get("/openapi.json").json()["paths"]) == {"/health", "/api/state"}
+        assert set(c.get("/openapi.json").json()["paths"]) == {"/health", "/api/state", "/api/simulation/control"}
 
 
 @pytest.mark.parametrize("exc,code", [(NotInitialized(),"NOT_INITIALIZED"),
@@ -53,7 +53,7 @@ def test_database_failure_is_visible_without_leaking_secrets(exc, code, path):
 
 def test_missing_route_has_common_error_format():
     with client() as c:
-        r = c.post("/api/simulation/control",json={})
+        r = c.post("/api/not-implemented",json={})
         assert r.status_code == 404
         assert set(r.json()) == {"code","message","details"}
 

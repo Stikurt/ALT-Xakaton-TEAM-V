@@ -39,7 +39,7 @@ run_id в примерах равен `example-run`, а bootstrap выдаёт �
 должен зашивать ID из примеров. При смене run или разрыве последовательности
 получать согласованный snapshot. Пауза не останавливает сетевое соединение.
 
-## WebSocket — согласуемый контракт этапа 2
+## WebSocket — контракт этапа 2
 
 Конверт: `{schema_version, run_id, ws_seq, state_version, type, payload}`.
 
@@ -56,7 +56,8 @@ run_id в примерах равен `example-run`, а bootstrap выдаёт �
 Сейчас WsEnvelope проверяет конверт; payload описан таблицей и примерами.
 Типизированный discriminated union payload добавляется при реализации WS.
 Примеры каждого типа — отдельные сообщения, не последовательный журнал.
-Наличие примера не означает, что `/ws` уже реализован.
+На этапе 2 реализованы snapshot/state_updated/clock_sync/simulation_error.
+Сообщения replan_* пока остаются согласуемыми примерами следующего этапа.
 
 ## Команды и ошибки
 
@@ -67,8 +68,10 @@ close_track и locomotive_unavailable требуют duration_s. Парамет�
 ApplyPlanCommand: command_id, run_id, expected_state_version.
 
 Ошибка: `{code, message, details: []}`. Секреты, входные пароли, SQL и traceback
-в ответ не включаются. Сейчас доступны 503 DATABASE_UNAVAILABLE / NOT_INITIALIZED
-и единый формат 404/405. После добавления команд: 401/403/409/422.
+в ответ не включаются. Доступны 503 DATABASE_UNAVAILABLE / NOT_INITIALIZED /
+SIMULATION_UNAVAILABLE, 409 ошибок движка и повторного ID с другим телом,
+422 валидации, единый формат 404/405. Пока 403 относится только к отклонённому
+Origin; роли ещё не реализованы.
 
 ## Границы участников
 

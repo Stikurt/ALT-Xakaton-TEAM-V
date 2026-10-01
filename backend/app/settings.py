@@ -12,5 +12,6 @@ class Settings(BaseSettings):
 
     database_url: SecretStr = SecretStr("postgresql://localhost:5432/uzel12")
     allowed_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
-    db_pool_max_size: int = Field(default=4, ge=1, le=10)
+    db_pool_max_size: int = Field(default=4, ge=2, le=10)
     db_timeout_s: float = Field(default=3, gt=0, le=30)
+    scenario_path: str = "shared/scenarios/one_train.json"

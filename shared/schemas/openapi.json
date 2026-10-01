@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Узел 12 — Backend",
-    "description": "Этап 1: контракты, PostgreSQL, health и чтение исходного состояния.",
-    "version": "0.1.0"
+    "description": "Этап 2: общий движок, PostgreSQL, команды управления и WebSocket.",
+    "version": "0.2.0"
   },
   "paths": {
     "/health": {
@@ -37,7 +37,7 @@
     "/api/state": {
       "get": {
         "summary": "State",
-        "description": "Read the persisted initial state. Live simulation is introduced in stage 2.",
+        "description": "Full live snapshot; its dynamic state has already been committed to PostgreSQL.",
         "operationId": "state_api_state_get",
         "responses": {
           "200": {
@@ -56,6 +56,62 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/simulation/control": {
+      "post": {
+        "summary": "Control",
+        "operationId": "control_api_simulation_control_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ControlCommand"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -178,6 +234,71 @@
           "message"
         ],
         "title": "Conflict"
+      },
+      "ControlCommand": {
+        "properties": {
+          "command_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Command Id"
+          },
+          "run_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "title": "Run Id"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "start",
+              "pause",
+              "speed",
+              "reset"
+            ],
+            "title": "Action"
+          },
+          "speed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "enum": [
+                  1,
+                  5,
+                  10
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "command_id",
+          "run_id",
+          "action"
+        ],
+        "title": "ControlCommand"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
       },
       "HealthResponse": {
         "properties": {
@@ -891,6 +1012,46 @@
           "status"
         ],
         "title": "Train"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
       },
       "WaitReason": {
         "properties": {
