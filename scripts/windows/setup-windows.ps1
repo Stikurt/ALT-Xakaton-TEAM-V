@@ -9,6 +9,21 @@ Set-Location $root
 function Step($text) { Write-Host "`n=== $text" -ForegroundColor Cyan }
 function Fail($text) { Write-Host "`n[ОШИБКА] $text" -ForegroundColor Red; Read-Host 'Нажмите Enter, чтобы закрыть'; exit 1 }
 
+# Порт PostgreSQL на этом компьютере берётся из DATABASE_URL в .env и передаётся docker compose
+# (DB_HOST_PORT), поэтому compose.yaml и backend всегда смотрят на один и тот же порт.
+function Get-DbPort {
+  $line = Get-Content "$root\.env" -Encoding UTF8 | Where-Object { $_ -match '^DATABASE_URL=' } | Select-Object -First 1
+  if ($line -match '@[^@/]+:(\d+)/') { return [int]$Matches[1] }
+  return 5432
+}
+function Test-PortFree([int]$port) {
+  try { $l = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $port); $l.Start(); $l.Stop(); return $true } catch { return $false }
+}
+function Test-DbContainerUp {
+  $id = (& docker compose ps -q --status running db 2>$null)
+  return [bool]$id
+}
+
 # Демо-пароли для презентации (минимум 12 символов — требование backend). Поменяйте при желании до первого запуска.
 $Passwords = @{ DISPATCHER = 'dispatcher2026'; VIEWER = 'viewer-2026-demo'; ADMIN = 'admin-2026-demo' }
 
@@ -52,14 +67,20 @@ if (Test-Path "$root\.env") {
   $secret = (& $python -m app.auth generate-secret).Trim()
   $hash = @{}
   foreach ($k in $Passwords.Keys) { $hash[$k] = ($Passwords[$k] | & $python -m app.auth hash-password --stdin).Trim() }
+  # Первый свободный порт: 5432 часто занят локальным PostgreSQL или зарезервирован Windows (Hyper-V/WinNAT).
+  $dbport = $null
+  foreach ($p in 5432, 55432, 55433, 56432, 57432) { if (Test-PortFree $p) { $dbport = $p; break } }
+  if (-not $dbport) { Fail 'Нет свободного порта для PostgreSQL (пробовал 5432, 55432, 55433, 56432, 57432).' }
+  Write-Host "PostgreSQL будет на 127.0.0.1:$dbport"
   $envText = @"
 POSTGRES_USER=uzel12
 POSTGRES_DB=uzel12
 POSTGRES_PASSWORD=$dbpw
-DATABASE_URL=postgresql://uzel12:$dbpw@localhost:5432/uzel12
+DB_HOST_PORT=$dbport
+DATABASE_URL=postgresql://uzel12:$dbpw@127.0.0.1:$dbport/uzel12
 ALLOWED_ORIGINS=["http://localhost:5173","http://127.0.0.1:5173"]
 DB_POOL_MAX_SIZE=4
-DB_TIMEOUT_S=3
+DB_TIMEOUT_S=10
 SCENARIO_PATH=shared/station.json
 PLANNER_TIMEOUT_S=5
 PLANNER_BUDGET_S=2
@@ -83,8 +104,12 @@ Push-Location "$root\frontend"; & npm ci --no-audit --no-fund; $code = $LASTEXIT
 if ($code) { Fail 'npm ci не прошёл' }
 
 Step 'PostgreSQL в Docker'
+$env:DB_HOST_PORT = Get-DbPort
+if (-not (Test-DbContainerUp) -and -not (Test-PortFree $env:DB_HOST_PORT)) {
+  Fail "Порт $($env:DB_HOST_PORT) занят другой программой или зарезервирован Windows. Удалите .env и запустите setup.cmd снова — будет выбран свободный порт (пароли создадутся заново)."
+}
 & docker compose up -d db
-if ($LASTEXITCODE) { Fail 'docker compose up не прошёл' }
+if ($LASTEXITCODE) { Fail "docker compose up не прошёл (порт $($env:DB_HOST_PORT)). Смотрите сообщение выше." }
 
 Step 'Миграции и начальный план (15 поездов)'
 $ok = $false
@@ -93,7 +118,7 @@ for ($i = 0; $i -lt 30; $i++) {
   if ($LASTEXITCODE -eq 0) { $ok = $true; break }
   Start-Sleep -Seconds 2
 }
-if (-not $ok) { Fail 'База не отвечает. Проверьте Docker Desktop и запустите снова.' }
+if (-not $ok) { Fail "База не отвечает на 127.0.0.1:$($env:DB_HOST_PORT). Проверьте Docker Desktop и DATABASE_URL в .env, затем запустите снова." }
 & $python -m app.storage.bootstrap
 if ($LASTEXITCODE) { Fail 'bootstrap не прошёл' }
 

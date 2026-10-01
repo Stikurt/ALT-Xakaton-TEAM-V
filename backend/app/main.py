@@ -24,6 +24,10 @@ from app.settings import Settings
 from app.storage.repository import NotInitialized, Repository
 
 logger = logging.getLogger(__name__)
+STARTUP_ATTEMPTS = 5
+STARTUP_RETRY_S = 2.0
+DB_UNAVAILABLE = ("База данных недоступна: проверьте, что PostgreSQL запущен и DATABASE_URL в .env "
+                  "указывает на его адрес и порт, затем перезапустите сервер.")
 
 
 def error_response(status: int, code: str, message: str, details=None):
@@ -40,6 +44,7 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
     async def lifespan(app: FastAPI):
         app.state.runtime = coordinator
         app.state.runtime_required = repository is None
+        app.state.runtime_error = None
         app.state.allowed_origins = settings.allowed_origins
         if repository is not None:
             app.state.repository = repository
@@ -58,17 +63,30 @@ def create_app(settings: Settings | None = None, repository=None, coordinator=No
         app.state.repository = Repository(pool)
         app.state.auth.store = PostgresSessionStore(pool)
         try:
-            try:
-                await asyncio.to_thread(app.state.repository.claim_owner)
-                state, initial_plan = await asyncio.to_thread(app.state.repository.load_runtime)
-                required = await asyncio.to_thread(app.state.repository.needs_replan,state.run_id)
-                owner = Coordinator(app.state.repository,state,initial_plan,replan_required=required,
-                    planner=PlannerProcess(settings.planner_timeout_s,settings.planner_budget_s))
-                await owner.start()
-                app.state.runtime = owner
-            except (psycopg.Error,PoolTimeout,NotInitialized) as exc:
-                logger.error("runtime_unavailable error_type=%s",type(exc).__name__)
-                await asyncio.to_thread(app.state.repository.release_owner)
+            # A database that is still starting (or slow first connections, e.g. Windows trying
+            # IPv6 localhost before 127.0.0.1) gets a few attempts before the API reports 503.
+            for attempt in range(1, STARTUP_ATTEMPTS + 1):
+                try:
+                    await asyncio.to_thread(app.state.repository.claim_owner)
+                    state, initial_plan = await asyncio.to_thread(app.state.repository.load_runtime)
+                    required = await asyncio.to_thread(app.state.repository.needs_replan,state.run_id)
+                    owner = Coordinator(app.state.repository,state,initial_plan,replan_required=required,
+                        planner=PlannerProcess(settings.planner_timeout_s,settings.planner_budget_s))
+                    await owner.start()
+                    app.state.runtime = owner
+                    break
+                except (psycopg.OperationalError,PoolTimeout) as exc:
+                    await asyncio.to_thread(app.state.repository.release_owner)
+                    if attempt == STARTUP_ATTEMPTS:
+                        app.state.runtime_error = DB_UNAVAILABLE
+                        logger.error("runtime_unavailable error_type=%s attempts=%d",type(exc).__name__,attempt)
+                        break
+                    logger.warning("database_not_ready error_type=%s attempt=%d",type(exc).__name__,attempt)
+                    await asyncio.sleep(STARTUP_RETRY_S)
+                except (psycopg.Error,NotInitialized) as exc:
+                    logger.error("runtime_unavailable error_type=%s",type(exc).__name__)
+                    await asyncio.to_thread(app.state.repository.release_owner)
+                    break
             yield
         finally:
             if app.state.runtime: await app.state.runtime.stop()

@@ -37,6 +37,13 @@ React 19 + Vite 8, Node 22.
 
 Новый прогон с начала — кнопка «Сброс» в интерфейсе.
 
+Порт PostgreSQL. `setup.cmd` выбирает первый свободный из 5432, 55432, 55433, 56432, 57432: порт 5432
+на Windows часто занят локальным PostgreSQL или зарезервирован Hyper-V/WinNAT (ошибка Docker
+`ports are not available ... forbidden by its access permissions`). Порт записывается в `DATABASE_URL`
+(адрес `127.0.0.1`, не `localhost`) и `DB_HOST_PORT`; `start.cmd` берёт его из `DATABASE_URL` и передаёт
+`docker compose`, так что база и backend всегда на одном порту. Если порт позже заняли — `start.cmd`
+остановится с понятным сообщением; удалите `.env` и запустите `setup.cmd` снова.
+
 ## Быстрый старт (Linux/macOS, bash)
 
 ```bash

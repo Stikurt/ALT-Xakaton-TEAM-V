@@ -9,12 +9,38 @@ if (-not (Test-Path $python) -or -not (Test-Path "$root\.env")) {
   Write-Host 'Сначала один раз запустите setup.cmd' -ForegroundColor Red; Read-Host 'Enter'; exit 1
 }
 $env:PYTHONPATH = "$root\backend"
+function Fail($text) { Write-Host "`n[ОШИБКА] $text" -ForegroundColor Red; Read-Host 'Нажмите Enter, чтобы закрыть'; exit 1 }
+
+# Порт PostgreSQL на этом компьютере берётся из DATABASE_URL в .env и передаётся docker compose
+# (DB_HOST_PORT), поэтому compose.yaml и backend всегда смотрят на один и тот же порт.
+function Get-DbPort {
+  $line = Get-Content "$root\.env" -Encoding UTF8 | Where-Object { $_ -match '^DATABASE_URL=' } | Select-Object -First 1
+  if ($line -match '@[^@/]+:(\d+)/') { return [int]$Matches[1] }
+  return 5432
+}
+function Test-PortFree([int]$port) {
+  try { $l = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $port); $l.Start(); $l.Stop(); return $true } catch { return $false }
+}
+function Test-DbContainerUp {
+  $id = (& docker compose ps -q --status running db 2>$null)
+  return [bool]$id
+}
 
 Write-Host '=== PostgreSQL' -ForegroundColor Cyan
+$env:DB_HOST_PORT = Get-DbPort
+$global:LASTEXITCODE = 1
+try { & docker info *> $null } catch {}
+if ($LASTEXITCODE -ne 0) { Fail 'Docker не запущен: откройте Docker Desktop, дождитесь зелёного статуса и повторите.' }
+if (-not (Test-DbContainerUp) -and -not (Test-PortFree $env:DB_HOST_PORT)) {
+  Fail "Порт $($env:DB_HOST_PORT) (из DATABASE_URL в .env) занят другой программой или зарезервирован Windows. Освободите его или удалите .env и запустите setup.cmd — он выберет свободный порт."
+}
 & docker compose up -d db
-if ($LASTEXITCODE) { Write-Host 'Docker не запущен: откройте Docker Desktop и повторите.' -ForegroundColor Red; Read-Host 'Enter'; exit 1 }
-for ($i = 0; $i -lt 30; $i++) { & $python -m app.storage.migrate 2>$null; if ($LASTEXITCODE -eq 0) { break }; Start-Sleep 2 }
+if ($LASTEXITCODE) { Fail "docker compose up не прошёл (порт $($env:DB_HOST_PORT)). Смотрите сообщение выше." }
+$ok = $false
+for ($i = 0; $i -lt 30; $i++) { & $python -m app.storage.migrate 2>$null; if ($LASTEXITCODE -eq 0) { $ok = $true; break }; Start-Sleep 2 }
+if (-not $ok) { Fail "База не отвечает на 127.0.0.1:$($env:DB_HOST_PORT). Проверьте DATABASE_URL в .env и контейнер в Docker Desktop." }
 & $python -m app.storage.bootstrap
+if ($LASTEXITCODE) { Fail 'bootstrap не прошёл — смотрите сообщение выше.' }
 
 Write-Host '=== backend (окно «backend»), frontend (окно «frontend»)' -ForegroundColor Cyan
 $backendCmd = "`$host.UI.RawUI.WindowTitle='backend :8000'; Set-Location '$root'; `$env:PYTHONPATH='$root\backend'; & '$python' -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1"
