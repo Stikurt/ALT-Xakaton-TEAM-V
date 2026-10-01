@@ -2,13 +2,13 @@
 .toolbar { flex: none; display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--border); background: transparent; min-height: 40px; }
 .toolbarRight { margin-left: auto; display: flex; gap: 6px; flex: none; }
 .svgBox { position: relative; flex: 1; min-height: 0; }
-.svg { width: 100%; height: 100%; display: block; cursor: grab; user-select: none; touch-action: none; }
+.svg { width: 100%; height: 100%; display: block; text-rendering: geometricPrecision; cursor: grab; user-select: none; touch-action: none; }
 .svg:active { cursor: grabbing; }
 
 .area { fill: rgba(95, 134, 255, 0.025); stroke: rgba(95, 134, 255, 0.12); stroke-dasharray: 3 5; }
 .platform { fill: #232c4d; stroke: #3a4673; }
 .cargo { fill: #3a2c1a; stroke: #6b5128; }
-.areaLabel { fill: var(--muted); font: 600 13px var(--display); letter-spacing: 0.14em; }
+.areaLabel { fill: var(--muted); font: 600 14px var(--font); letter-spacing: 0.01em; }
 
 .links line { stroke: #1a2240; stroke-width: 2; }
 .border { fill: var(--panel); stroke: var(--text-2); }

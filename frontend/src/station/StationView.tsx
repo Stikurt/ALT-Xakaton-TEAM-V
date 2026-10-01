@@ -197,12 +197,12 @@ export default function StationView(p: StationViewProps) {
         <g>
           <rect x={310} y={98} width={780} height={104} rx={8} className={s.area} />
           <rect x={340} y={146} width={720} height={8} rx={2} className={s.platform} />
-          <text x={318} y={92} className={s.areaLabel}>ПЛАТФОРМЫ · ПАССАЖИРСКИЙ ПАРК</text>
+          <text x={1080} y={92} textAnchor="end" className={s.areaLabel}>Пассажирский парк · платформы</text>
           <rect x={310} y={638} width={780} height={104} rx={8} className={s.area} />
           <rect x={340} y={686} width={720} height={8} rx={2} className={s.cargo} />
-          <text x={318} y={632} className={s.areaLabel}>ГРУЗОВОЙ ФРОНТ F10 / F11</text>
-          <text x={318} y={232 - 12} className={s.areaLabel} opacity={0.6}>ГРУЗОВОЙ ПРИЁМ-ОТПРАВЛЕНИЕ</text>
-          <text x={318} y={472 - 12} className={s.areaLabel} opacity={0.6}>НАКОПЛЕНИЕ И ПОДГОТОВКА</text>
+          <text x={1080} y={632} textAnchor="end" className={s.areaLabel}>Грузовой фронт F10, F11</text>
+          <text x={1080} y={232 - 12} textAnchor="end" className={s.areaLabel} opacity={0.7}>Грузовой приём и отправление</text>
+          <text x={1080} y={472 - 12} textAnchor="end" className={s.areaLabel} opacity={0.7}>Накопление и подготовка</text>
         </g>
 
         {/* соединения горловин (условная схема, не проект СЦБ) */}
@@ -241,8 +241,6 @@ export default function StationView(p: StationViewProps) {
               <line x1={t.geometry.x1} y1={y} x2={t.geometry.x2} y2={y} className={cls} filter={closed || occ ? 'url(#glowSoft)' : undefined} />
               {reserved && !closed && <title>{`${t.id}: резерв под ${occTrain!.id} на время перемещения`}</title>}
               {closed && <rect x={t.geometry.x1} y={y - 7} width={t.geometry.x2 - t.geometry.x1} height={14} fill="url(#hatch)" rx={2} />}
-              <rect x={t.geometry.x1 - 2} y={y - 12} width={48} height={24} rx={5} className={s.trackChip} />
-              <text x={t.geometry.x1 + 22} y={y + 6} textAnchor="middle" className={s.trackLabel}>{t.id}</text>
               <text x={t.geometry.x2 + 12} y={y + 4} className={closed ? s.trackNoteBad : s.trackNote}>
                 {closed ? `ЗАКРЫТ до ${fmtT(st.closed_until_s)}` : `${t.usable_length_m} м`}
               </text>
@@ -260,11 +258,6 @@ export default function StationView(p: StationViewProps) {
               {zone && <circle cx={x} cy={y} r={busy ? 15 : 11} className={busy ? s.zoneBusy : s.zoneFree} />}
               {!zone && <rect x={x - 7} y={y - 7} width={14} height={14} rx={3} className={s.border} />}
               <text x={x} y={y + (zone ? 32 : 26)} textAnchor="middle" className={s.nodeLabel}>{n}</text>
-              {zone && busy && (
-                <text x={x} y={y - 22} textAnchor="middle" className={s.zoneNote}>
-                  {opById[zoneBusy[n]!]?.train_id ?? ''}
-                </text>
-              )}
             </g>
           )
         })}
@@ -296,9 +289,19 @@ export default function StationView(p: StationViewProps) {
           onClick={(id) => click({ type: 'train', id })}
         />
 
+        {/* номера путей поверх составов: состав у начала пути не закрывает номер */}
+        <g>
+          {topo.tracks.map((t) => (
+            <g key={'lbl' + t.id} className={s.trackG} onClick={click({ type: 'track', id: t.id })}>
+              <rect x={t.geometry.x1 - 2} y={t.geometry.y1 - 12} width={48} height={24} rx={5} className={s.trackChip} />
+              <text x={t.geometry.x1 + 22} y={t.geometry.y1 + 6} textAnchor="middle" className={s.trackLabel}>{t.id}</text>
+            </g>
+          ))}
+        </g>
+
         {/* очередь у W */}
         <g>
-          <text x={14} y={500} className={s.areaLabel}>ОЧЕРЕДЬ У W · {queue.length}</text>
+          <text x={14} y={500} className={s.areaLabel}>Очередь у W: {queue.length}</text>
           {queue.map((t, i) => {
             const waitingReason = t.wait_reason
             const sel = selId === t.id
@@ -311,7 +314,7 @@ export default function StationView(p: StationViewProps) {
             )
           })}
           {queue.length === 0 && <text x={14} y={528} className={s.qSub}>пусто</text>}
-          <text x={14} y={512 + Math.max(queue.length, 1) * 38 + 22} className={s.areaLabel} opacity={0.6}>ОЖИДАЮТСЯ</text>
+          <text x={14} y={512 + Math.max(queue.length, 1) * 38 + 22} className={s.areaLabel} opacity={0.6}>Ожидаются</text>
           {soon.map((t, i) => (
             <g key={t.id} transform={`translate(14, ${512 + Math.max(queue.length, 1) * 38 + 36 + i * 24})`}
               className={s.queueChip} onClick={click({ type: 'train', id: t.id })}>
@@ -325,7 +328,7 @@ export default function StationView(p: StationViewProps) {
 
         {/* ресурсы */}
         <g transform="translate(1236, 496)">
-          <text x={0} y={0} className={s.areaLabel}>РЕСУРСЫ</text>
+          <text x={0} y={0} className={s.areaLabel}>Ресурсы</text>
           {snap.resources.map((r, i) => {
             const col = 0
             const row = i
@@ -441,7 +444,9 @@ const TrainsLayer = memo(function TrainsLayer(p: TLProps) {
         const color = waiting ? 'var(--wait)' : `var(--k-${t.kind})`
         const d = toPath(body)
         // подпись не выходит за пути и не наезжает на подписи длины справа
-        const tagX = Math.max(70, Math.min(center[0], t.delay_s > 0 ? 960 : 1020))
+        // в горловине (между GW и началом путей) подпись уводим влево, чтобы не закрывать номера путей
+        const inThroat = !!t.movement && center[0] > 180 && center[0] < 345
+        const tagX = inThroat ? Math.min(center[0] - 10, 250) : Math.max(70, Math.min(center[0], t.delay_s > 0 ? 960 : 1020))
         return (
           <g key={t.id} className={s.trainG} onClick={p.onClick(t.id)}>
             {trace && <path d={toPath(trace)} className={s.routeActual} />}
