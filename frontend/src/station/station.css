@@ -1,0 +1,473 @@
+.sv {
+  --sv-bg:#101820;
+  --sv-line:#2c3944;
+  --sv-muted:#9baab7;
+  --sv-accent:#77d6bd;
+  box-sizing:border-box;
+  color:#edf2f5;
+  background:var(--sv-bg);
+  border:1px solid var(--sv-line);
+  border-radius:14px;
+  font:14px/1.45 'Segoe UI',sans-serif;
+  overflow:hidden;
+  min-width:0
+}
+.sv * {
+  box-sizing:border-box
+}
+.sv button {
+  font:inherit;
+  cursor:pointer
+}
+.sv button:focus-visible,.sv [role=button]:focus-visible {
+  outline:2px solid #a7ffe5;
+  outline-offset:3px
+}
+.sv button:disabled {
+  opacity:.35;
+  cursor:default
+}
+.sv-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+  padding:21px 24px;
+  border-bottom:1px solid var(--sv-line)
+}
+.sv-eyebrow {
+  font-size:10px;
+  letter-spacing:1.6px;
+  font-weight:700;
+  color:var(--sv-muted)
+}
+.sv h2 {
+  font-size:20px;
+  letter-spacing:-.4px;
+  font-weight:600;
+  margin:4px 0 0
+}
+.sv-counter {
+  display:inline-block;
+  font-size:11px;
+  font-weight:400;
+  letter-spacing:0;
+  color:var(--sv-muted);
+  background:#202c36;
+  border-radius:5px;
+  padding:3px 8px;
+  margin-left:8px
+}
+.sv-status {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:12px;
+  white-space:nowrap;
+  color:#c4d0db
+}
+.sv-status time {
+  font:15px 'Consolas',monospace;
+  color:#fff;
+  border-left:1px solid var(--sv-line);
+  padding-left:12px;
+  margin-left:4px
+}
+.sv-dot {
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--sv-accent)
+}
+.sv-dot-off {
+  background:#efa75b
+}
+.sv-map-wrap {
+  position:relative;
+  overflow:hidden;
+  background:radial-gradient(ellipse at 60% 30%,#18242c,var(--sv-bg) 70%)
+}
+.sv-map-meta {
+  position:absolute;
+  top:18px;
+  left:24px;
+  right:24px;
+  display:flex;
+  justify-content:space-between;
+  pointer-events:none;
+  font:10px 'Consolas',monospace;
+  letter-spacing:1px;
+  color:#8e9ba8
+}
+.sv-map-meta i {
+  display:inline-block;
+  width:3px;
+  height:3px;
+  border-radius:50%;
+  background:#71808e;
+  vertical-align:middle;
+  margin:0 7px
+}
+.sv-map {
+  display:block;
+  width:100%;
+  height:auto;
+  min-height:380px;
+  max-height:660px;
+  aspect-ratio:14/9;
+  touch-action:none;
+  user-select:none;
+  cursor:grab
+}
+.sv-map:active {
+  cursor:grabbing
+}
+.sv-zones rect {
+  fill:#1c2a33;
+  fill-opacity:.6;
+  stroke:#30404a;
+  stroke-opacity:.5
+}
+.sv-zones text {
+  fill:#8d9da8;
+  font-size:15px;
+  letter-spacing:2px
+}
+.sv-zones .sv-hidden-label {
+  fill:none
+}
+.sv-zones .sv-platform {
+  fill:#465258;
+  stroke:#677477;
+  stroke-width:1;
+  fill-opacity:.7
+}
+.sv-zones .sv-platform-label {
+  font-size:10px;
+  fill:#b7c4c5;
+  letter-spacing:1px
+}
+.sv-approaches {
+  fill:none;
+  stroke:#3c4b56;
+  stroke-width:4;
+  stroke-linejoin:round
+}
+.sv-junction {
+  fill:#13212c;
+  stroke:#8194a1;
+  stroke-width:3
+}
+.sv-gate {
+  font-size:16px;
+  fill:#899fac;
+  font-family:Consolas,monospace
+}
+.sv-boundary {
+  font-size:22px;
+  fill:#c8d8df;
+  font-weight:600
+}
+.sv-track {
+  cursor:pointer
+}
+.sv-track-hit {
+  fill:none;
+  stroke:transparent;
+  stroke-width:42
+}
+.sv-track-bed {
+  fill:none;
+  stroke:#293944;
+  stroke-width:17;
+  stroke-linecap:round
+}
+.sv-track-rail {
+  fill:none;
+  stroke:#657785;
+  stroke-width:4;
+  stroke-linecap:round
+}
+.sv-track-hatch {
+  fill:none;
+  stroke-width:23
+}
+.sv-track.is-occupied .sv-track-bed {
+  stroke:#203f56
+}
+.sv-track.is-occupied .sv-track-rail {
+  stroke:#5798c6
+}
+.sv-track.is-closed .sv-track-rail {
+  stroke:#e99b9b
+}
+.sv-track.is-selected .sv-track-bed,.sv-track:focus-visible .sv-track-bed {
+  stroke:#76d4bd;
+  stroke-width:25
+}
+.sv-track.is-selected .sv-track-rail {
+  stroke:#132b30
+}
+.sv-track-id {
+  fill:#e0e8ed;
+  font-size:21px;
+  font-weight:650;
+  font-family:Consolas,monospace
+}
+.sv-track-label {
+  fill:#acbac5;
+  font-size:17px
+}
+.sv-track-length {
+  fill:#8898a5;
+  font-size:15px
+}
+.sv-track.is-closed .sv-track-label {
+  fill:#ffb1b7;
+  font-weight:600
+}
+.sv-track-preview {
+  fill:none;
+  stroke:#c5b0fa;
+  stroke-width:3;
+  stroke-dasharray:9 9
+}
+.sv-route-actual {
+  fill:none;
+  stroke:#77d6bd;
+  stroke-width:5;
+  stroke-linecap:round;
+  stroke-linejoin:round
+}
+.sv-route-preview {
+  fill:none;
+  stroke:#c5b0fa;
+  stroke-width:4;
+  stroke-dasharray:11 9;
+  stroke-linejoin:round
+}
+.sv-conflict-label {
+  fill:#ffbc76;
+  font-size:14px;
+  font-weight:700;
+  letter-spacing:1px
+}
+.sv-track.is-conflict .sv-track-bed {
+  stroke:#9c6340
+}
+.sv-train {
+  cursor:pointer
+}
+.sv-train-outline {
+  fill:none;
+  stroke:transparent;
+  stroke-width:2
+}
+.sv-train-body {
+  fill:#438bb5;
+  stroke:#8cc9ec;
+  stroke-width:1.5
+}
+.sv-train.passenger .sv-train-body {
+  fill:#398c7d;
+  stroke:#9df5d9
+}
+.sv-train.local .sv-train-body {
+  fill:#517995;
+  stroke:#a0c0d4
+}
+.sv-train.is-waiting .sv-train-body {
+  fill:#835c2d;
+  stroke:#efbd78
+}
+.sv-train.is-selected .sv-train-outline,.sv-train:focus-visible .sv-train-outline {
+  stroke:#e2fff4;
+  fill:#77d6bd;
+  fill-opacity:.12
+}
+.sv-car-seam {
+  stroke:#142e41;
+  stroke-width:1;
+  opacity:.6
+}
+.sv-train-arrow {
+  fill:none;
+  stroke:#e8fff6;
+  stroke-width:2
+}
+.sv-train-id {
+  fill:white;
+  font-size:18px;
+  font-family:Consolas,monospace;
+  font-weight:700;
+  paint-order:stroke;
+  stroke:#193c50;
+  stroke-width:3;
+  stroke-linejoin:round;
+  pointer-events:none
+}
+.sv-wait-mark {
+  fill:#ffcc84;
+  font-size:25px;
+  font-weight:700
+}
+.sv-train.is-conflict .sv-train-outline {
+  stroke:#ffbd7d;
+  stroke-width:3
+}
+.sv-zoom {
+  position:absolute;
+  bottom:18px;
+  left:22px;
+  display:flex;
+  align-items:center;
+  border:1px solid #3c4d59;
+  border-radius:8px;
+  background:#16212a;
+  overflow:hidden
+}
+.sv-zoom button {
+  color:#e0f3ee;
+  background:none;
+  border:0;
+  width:33px;
+  height:33px;
+  font-size:20px
+}
+.sv-zoom button:hover {
+  background:#293d46
+}
+.sv-zoom span {
+  font:11px Consolas,monospace;
+  min-width:43px;
+  text-align:center;
+  color:#afbec9
+}
+.sv-pan-hint {
+  position:absolute;
+  bottom:25px;
+  right:24px;
+  font-size:10px;
+  color:#8b9dab
+}
+.sv-queue {
+  border-top:1px solid var(--sv-line);
+  padding:14px 24px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  min-height:65px
+}
+.sv-queue .sv-eyebrow {
+  margin-right:9px
+}
+.sv-queue b {
+  font-family:Consolas,monospace;
+  color:#eac082;
+  margin-left:8px
+}
+.sv-queue button {
+  border:1px solid #675333;
+  border-radius:6px;
+  background:#2a261f;
+  color:#f3ca8a;
+  font-size:12px;
+  padding:6px 10px
+}
+.sv-queue button span {
+  color:#c7b493;
+  font-size:11px;
+  margin:0 8px
+}
+.sv-queue button.is-selected {
+  outline:2px solid var(--sv-accent)
+}
+.sv-muted {
+  color:var(--sv-muted);
+  font-size:12px
+}
+.sv-legend {
+  display:flex;
+  gap:18px;
+  flex-wrap:wrap;
+  border-top:1px solid var(--sv-line);
+  padding:13px 24px;
+  color:#aebdc8;
+  font-size:11px
+}
+.sv-legend span {
+  display:flex;
+  align-items:center;
+  gap:7px
+}
+.sv-legend i {
+  display:inline-block;
+  width:15px;
+  height:5px;
+  background:#657785;
+  border-radius:1px
+}
+.sv-legend .occupied {
+  background:#5798c6
+}
+.sv-legend .waiting {
+  background:#efbd78
+}
+.sv-legend .closed {
+  height:9px;
+  background:repeating-linear-gradient(45deg,#914652 0 3px,#e79ca5 3px 5px)
+}
+.sv-legend .actual {
+  background:#77d6bd
+}
+.sv-legend .forecast {
+  background:none;
+  border-top:2px dashed #c5b0fa;
+  height:0
+}
+.sv-banner {
+  padding:9px 24px;
+  background:#263c4d;
+  border-bottom:1px solid #476179;
+  font-size:12px;
+  color:#cfe5fa
+}
+.sv-warning {
+  background:#3e3020;
+  border-color:#715334;
+  color:#ffda9e
+}
+.sv-preview {
+  background:#302b43;
+  border-color:#574867;
+  color:#e1d2ff
+}
+@media(max-width:700px) {
+  .sv-header {
+    align-items:flex-start;
+    padding:16px;
+    flex-direction:column
+  }
+  .sv-legend {
+    gap:12px;
+    padding:12px 16px
+  }
+  .sv-map {
+    min-height:320px
+  }
+  .sv-pan-hint {
+    display:none
+  }
+  .sv-map-meta {
+    left:16px;
+    right:16px;
+    font-size:8px
+  }
+  .sv-queue {
+    padding:12px 16px
+  }
+  .sv h2 {
+    font-size:18px
+  }
+}

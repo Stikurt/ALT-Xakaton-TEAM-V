@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "../test-results",
+    "rootDir": ".."
+  },
+  "include": [
+    "geometry.test.ts",
+    "../geometry.ts",
+    "../types.ts",
+    "../demo/fixtures.ts"
+  ]
+}
