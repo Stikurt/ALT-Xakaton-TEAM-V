@@ -457,8 +457,8 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
                     continue
 
                 choice_key = (
-                    start_s,
                     track_rank,
+                    start_s,
                     resource_rank,
                     track_id,
                     tuple(resources),
