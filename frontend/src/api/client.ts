@@ -55,10 +55,13 @@ export const api = {
   },
   control: (run_id: string, action: 'start' | 'pause' | 'speed' | 'reset', speed?: number) =>
     req<{ ok: boolean; run_id: string }>('POST', '/api/simulation/control', { command_id: newId(), run_id, action, speed }),
-  incident: (run_id: string, cmd: IncidentCmd) =>
-    req<{ ok: boolean; job_id: string; results: { message: string }[] }>('POST', '/api/incidents', {
-      command_id: newId(), run_id, ...cmd, kind: INCIDENT_TO_SERVER[cmd.kind],
-    }),
+  incident: (run_id: string, cmd: IncidentCmd | IncidentCmd[]) => {
+    const toServer = (c: IncidentCmd) => ({ ...c, kind: INCIDENT_TO_SERVER[c.kind] })
+    const body = Array.isArray(cmd)
+      ? { command_id: newId(), run_id, batch: cmd.map(toServer) } // пакет: один пересчёт на все сбои
+      : { command_id: newId(), run_id, ...toServer(cmd) }
+    return req<{ ok: boolean; job_id: string; results: { status?: number; message: string }[] }>('POST', '/api/incidents', body)
+  },
   replan: (run_id: string) => req<{ job_id: string }>('POST', '/api/replans', { run_id }),
   plan: async (id: string): Promise<Plan> => normalizePlan(await req<unknown>('GET', `/api/plans/${encodeURIComponent(id)}`)),
   apply: (id: string, run_id: string, expected_state_version: number) =>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../app/store'
 import Icon from '../app/Icon'
 import { fmtT } from '../app/labels'
-import type { IncidentKind } from '../api/types'
+import type { IncidentCmd, IncidentKind } from '../api/types'
 import s from './panels.module.css'
 
 const KINDS: { id: IncidentKind; label: string; hint: string }[] = [
@@ -20,6 +20,7 @@ export default function IncidentDialog() {
   const [kind, setKind] = useState<IncidentKind>('close_track')
   const [target, setTarget] = useState('')
   const [dur, setDur] = useState(600)
+  const [batch, setBatch] = useState<IncidentCmd[]>([])
 
   const options =
     kind === 'close_track'
@@ -58,12 +59,23 @@ export default function IncidentDialog() {
   const k = KINDS.find((x) => x.id === kind)!
   const invalid = !target || dur <= 0 || dur > 7200
 
+  const current = (): IncidentCmd => (kind === 'delay' ? { kind, target_id: target, delay_s: dur } : { kind, target_id: target, duration_s: dur })
+  const inBatch = (c: IncidentCmd) => batch.some((b) => b.kind === c.kind && b.target_id === c.target_id)
+  const addToBatch = () => {
+    if (invalid || inBatch(current())) return
+    setBatch((b) => [...b, current()])
+  }
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (invalid) return
-    const ok = await incident(kind === 'delay' ? { kind, target_id: target, delay_s: dur } : { kind, target_id: target, duration_s: dur })
-    if (ok) setOpen(false)
+    const items = batch.length ? [...batch, ...(invalid || inBatch(current()) ? [] : [current()])] : invalid ? [] : [current()]
+    if (!items.length) return
+    const ok = await incident(items.length === 1 ? items[0] : items)
+    if (ok) {
+      setBatch([])
+      setOpen(false)
+    }
   }
+  const label = (c: IncidentCmd) => `${KINDS.find((k) => k.id === c.kind)!.label}: ${c.target_id}, ${Math.round((c.duration_s ?? c.delay_s ?? 0) / 60)} мин`
 
   return (
     <div className={s.modalBack} onClick={() => setOpen(false)}>
@@ -90,9 +102,30 @@ export default function IncidentDialog() {
           <input id="incident-duration" type="number" min={60} max={7200} step={60} value={dur} onChange={(e) => setDur(Number(e.target.value))} />
           <small className="muted">≈ {Math.round(dur / 60)} мин. Сейчас {fmtT(snap.sim_time_s)}{kind !== 'delay' ? `, до ${fmtT(snap.sim_time_s + dur)}` : ''}</small>
         </label>
+        {batch.length > 0 && (
+          <div className={s.batch}>
+            <div className="eyebrow">Пакет сбоев: применяются вместе, затем один пересчёт</div>
+            <ul>
+              {batch.map((c, i) => (
+                <li key={i}>
+                  <span>{label(c)}</span>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setBatch((b) => b.filter((_, j) => j !== i))} aria-label="Убрать из пакета">
+                    <Icon name="close" size={12} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className={s.modalFoot}>
-          <span className="muted">После внесения автоматически начнётся пересчёт плана.</span>
-          <button type="submit" className="btn btn-danger" disabled={invalid || !!pending}><Icon name="alert" size={14} />Внести сбой</button>
+          <button type="button" className="btn btn-sm" onClick={addToBatch} disabled={invalid || inBatch(current())}
+            title="Собрать несколько сбоев и внести их одной командой">
+            <Icon name="plus" size={12} /> В пакет
+          </button>
+          <button type="submit" className="btn btn-danger" disabled={(invalid && !batch.length) || !!pending}>
+            <Icon name="alert" size={14} />
+            {batch.length ? `Внести пакет (${batch.length + (invalid || inBatch(current()) ? 0 : 1)})` : 'Внести сбой'}
+          </button>
         </div>
       </form>
     </div>

@@ -12,6 +12,7 @@ import LoginScreen from '../panels/LoginScreen'
 import HistoryBar from '../panels/HistoryBar'
 import { CsvDialog, HelpDialog } from '../panels/Dialogs'
 import Timeline from '../timeline/Timeline'
+import Journal from '../timeline/Journal'
 import { useHotkeys } from './useHotkeys'
 import { startAutopilot } from './autopilot'
 import s from './App.module.css'
@@ -52,6 +53,8 @@ function Workspace() {
   const previewPlan = useStore(selectPreviewPlan)
   const httpPolling = useStore((x) => x.httpPolling)
   const [timelineOpen, setTimelineOpen] = useState(true)
+  const [bottomTab, setBottomTab] = useState<'gantt' | 'journal'>('gantt')
+  const journalCount = useStore((x) => x.journal.length)
   useHotkeys()
   useEffect(() => startAutopilot(), [])
 
@@ -95,12 +98,21 @@ function Workspace() {
       </main>
       <RightPanel />
       <section className={s.bottom}>
-        <button className={s.bottomToggle} onClick={() => setTimelineOpen((v) => !v)} aria-expanded={timelineOpen}>
-          <span className={s.caret} data-open={timelineOpen} />
-          <span className="eyebrow">Диаграмма операций</span>
-          <span className="muted">пути · горловины · ресурсы</span>
-        </button>
-        {timelineOpen && <Timeline />}
+        <div className={s.bottomBar}>
+          <button className={s.caretBtn} onClick={() => setTimelineOpen((v) => !v)} aria-expanded={timelineOpen} aria-label="Свернуть нижнюю панель">
+            <span className={s.caret} data-open={timelineOpen} />
+          </button>
+          {(['gantt', 'journal'] as const).map((t) => (
+            <button key={t} className={`${s.bottomTab} ${bottomTab === t && timelineOpen ? s.bottomTabOn : ''}`}
+              onClick={() => { setBottomTab(t); setTimelineOpen(true) }}>
+              {t === 'gantt' ? 'Диаграмма операций' : `Журнал событий${journalCount ? ` · ${journalCount}` : ''}`}
+            </button>
+          ))}
+          <span className="muted" style={{ marginLeft: 'auto', fontSize: 11.5 }}>
+            {bottomTab === 'gantt' ? 'пути, горловины и ресурсы по модельному времени' : 'факты запуска по модельному времени'}
+          </span>
+        </div>
+        {timelineOpen && (bottomTab === 'gantt' ? <Timeline /> : <Journal />)}
       </section>
       <IncidentDialog />
       <PlanCompare />

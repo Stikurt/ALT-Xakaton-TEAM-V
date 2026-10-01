@@ -1,4 +1,5 @@
-// ИИ-диспетчер: автономный режим принятия решений поверх планировщика Н.
+// ИИ-помощник диспетчера поверх планировщика Н. Режимы: «Советы» (по умолчанию) — сам следит за станцией,
+// при конфликте или сбое считает варианты и рекомендует лучший, принимает человек; «Автопилот» — принимает сам.
 // Он не строит расписание сам и не обходит проверки сервера: просит пересчёт, выбирает вариант по явным правилам
 // и принимает его через тот же POST /api/plans/{id}/apply, что и человек. Сервер может отказать (409) — тогда повтор.
 // Работает в браузере диспетчера, пока вкладка открыта (серверный автопилот — вопрос к И, см. docs/decisions.md).
@@ -6,7 +7,7 @@ import { api, HttpError } from '../api/client'
 import type { Plan, Snapshot } from '../api/types'
 import { fmtDur, fmtT, STRATEGY } from './labels'
 import { useStore } from './store'
-import { pickBest } from './autopilotPolicy'
+import { computeTips, pickBest } from './autopilotPolicy'
 
 export { pickBest }
 
@@ -28,6 +29,9 @@ export function startAutopilot(): () => void {
   let epochSeenAt = 0
   let epochSeen = -2
   let ownApply = false
+  let tipsVersion = -1
+  let lastPlanId: string | null = null
+  let tipsAt = -999
 
   const st = () => useStore.getState()
 
@@ -51,7 +55,8 @@ export function startAutopilot(): () => void {
       return
     }
     if ((best.metrics.changed_count ?? 1) === 0 && nConf === 0) {
-      useStore.setState((x) => ({ replan: { ...x.replan, status: 'idle', plans: [], job_id: null } }))
+      // в автопилоте варианты убираем; в режиме советов оставляем — диспетчер может сам их сравнить
+      if (st().autopilot.mode === 'auto') useStore.setState((x) => ({ replan: { ...x.replan, status: 'idle', plans: [], job_id: null } }))
       if (st().autopilot.log[0]?.kind !== 'keep')
         st().apLog({ kind: 'keep', title: 'Оставил текущий план', reasons: ['Лучший вариант не меняет будущих назначений, конфликтов нет'], plan_id: best.id })
       st().apUpdate({ status: 'watching', note: 'Текущий план оптимален' })
@@ -71,13 +76,22 @@ export function startAutopilot(): () => void {
     if (best.index_forecast) reasons.push(`Индекс эффективности (прогноз 15 мин): ${best.index_forecast.value}`)
     for (const e of best.explanations.slice(0, 3)) reasons.push(e.message)
 
+    if (st().autopilot.mode === 'advise') {
+      const title = `Рекомендую «${STRATEGY[best.strategy] ?? best.strategy}»`
+      useStore.setState((x) => ({ autopilot: { ...x.autopilot, advice: { plan_id: best.id, job_id: x.replan.job_id ?? '', epoch: snap.epoch, title, reasons, at_sim: snap.sim_time_s } } }))
+      st().apLog({ kind: 'advice', title, reasons, plan_id: best.id })
+      st().toast('info', `ИИ-помощник: ${title.toLowerCase()} — ${reasons[1] ?? reasons[0]}`)
+      st().apUpdate({ status: 'watching', note: 'Есть рекомендация — примите или отклоните' })
+      busy = false
+      return
+    }
     st().apUpdate({ status: 'applying', note: `Принимаю ${best.id}` })
     try {
       await api.apply(best.id, snap.run_id, snap.state_version)
       retries = 0
       ownApply = true // следующий рост epoch — это наше же принятие плана, а не новый сбой
       useStore.setState((s) => ({
-        autopilot: { ...s.autopilot, applied: s.autopilot.applied + 1 },
+        autopilot: { ...s.autopilot, applied: s.autopilot.applied + 1, advice: null },
         replan: { ...s.replan, status: 'idle', plans: [], job_id: null },
         compareOpen: false, previewPlanId: null,
       }))
@@ -102,14 +116,25 @@ export function startAutopilot(): () => void {
   const tick = () => {
     const s = st()
     const snap = s.snapshot
-    if (!s.autopilot.enabled || !snap) return
+    if (s.autopilot.mode === 'off' || !snap) return
+    // советы-наблюдения обновляются всегда, когда помощник включён
+    if (snap.state_version !== tipsVersion || snap.sim_time_s - tipsAt >= 10) {
+      tipsVersion = snap.state_version
+      tipsAt = snap.sim_time_s
+      const tips = computeTips(s.history?.snapshot ?? snap)
+      if (JSON.stringify(tips) !== JSON.stringify(s.autopilot.tips)) s.apUpdate({ tips })
+    }
+    // рекомендация устарела — обстановка изменилась после её расчёта
+    if (s.autopilot.advice && s.autopilot.advice.epoch !== snap.epoch) {
+      s.apUpdate({ advice: null })
+    }
     const blocked = s.conn !== 'online' || !!s.history || s.user?.role === 'viewer'
     if (blocked) {
       if (s.autopilot.status !== 'paused')
-        s.apUpdate({ status: 'paused', note: s.history ? 'Вы в режиме истории' : s.conn !== 'online' ? 'Нет связи с сервером' : 'Нет прав на принятие планов' })
+        s.apUpdate({ status: 'paused', note: s.history ? 'Вы в режиме истории' : s.conn !== 'online' ? 'Нет связи с сервером' : 'Наблюдатель: только советы, без пересчёта' })
       return
     }
-    if (s.autopilot.status === 'paused') s.apUpdate({ status: 'watching', note: 'Слежу за конфликтами и сбоями' })
+    if (s.autopilot.status === 'paused') s.apUpdate({ status: 'watching', note: s.autopilot.mode === 'auto' ? 'Сам принимаю лучший допустимый план' : 'Слежу за станцией и даю советы' })
     if (busy) return
     // 1) готовы варианты — принять решение
     if (s.replan.status === 'done' && s.replan.job_id && s.replan.job_id !== handledJob) {
@@ -118,6 +143,9 @@ export function startAutopilot(): () => void {
       handledEpoch = snap.epoch
       void decide(s.replan.plans, snap)
       return
+    }
+    if (s.replan.status !== 'running' && (s.autopilot.status === 'replanning' || s.autopilot.status === 'deciding')) {
+      s.apUpdate({ status: 'watching', note: s.autopilot.advice ? 'Есть рекомендация — примите или отклоните' : s.autopilot.mode === 'auto' ? 'Сам принимаю лучший допустимый план' : 'Слежу за станцией и даю советы' })
     }
     if (s.replan.status === 'running') {
       if (s.autopilot.status !== 'replanning') s.apUpdate({ status: 'replanning', note: 'Планировщик считает варианты' })
@@ -130,15 +158,18 @@ export function startAutopilot(): () => void {
     if (snap.epoch !== epochSeen) {
       epochSeen = snap.epoch
       epochSeenAt = Date.now()
-      if (ownApply) {
+      // принятие плана (нами или человеком) тоже меняет epoch — это не новый сбой
+      if (ownApply || snap.active_plan_id !== lastPlanId) {
         ownApply = false
         handledEpoch = snap.epoch
       }
+      lastPlanId = snap.active_plan_id
     }
     // после сбоя сервер сам запускает пересчёт — ждём его 3 с, чтобы не заказывать второй
     const newIncident = snap.epoch !== -1 && handledEpoch !== -2 && snap.epoch !== handledEpoch && s.replan.status !== 'done' &&
       Date.now() - epochSeenAt > 3000
-    if ((newConflicts || newIncident) && Date.now() - lastReplanAt > REPLAN_COOLDOWN_MS) {
+    const settled = Date.now() - epochSeenAt > 3000 // сразу после сбоя сервер сам считает варианты
+    if (((newConflicts && settled) || newIncident) && Date.now() - lastReplanAt > REPLAN_COOLDOWN_MS) {
       handledSig = sig
       handledEpoch = snap.epoch
       const why = newConflicts
@@ -149,7 +180,7 @@ export function startAutopilot(): () => void {
   }
 
   const unsub = useStore.subscribe((s, prev) => {
-    if (s.autopilot.enabled && !prev.autopilot.enabled) {
+    if (s.autopilot.mode !== prev.autopilot.mode && s.autopilot.mode !== 'off') {
       // при включении учитываем уже готовые варианты и текущие конфликты
       handledJob = null
       handledSig = ''

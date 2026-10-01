@@ -17,27 +17,45 @@ export default function RightPanel() {
   )
 }
 
-/** Дуговой индикатор 0–100 с порогами 50 и 80. */
+/** Индекс: число, категория и шкала 0–100 с порогами 50 и 80 (как на шкальном приборе). */
 export function IndexGauge({ idx, size = 92, ghost }: { idx: StationIndex | null; size?: number; ghost?: boolean }) {
-  const r = 38
-  const c = Math.PI * r
-  const v = idx ? idx.value / 100 : 0
   const col = !idx ? 'var(--muted)' : idx.category === 'norm' ? 'var(--ok)' : idx.category === 'attention' ? 'var(--wait)' : 'var(--closed)'
-  const tick = (p: number) => {
-    const a = Math.PI * (1 - p)
-    return { x1: 50 + Math.cos(a) * 31, y1: 50 - Math.sin(a) * 31, x2: 50 + Math.cos(a) * 45, y2: 50 - Math.sin(a) * 45 }
-  }
+  const w = Math.round(size * 1.35)
+  const v = idx ? Math.max(0, Math.min(100, idx.value)) : 0
   return (
-    <svg width={size} height={size * 0.62} viewBox="0 0 100 62" aria-label={idx ? `Индекс ${idx.value}, ${INDEX_CAT[idx.category]}` : 'Индекс: нет данных'}>
-      <path d="M12 50 A38 38 0 0 1 88 50" fill="none" stroke="var(--panel-2)" strokeWidth="8" strokeLinecap="round" />
-      <path d="M12 50 A38 38 0 0 1 88 50" fill="none" stroke={col} strokeWidth="8" strokeLinecap="round"
-        strokeDasharray={`${c * v} ${c}`} style={{ filter: ghost ? undefined : `drop-shadow(0 0 4px ${col})`, opacity: ghost ? 0.55 : 1 }} />
-      {[0.5, 0.8].map((p) => <line key={p} {...tick(p)} stroke="var(--bg)" strokeWidth="1.5" />)}
-      <text x="50" y="47" textAnchor="middle" fill="var(--text)" style={{ font: '800 22px var(--mono)' }}>{idx ? idx.value : '—'}</text>
-      <text x="50" y="60" textAnchor="middle" fill={col} style={{ font: '600 8px var(--display)', letterSpacing: '.12em' }}>
-        {idx ? INDEX_CAT[idx.category].toUpperCase() : 'НЕТ ДАННЫХ'}
-      </text>
-    </svg>
+    <div className={s.meter} style={{ width: w, opacity: ghost ? 0.7 : 1 }}
+      aria-label={idx ? `Индекс ${idx.value}, ${INDEX_CAT[idx.category]}` : 'Индекс: нет данных'}>
+      <div className={s.meterTop}>
+        <span className={`mono ${s.meterVal}`} style={{ color: idx ? 'var(--text)' : 'var(--muted)' }}>{idx ? idx.value : '—'}</span>
+        <span className={s.meterCat} style={{ color: col }}>{idx ? INDEX_CAT[idx.category] : 'нет данных'}</span>
+      </div>
+      <svg width={w} height={14} viewBox={`0 0 ${w} 14`} aria-hidden="true">
+        <rect x={0} y={4} width={w * 0.5} height={5} fill="rgba(255,77,94,.28)" />
+        <rect x={w * 0.5} y={4} width={w * 0.3} height={5} fill="rgba(255,181,59,.28)" />
+        <rect x={w * 0.8} y={4} width={w * 0.2} height={5} fill="rgba(109,255,176,.25)" />
+        {idx && <rect x={Math.min(w - 3, (w * v) / 100 - 1.5)} y={0} width={3} height={13} fill={col} />}
+      </svg>
+    </div>
+  )
+}
+
+/** Тренд фактического индекса за последние 15 минут модели (значения сервера, без пересчёта). */
+function Trend() {
+  const pts = useStore((x) => x.indexTrend)
+  if (pts.length < 2) return null
+  const W = 300, H = 34
+  const t0 = pts[0].t, t1 = pts[pts.length - 1].t || 1
+  const xs = (t: number) => ((t - t0) / Math.max(1, t1 - t0)) * W
+  const ys = (v: number) => H - 2 - (v / 100) * (H - 4)
+  const d = pts.map((p, i) => `${i ? 'L' : 'M'}${xs(p.t).toFixed(1)},${ys(p.v).toFixed(1)}`).join('')
+  return (
+    <div className={s.trend}>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" width="100%" height={H} aria-label="Индекс за последние 15 минут">
+        {[50, 80].map((v) => <line key={v} x1={0} x2={W} y1={ys(v)} y2={ys(v)} stroke="var(--border-strong)" strokeDasharray="2 3" />)}
+        <path d={d} fill="none" stroke="var(--occupied)" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+      </svg>
+      <div className={s.trendAxis}><span className="mono">{fmtT(t0)}</span><span>пороги 50 и 80</span><span className="mono">{fmtT(t1)}</span></div>
+    </div>
   )
 }
 
@@ -71,11 +89,12 @@ function IndexCard() {
       <div className={s.idxHead}>
         <div>
           <div className="eyebrow">Индекс эффективности</div>
-          <div className={s.idxSub}>{idx ? `факт · окно ${Math.max(1, Math.round(idx.window_s / 60))} мин` : 'появится после запуска'}</div>
+          <div className={s.idxSub}>{idx ? `Факт за ${Math.max(1, Math.round(idx.window_s / 60))} мин` : 'Появится после запуска'}</div>
           <div className={s.idxFormula}>I = 100 · (1 − Σ wᵢ·pᵢ)</div>
         </div>
         <IndexGauge idx={idx} />
       </div>
+      <Trend />
       {idx && <Factors idx={idx} />}
     </section>
   )

@@ -21,7 +21,7 @@ export default function TopBar() {
   const openCsv = useStore((x) => x.openCsv)
   const logout = useStore((x) => x.logout)
   const ap = useStore((x) => x.autopilot)
-  const setAutopilot = useStore((x) => x.setAutopilot)
+  const setMode = useStore((x) => x.setAssistantMode)
   const httpPolling = useStore((x) => x.httpPolling)
   const noAuth = useStore((x) => x.noAuthBackend)
   const now = useSimNow(10)
@@ -88,9 +88,10 @@ export default function TopBar() {
           title={!started ? 'Сначала запустите симуляцию' : 'S'}>
           <Icon name="alert" size={14} /> Внести сбой
         </button>
-        <button className={`btn ${ap.enabled ? s.apOn : s.apOff}`} onClick={() => setAutopilot(!ap.enabled)} disabled={role === 'viewer'}
-          aria-pressed={ap.enabled} title="ИИ-диспетчер сам пересчитывает и принимает план (A)">
-          <span className={s.apDot} /> ИИ-диспетчер{ap.enabled ? ': вкл' : ''}
+        <button className={`btn ${ap.mode === 'auto' ? s.apOn : ap.mode === 'advise' ? s.apAdvise : s.apOff}`}
+          onClick={() => setMode(ap.mode === 'off' ? 'advise' : ap.mode === 'advise' && role !== 'viewer' ? 'auto' : 'off')}
+          title="ИИ-помощник: выкл → советы → автопилот (A)">
+          <span className={s.apDot} /> ИИ: {ap.mode === 'off' ? 'выкл' : ap.mode === 'advise' ? `советы${ap.tips.length || ap.advice ? ` · ${ap.tips.length + (ap.advice ? 1 : 0)}` : ''}` : 'автопилот'}
         </button>
         <button className="btn btn-ghost" onClick={() => openCsv()} disabled={offline} title="Отчёт по запуску (CSV)">
           <Icon name="download" size={14} /> CSV

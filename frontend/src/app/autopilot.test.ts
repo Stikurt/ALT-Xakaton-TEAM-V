@@ -18,3 +18,38 @@ describe('правило выбора ИИ-диспетчера', () => {
     expect(pickBest([mk('a', 'feasible', 0, 300, 5), mk('b', 'feasible', 0, 300, 2)])!.id).toBe('b')
   })
 })
+
+import { computeTips } from './autopilotPolicy'
+import { Station } from '../mock/sim'
+import { plan } from '../mock/planner'
+import { normalizeSnapshot } from '../api/adapt'
+
+describe('советы ИИ-помощника', () => {
+  const run = (n: number, setup?: (st: Station) => void) => {
+    const st = new Station()
+    st.applyPlan(plan(st.snapshot(), 'earliest_departure'))
+    st.paused = false
+    st.process()
+    setup?.(st)
+    for (let i = 0; i < n; i++) st.step()
+    return normalizeSnapshot(st.snapshot())
+  }
+  it('на старте замечаний нет', () => {
+    expect(computeTips(run(10))).toEqual([])
+  })
+  it('сообщает о поезде, который долго ждёт у W', () => {
+    const tips = computeTips(run(1500))
+    const wait = tips.find((t) => t.key.startsWith('wait-'))
+    expect(wait?.text).toMatch(/ждёт у W/)
+  })
+  it('предупреждает о скором открытии закрытого пути', () => {
+    const tips = computeTips(run(560, (st) => st.incident('close_track', 'P09', 600)))
+    expect(tips.some((t) => t.key === 'open-P09')).toBe(true)
+  })
+  it('не больше 6 советов, сначала самые важные', () => {
+    const tips = computeTips(run(3000))
+    expect(tips.length).toBeLessThanOrEqual(6)
+    const order = { bad: 0, warn: 1, info: 2 }
+    for (let i = 1; i < tips.length; i++) expect(order[tips[i].severity]).toBeGreaterThanOrEqual(order[tips[i - 1].severity])
+  })
+})

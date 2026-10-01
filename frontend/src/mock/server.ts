@@ -189,12 +189,18 @@ function route(method: string, path: string, body: Dict<any>): Res { // eslint-d
   }
   if (p === '/api/incidents') {
     if ((e = need('dispatcher')) || (e = checkRun())) return e
-    const [status, code, msg] = st.incident(body.kind, body.target_id, Number(body.duration_s || 600), Number(body.delay_s || 300))
-    if (status !== 200) return remember(status, { code, message: msg, details: {} })
+    // пакет сбоев (ТЗ разд. 4): применить все валидные команды, затем один пересчёт
+    const items: Dict<any>[] = Array.isArray(body.batch) && body.batch.length ? body.batch : [body] // eslint-disable-line @typescript-eslint/no-explicit-any
+    const results = items.map((it) => {
+      const [status, code, message] = st.incident(it.kind, it.target_id, Number(it.duration_s || 600), Number(it.delay_s || 300))
+      return { status, code, message, target_id: it.target_id }
+    })
+    const ok = results.filter((r) => r.status === 200)
+    if (!ok.length) return remember(results[0].status, { code: results[0].code, message: results[0].message, details: { results } })
     hub.remember()
     const job = hub.requestReplan()
     hub.publish()
-    return remember(200, { ok: true, results: [{ status, code, message: msg, target_id: body.target_id }], job_id: job, state_version: st.state_version })
+    return remember(200, { ok: true, results, job_id: job, state_version: st.state_version })
   }
   if (p === '/api/replans') {
     if ((e = need('dispatcher')) || (e = checkRun())) return e

@@ -38,13 +38,26 @@ export interface ApDecision {
   id: number
   at_sim: number
   at_real: number
-  kind: 'apply' | 'keep' | 'skip' | 'replan' | 'error' | 'info'
+  kind: 'apply' | 'keep' | 'skip' | 'replan' | 'error' | 'info' | 'advice'
   title: string
   reasons: string[]
   plan_id?: string
 }
+export interface JEvent { id: number; t: number; kind: 'arrive' | 'enter' | 'depart' | 'incident' | 'plan' | 'conflict' | 'resolved' | 'run'; text: string; train?: string; bad?: boolean }
+export type AssistantMode = 'off' | 'advise' | 'auto'
+export interface Tip {
+  key: string
+  severity: 'info' | 'warn' | 'bad'
+  text: string
+  action?: { kind: 'replan' } | { kind: 'select'; target: Selection }
+}
+export interface Advice { plan_id: string; job_id: string; epoch: number; title: string; reasons: string[]; at_sim: number }
 export interface AutopilotState {
+  mode: AssistantMode
+  /** true, когда ИИ сам принимает решения (режим «Автопилот») */
   enabled: boolean
+  tips: Tip[]
+  advice: Advice | null
   status: 'off' | 'watching' | 'replanning' | 'deciding' | 'applying' | 'paused'
   note: string
   log: ApDecision[]
@@ -78,6 +91,8 @@ interface State {
   toasts: Toast[]
   latency: { last_ms: number | null }
   autopilot: AutopilotState
+  indexTrend: { t: number; v: number }[]
+  journal: JEvent[]
 
   boot: () => () => void
   login: (u: string, p: string) => Promise<void>
@@ -85,7 +100,7 @@ interface State {
   select: (s: Selection) => void
   setNav: (n: Nav) => void
   control: (action: 'start' | 'pause' | 'speed' | 'reset', speed?: number) => Promise<void>
-  incident: (cmd: IncidentCmd) => Promise<boolean>
+  incident: (cmd: IncidentCmd | IncidentCmd[]) => Promise<boolean>
   requestReplan: () => Promise<void>
   applyPlan: (id: string) => Promise<void>
   setPreview: (id: string | null) => void
@@ -100,6 +115,7 @@ interface State {
   toast: (kind: Toast['kind'], text: string) => void
   dismissToast: (id: number) => void
   setAutopilot: (enabled: boolean) => void
+  setAssistantMode: (m: AssistantMode) => void
   apUpdate: (patch: Partial<AutopilotState>) => void
   apLog: (d: Omit<ApDecision, 'id' | 'at_real' | 'at_sim'>) => void
 }
@@ -137,14 +153,23 @@ export const useStore = create<State>((set, get) => {
       }
     }
     const runChanged = prev && prev.run_id !== snap.run_id
-    set((s) => ({
+    set((s) => {
+      const trend = runChanged ? [] : s.indexTrend
+      const last = trend[trend.length - 1]
+      const nextTrend = snap.index && (!last || snap.sim_time_s - last.t >= 5)
+        ? [...trend.filter((p) => p.t >= snap.sim_time_s - 900), { t: snap.sim_time_s, v: snap.index.value }]
+        : trend
+      return {
+      indexTrend: nextTrend,
+      journal: runChanged || !prev ? (prev ? [{ id: ++toastSeq, t: snap.sim_time_s, kind: 'run' as const, text: `Новый запуск ${snap.run_id}` }] : []) : [...diffEvents(prev, snap), ...s.journal].slice(0, 300),
       snapshot: snap,
       topology: topo ?? s.topology,
       lastUpdate: Date.now(),
       ...(runChanged
         ? { replan: emptyReplan, previewPlanId: null, compareOpen: false, selection: null, history: null, nav: s.nav === 'history' ? 'overview' : s.nav }
         : {}),
-    }))
+      }
+    })
     syncClock({ sim_time_s: snap.sim_time_s, speed: snap.speed, paused: snap.paused })
   }
 
@@ -254,7 +279,7 @@ export const useStore = create<State>((set, get) => {
               status: 'done', job_id: p.job_id, plans, identical, calc_ms: p.calc_ms ?? null, error: null,
               finished_at_epoch: p.stale ? -999 : plans[0]?.based_on_epoch ?? null, baseline: p.baseline_index ?? null,
             },
-            compareOpen: get().history || get().autopilot.enabled ? get().compareOpen : true,
+            compareOpen: get().history || get().autopilot.mode !== 'off' ? get().compareOpen : true,
           })
         })()
         break
@@ -344,7 +369,9 @@ export const useStore = create<State>((set, get) => {
     pending: null,
     toasts: [],
     latency: { last_ms: null },
-    autopilot: { enabled: false, status: 'off', note: '', log: [], applied: 0 },
+    autopilot: { mode: 'advise', enabled: false, tips: [], advice: null, status: 'watching', note: 'Слежу за станцией и даю советы', log: [], applied: 0 },
+    indexTrend: [],
+    journal: [],
 
     boot: () => {
       api.me().then(
@@ -403,7 +430,10 @@ export const useStore = create<State>((set, get) => {
     },
     incident: async (cmd) => {
       const r = await guarded('incident', (run) => api.incident(run, cmd))
-      if (r) get().toast('ok', r.results.map((x) => x.message).join('; ') + '. Идёт пересчёт плана.')
+      if (r) {
+        const bad = r.results.filter((x) => x.status && x.status !== 200)
+        get().toast(bad.length ? 'info' : 'ok', r.results.map((x) => x.message).join('; ') + '. Идёт пересчёт плана.')
+      }
       return !!r
     },
     requestReplan: async () => {
@@ -416,7 +446,7 @@ export const useStore = create<State>((set, get) => {
       const r = await guarded('apply', (run) => api.apply(id, run, snap.state_version))
       if (r) {
         get().toast('ok', 'План принят. Новые назначения уже исполняются.')
-        set({ compareOpen: false, previewPlanId: null, replan: emptyReplan })
+        set((s) => ({ compareOpen: false, previewPlanId: null, replan: emptyReplan, autopilot: { ...s.autopilot, advice: null } }))
       }
     },
     setPreview: (previewPlanId) => set({ previewPlanId }),
@@ -462,16 +492,21 @@ export const useStore = create<State>((set, get) => {
       window.setTimeout(() => get().dismissToast(id), kind === 'error' ? 7000 : 4000)
     },
     dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
-    setAutopilot: (enabled) => {
+    setAutopilot: (enabled) => get().setAssistantMode(enabled ? 'auto' : 'advise'),
+    setAssistantMode: (mode) => {
       const { user, autopilot } = get()
-      if (enabled && user?.role === 'viewer') {
-        get().toast('error', 'Включить ИИ-диспетчера может только диспетчер или администратор.')
+      if (mode === 'auto' && user?.role === 'viewer') {
+        get().toast('error', 'Автопилот может включить только диспетчер или администратор. Советы доступны.')
         return
       }
-      set({ autopilot: { ...autopilot, enabled, status: enabled ? 'watching' : 'off', note: enabled ? 'Слежу за конфликтами и сбоями' : '' } })
-      get().apLog({ kind: 'info', title: enabled ? 'ИИ-диспетчер включён' : 'ИИ-диспетчер выключен', reasons: enabled
-        ? ['Сам пересчитывает план при конфликте или сбое и принимает лучший допустимый вариант']
-        : ['Решения снова принимает диспетчер'] })
+      if (mode === autopilot.mode) return
+      const note = mode === 'off' ? '' : mode === 'advise' ? 'Слежу за станцией и даю советы' : 'Сам принимаю лучший допустимый план'
+      set({ autopilot: { ...autopilot, mode, enabled: mode === 'auto', status: mode === 'off' ? 'off' : 'watching', note, advice: mode === 'off' ? null : autopilot.advice, tips: mode === 'off' ? [] : autopilot.tips } })
+      const title = mode === 'off' ? 'ИИ-помощник выключен' : mode === 'advise' ? 'Режим «Советы»' : 'Режим «Автопилот»'
+      const reasons = mode === 'off' ? ['Решения и анализ — только диспетчер']
+        : mode === 'advise' ? ['При конфликте или сбое сам считает варианты и рекомендует лучший; принимает диспетчер']
+          : ['При конфликте или сбое сам пересчитывает и принимает лучший допустимый вариант']
+      get().apLog({ kind: 'info', title, reasons })
     },
     apUpdate: (patch) => set((s) => ({ autopilot: { ...s.autopilot, ...patch } })),
     apLog: (d) => set((s) => ({
@@ -499,3 +534,50 @@ export const selectRole = (s: State): Role => s.user?.role ?? 'viewer'
 
 // Для отладки и e2e-проверок в dev-сборке
 if (import.meta.env.DEV) (window as unknown as { __store: typeof useStore }).__store = useStore
+
+/** События для журнала — сравнение двух подряд пришедших снимков сервера (только факты, без прогнозов). */
+function diffEvents(a: Snapshot, b: Snapshot): JEvent[] {
+  if (a.run_id !== b.run_id || b.state_version === a.state_version) return []
+  const out: JEvent[] = []
+  const ev = (kind: JEvent['kind'], text: string, train?: string, bad?: boolean) => out.push({ id: ++toastSeq, t: b.sim_time_s, kind, text, train, bad })
+  const at = Object.fromEntries(a.trains.map((t) => [t.id, t]))
+  for (const t of b.trains) {
+    const p = at[t.id]
+    if (!p || p.status === t.status) continue
+    if (t.status === 'waiting_entry') ev('arrive', `${t.id} прибыл к границе W`, t.id)
+    else if (t.status === 'on_track' && p.status === 'moving' && p.track_id === null) ev('enter', `${t.id} принят на ${t.track_id}`, t.id)
+    else if (t.status === 'departed') {
+      const late = (t.actual_departure_s ?? b.sim_time_s) - t.scheduled_departure_s
+      ev('depart', `${t.id} отправлен${late > 0 ? `, опоздание ${Math.round(late / 60)} мин` : ' по графику'}`, t.id, late > 0)
+    }
+  }
+  const tr = Object.fromEntries(a.tracks.map((t) => [t.id, t]))
+  for (const t of b.tracks) {
+    if (tr[t.id]?.availability === 'open' && t.availability === 'closed') ev('incident', `${t.id} закрыт до ${fmtTime(t.closed_until_s)}`, undefined, true)
+    if (tr[t.id]?.availability === 'closed' && t.availability === 'open') ev('resolved', `${t.id} снова открыт`)
+  }
+  const rs = Object.fromEntries(a.resources.map((r) => [r.id, r]))
+  for (const r of b.resources) {
+    if (rs[r.id]?.availability === 'available' && r.availability === 'unavailable') ev('incident', `${r.id} недоступен до ${fmtTime(r.unavailable_until_s)}`, undefined, true)
+    if (rs[r.id]?.availability === 'unavailable' && r.availability === 'available') ev('resolved', `${r.id} снова доступен`)
+  }
+  for (const t of b.trains) {
+    const p = at[t.id]
+    if (p && t.status === 'scheduled' && t.expected_arrival_s > p.expected_arrival_s)
+      ev('incident', `${t.id}: прибытие перенесено на ${fmtTime(t.expected_arrival_s)}`, t.id, true)
+  }
+  if (b.active_plan_id && b.active_plan_id !== a.active_plan_id) ev('plan', `Принят план ${b.active_plan_id}`)
+  // кратковременные ожидания горловины не засоряют журнал: только нарушения плана и закрытия/недоступность
+  const notable = (c: Snapshot['conflicts'][number]) => c.kind === 'plan' || c.code === 'TRACK_CLOSED' || c.code === 'RESOURCE_UNAVAILABLE'
+  const ca = new Set(a.conflicts.filter(notable).map((c) => c.id))
+  const cb = new Set(b.conflicts.filter(notable).map((c) => c.id))
+  for (const c of b.conflicts.filter(notable)) if (!ca.has(c.id)) ev('conflict', c.message, c.entity_ids[0], true)
+  const gone = a.conflicts.filter(notable).filter((c) => !cb.has(c.id)).length
+  if (gone) ev('resolved', gone === 1 ? 'Конфликт снят' : `Снято конфликтов: ${gone}`)
+  return out.reverse()
+}
+function fmtTime(s: number | null) {
+  if (s === null) return '—'
+  const m = Math.floor(s / 60), sec = s % 60
+  return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+}
