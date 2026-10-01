@@ -9,3 +9,8 @@ tests/local-results.txt
 node_modules/
 dist/
 .DS_Store
+.coverage
+htmlcov/
+*.log
+.idea/
+.vscode/

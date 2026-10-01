@@ -100,14 +100,25 @@ VITE_BACKEND=http://127.0.0.1:8000 npm run dev
 `severity error/warning`, объяснения-строки, неразмещённые операции, имена сбоев `delay_train`/`locomotive_unavailable`.
 Если backend прислал только `active_plan_id` или `replan_finished.plan_ids`, планы читаются через `GET /api/plans/{id}`.
 
-Пока у backend нет `/api/me` и `/ws` (этап 1), интерфейс входит без пароля как наблюдатель и читает снимок по HTTP
-раз в 2 с (индикатор «Только HTTP»), команды заблокированы. Проверено вживую на ветке `backend` (commit 45bf1b8) с PostgreSQL 16.
+Контракт с backend (ветка `develop`), проверяется `src/api/client.test.ts` на файлах `shared/examples`,
+которые генерирует `scripts/generate_contracts.py` из моделей backend:
+
+- вход: `POST /api/login` / `GET /api/me` возвращают `csrf_token`; клиент держит его в памяти вкладки и
+  сам добавляет `X-CSRF-Token` ко всем POST (`src/api/client.ts`); при `403 CSRF_FAILED` один раз
+  обновляет токен через `/api/me` и повторяет команду;
+- варианты плана: `GET /api/plans/{id}` → `{plan, stale, applicable}`; метрики backend
+  `total_positive_delay_s` / `changed_future_assignments`; устаревание варианта — по `state_version`;
+- сбои: один — `POST /api/incidents`, пакет — `POST /api/incidents/batch` с полем `incidents` (1–50);
+- история: `available_from_s` / `available_to_s` в ответе `/api/history`;
+- узлы, горловины, депо и пути приёма берутся из топологии станции, а не из зашитых id.
+
+Режим «без входа, наблюдатель» остаётся только для старого backend без `/api/me` (ответ 404).
 
 ## Проверки
 
 ```bash
-cd frontend && npm test            # vitest: адаптер на примерах И, геометрия, демо-сервер (15 тестов)
-cd mock_backend && python -m pytest -q   # мок: план, сбои, роли, идемпотентность, история, CSV (5 тестов)
+cd frontend && npm test            # vitest: адаптер и HTTP-клиент на контрактах backend, геометрия, демо-сервер
+python -m pytest -q mock_backend/tests   # из корня (или cd mock_backend && python -m pytest -q): мок по контракту backend
 ```
 
 Шрифты (Tektur, Golos Text, JetBrains Mono) подключены локально через @fontsource — интернет на защите не нужен.
