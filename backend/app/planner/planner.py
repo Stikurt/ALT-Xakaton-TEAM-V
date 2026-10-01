@@ -127,30 +127,44 @@ def topological_operations(operations):
 
 
 def _candidate_tracks(snapshot, train, operation):
+    """Deterministic station-role heuristic.
+
+    The normal layout keeps transit traffic on P05/P06 and the local-freight
+    process on P03 -> cargo -> storage -> P04. This avoids creating avoidable
+    conflicts while staying inside the station topology from station.json.
+    """
     kind = get_value(operation, "kind", "")
     train_kind = get_value(train, "kind", "")
     tracks = _track_map(snapshot)
 
     if kind == "arrival":
-        expected = "passenger" if train_kind == "passenger" else "freight"
+        if train_kind == "passenger":
+            preferred = ["P01", "P02"]
+        elif train_kind == "transit":
+            preferred = ["P05", "P06"]
+        elif train_kind == "local":
+            preferred = ["P03"]
+        else:
+            preferred = []
     elif kind == "shunt_to_cargo":
-        expected = "cargo"
+        preferred = ["P10", "P11"]
     elif kind == "shunt_to_storage":
-        expected = "storage"
+        preferred = ["P07", "P08", "P09"]
     elif kind == "shunt_to_departure":
-        expected = "freight"
+        preferred = ["P04"]
     else:
         return []
 
     result = []
-    for track in tracks.values():
-        if get_value(track, "kind") != expected:
+    for track_id in preferred:
+        track = tracks.get(track_id)
+        if track is None:
             continue
         if get_value(track, "usable_length_m", 0) < get_value(train, "length_m", 0):
             continue
-        result.append(get_value(track, "id"))
+        result.append(track_id)
 
-    return sorted(result)
+    return result
 
 
 def _route_id(config, snapshot, from_id, to_id):
