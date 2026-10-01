@@ -49,8 +49,9 @@ export default function LoginScreen() {
         <button className="btn btn-primary" type="submit" disabled={busy || !u} style={{ width: '100%', justifyContent: 'center', height: 36 }}>
           <Icon name="lock" size={14} /> Войти
         </button>
-        <div className={s.demoBox}>
-          <div className="eyebrow">Учётные записи{transport().demo ? ' демо-версии' : ' мок-сервера'}</div>
+        {/* Подсказки с паролями — только для встроенного демо-сервера; у настоящего backend свои пароли (.env) */}
+        {transport().demo && <div className={s.demoBox}>
+          <div className="eyebrow">Учётные записи демо-версии</div>
           {DEMO.map((d) => (
             <button type="button" key={d.u} className={s.demoRow} onClick={() => { setU(d.u); setP(d.p) }}>
               <span className="mono">{d.u}</span>
@@ -59,7 +60,7 @@ export default function LoginScreen() {
             </button>
           ))}
           <div className="muted" style={{ fontSize: 11 }}>Пароль совпадает с именем. Нажмите строку, чтобы подставить.</div>
-        </div>
+        </div>}
         <p className={s.loginNote}>Демонстрационная модель. Не предназначена для управления реальным движением.</p>
       </form>
     </div>

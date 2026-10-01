@@ -19,7 +19,8 @@ def health(request: Request):
     owner = getattr(request.app.state,"runtime",None)
     if owner is None and request.app.state.runtime_required:
         from app.runtime.coordinator import RuntimeUnavailable
-        raise RuntimeUnavailable("Движок не инициализирован: выполните bootstrap и перезапустите сервер.")
+        raise RuntimeUnavailable(getattr(request.app.state,"runtime_error",None)
+                                 or "Движок не инициализирован: выполните bootstrap и перезапустите сервер.")
     if owner and owner.fault:
         from app.runtime.coordinator import RuntimeUnavailable
         raise RuntimeUnavailable(owner.fault)
@@ -34,5 +35,6 @@ def state(request: Request):
     if owner: return owner.get_state()
     if request.app.state.runtime_required:
         from app.runtime.coordinator import RuntimeUnavailable
-        raise RuntimeUnavailable("Движок не инициализирован: выполните bootstrap и перезапустите сервер.")
+        raise RuntimeUnavailable(getattr(request.app.state,"runtime_error",None)
+                                 or "Движок не инициализирован: выполните bootstrap и перезапустите сервер.")
     return request.app.state.repository.current_state()

@@ -7,6 +7,7 @@ from app.domain.models import StateResponse
 from app.planner import RULES, plan
 from app.simulation import apply_plan, create_initial_state, snapshot
 from app.simulation.engine import State
+from app.runtime import efficiency
 from app.topology import planning_horizon, station_boundary
 
 
@@ -58,6 +59,7 @@ def topology_of(config: dict, snap: dict | None = None) -> dict:
 
 def response(state: State) -> StateResponse:
     snap = snapshot(state)
+    snap["index"] = efficiency.fact(state)
     return StateResponse.model_validate({"snapshot": snap, "topology": topology_of(state.config, snap)})
 
 

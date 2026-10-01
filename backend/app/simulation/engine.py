@@ -75,6 +75,9 @@ class State:
     serial: int = 0
     fractional_s: float = 0.0
     commands: dict[str, Json] = field(default_factory=dict)
+    # Efficiency-index samples written by the backend coordinator (app.runtime.efficiency):
+    # [bucket_start_s, occupied·s, open·s, blocked·s, active·s]. Not used by the engine itself.
+    index_samples: list = field(default_factory=list)
 
 
 @dataclass

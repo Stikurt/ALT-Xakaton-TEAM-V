@@ -78,7 +78,7 @@ def generate():
         "state_updated": {"snapshot": moving.snapshot.model_dump(mode="json")},
         "clock_sync": {"sim_time_s": 60, "speed": 1, "paused": False},
         "replan_started": {"job_id":"example-job","based_on_version":2},
-        "replan_finished": {"job_id":"example-job","plan_ids":["example-plan"],"based_on_version":0,"stale":True,"identical":False},
+        "replan_finished": {"job_id":"example-job","plan_ids":["example-plan"],"based_on_version":0,"stale":True,"identical":False,"baseline_index":None},
         "replan_failed": {"job_id":"example-job","code":"PLANNER_ERROR","message":"Расчёт не выполнен."},
         "simulation_error": {"code":"DATABASE_UNAVAILABLE","message":"Сохранение недоступно, модель остановлена."},
     }

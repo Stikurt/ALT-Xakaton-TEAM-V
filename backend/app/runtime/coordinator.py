@@ -7,6 +7,7 @@ import logging
 import math
 import time
 
+from app.runtime import efficiency
 from app.runtime.broadcast import Broadcast
 from app.runtime.state import response, restore_initial_plan, encode_checkpoint
 from app.runtime.planning import candidate_problem
@@ -108,6 +109,8 @@ class Coordinator:
             if self.state.queue and self.state.queue[0][0]<=boundary:
                 boundary=max(now,self.state.queue[0][0])
             transition=advance_to(self.state,boundary,rules=RULES)
+            # The state is constant on [now, boundary): events happen at the boundary itself.
+            transition.state.index_samples=efficiency.record(self.state.index_samples,self.state,now,boundary)
             transition.state.fractional_s=max(0.,total-whole) if boundary==target else 0.
             await self._commit(transition)
             # The engine pauses by itself when the run is complete (simulation_completed).
@@ -187,7 +190,8 @@ class Coordinator:
                     payload.update(result['error'])
                     self.broadcast.publish(self.message('replan_failed',payload))
                 else:
-                    payload.update(plan_ids=[p['id'] for p in plans],stale=result['stale'],identical=result['identical'])
+                    payload.update(plan_ids=[p['id'] for p in plans],stale=result['stale'],identical=result['identical'],
+                                   baseline_index=efficiency.baseline(self.state))
                     self.broadcast.publish(self.message('replan_finished',payload))
         if self.planner.process is None:
             job=await asyncio.to_thread(self.repository.claim_replan,self.state)

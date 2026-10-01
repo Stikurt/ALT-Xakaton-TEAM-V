@@ -603,6 +603,72 @@
       "title": "IncidentSpec",
       "type": "object"
     },
+    "IndexFactor": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "enum": [
+            "delay",
+            "on_time",
+            "utilization",
+            "conflicts",
+            "idle"
+          ],
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "penalty": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Penalty"
+        },
+        "weight": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Weight",
+          "type": "number"
+        },
+        "contribution": {
+          "anyOf": [
+            {
+              "maximum": 100,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Contribution"
+        },
+        "no_data": {
+          "default": false,
+          "title": "No Data",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "penalty",
+        "weight",
+        "contribution"
+      ],
+      "title": "IndexFactor",
+      "type": "object"
+    },
     "Movement": {
       "additionalProperties": false,
       "properties": {
@@ -857,6 +923,17 @@
           ],
           "default": null,
           "title": "Horizon S"
+        },
+        "index_forecast": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StationIndex"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -1356,6 +1433,17 @@
           "default": false,
           "title": "Replan Required",
           "type": "boolean"
+        },
+        "index": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StationIndex"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -1394,6 +1482,56 @@
         "topology"
       ],
       "title": "StateResponse",
+      "type": "object"
+    },
+    "StationIndex": {
+      "additionalProperties": false,
+      "description": "I = 100 · (1 − Σ wᵢ·pᵢ); see app.runtime.efficiency.",
+      "properties": {
+        "value": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        },
+        "category": {
+          "enum": [
+            "norm",
+            "attention",
+            "critical"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "window_s": {
+          "minimum": 0,
+          "title": "Window S",
+          "type": "integer"
+        },
+        "factors": {
+          "items": {
+            "$ref": "#/$defs/IndexFactor"
+          },
+          "title": "Factors",
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "fact",
+            "forecast"
+          ],
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value",
+        "category",
+        "window_s",
+        "factors",
+        "kind"
+      ],
+      "title": "StationIndex",
       "type": "object"
     },
     "Topology": {

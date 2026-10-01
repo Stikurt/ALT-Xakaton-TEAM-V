@@ -31,5 +31,6 @@
   "calculation_time_ms": 0.0,
   "violations": [],
   "changes": [],
-  "horizon_s": null
+  "horizon_s": null,
+  "index_forecast": null
 }

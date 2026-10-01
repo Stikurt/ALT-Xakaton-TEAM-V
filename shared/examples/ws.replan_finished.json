@@ -11,6 +11,7 @@
     ],
     "based_on_version": 0,
     "stale": true,
-    "identical": false
+    "identical": false,
+    "baseline_index": null
   }
 }

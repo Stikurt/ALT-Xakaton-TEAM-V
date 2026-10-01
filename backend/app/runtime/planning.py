@@ -6,6 +6,7 @@ import time
 
 from app.domain.models import Plan
 from app.planner import RULES, plan
+from app.runtime import efficiency
 from app.runtime.state import decode_checkpoint
 from app.simulation.engine import rules_context, SimulationError
 
@@ -43,6 +44,7 @@ def calculate_variants(checkpoint, budget_s):
         else:
             raw['status']='feasible'
         raw['metrics']['changed_future_assignments']=len(changes)
+        raw['index_forecast']=efficiency.forecast(state,raw['assignments'],len(violations)+len(missing))
         variants.append(Plan.model_validate(raw).model_dump(mode='json'))
     return variants
 

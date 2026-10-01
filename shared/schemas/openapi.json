@@ -1950,6 +1950,72 @@
         ],
         "title": "IncidentSpec"
       },
+      "IndexFactor": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "delay",
+              "on_time",
+              "utilization",
+              "conflicts",
+              "idle"
+            ],
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "penalty": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Penalty"
+          },
+          "weight": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Weight"
+          },
+          "contribution": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contribution"
+          },
+          "no_data": {
+            "type": "boolean",
+            "title": "No Data",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "penalty",
+          "weight",
+          "contribution"
+        ],
+        "title": "IndexFactor"
+      },
       "LoginRequest": {
         "properties": {
           "username": {
@@ -2227,6 +2293,16 @@
               }
             ],
             "title": "Horizon S"
+          },
+          "index_forecast": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StationIndex"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -2763,6 +2839,16 @@
             "type": "boolean",
             "title": "Replan Required",
             "default": false
+          },
+          "index": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StationIndex"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -2803,6 +2889,56 @@
           "topology"
         ],
         "title": "StateResponse"
+      },
+      "StationIndex": {
+        "properties": {
+          "value": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Value"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "norm",
+              "attention",
+              "critical"
+            ],
+            "title": "Category"
+          },
+          "window_s": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Window S"
+          },
+          "factors": {
+            "items": {
+              "$ref": "#/components/schemas/IndexFactor"
+            },
+            "type": "array",
+            "title": "Factors"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "fact",
+              "forecast"
+            ],
+            "title": "Kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "value",
+          "category",
+          "window_s",
+          "factors",
+          "kind"
+        ],
+        "title": "StationIndex",
+        "description": "I = 100 · (1 − Σ wᵢ·pᵢ); see app.runtime.efficiency."
       },
       "Topology": {
         "properties": {
