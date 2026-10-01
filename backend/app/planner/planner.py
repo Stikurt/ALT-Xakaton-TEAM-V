@@ -405,6 +405,14 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
         elif kind == "departure":
             current_track = None
 
+    # Temporary target-track reservations were used to find conflict-free
+    # movement slots. Replace them with the train's continuous hold interval.
+    for assignment in raw_assignments:
+        if assignment["_kind"] != "departure":
+            trial["tracks"][assignment["track_id"]].remove_owner(
+                assignment["operation_id"]
+            )
+
     # Reserve the whole path-holding intervals required by the model.
     occupancy = _occupancy_intervals(snapshot, config, train, raw_assignments)
     for track_id, start_s, end_s in occupancy:
