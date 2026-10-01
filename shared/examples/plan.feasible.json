@@ -39,5 +39,6 @@
   "based_on_time_s": 0,
   "calculation_time_ms": 0.0,
   "violations": [],
-  "changes": []
+  "changes": [],
+  "horizon_s": null
 }

@@ -256,6 +256,7 @@
           "capabilities": [
             "shunt"
           ],
+          "track_id": null,
           "availability": "available",
           "unavailable_until_s": null,
           "active_operation_id": null
@@ -266,6 +267,7 @@
           "capabilities": [
             "shunt"
           ],
+          "track_id": null,
           "availability": "available",
           "unavailable_until_s": null,
           "active_operation_id": null
@@ -277,6 +279,7 @@
             "shunt",
             "formation"
           ],
+          "track_id": null,
           "availability": "available",
           "unavailable_until_s": null,
           "active_operation_id": null
@@ -288,6 +291,7 @@
             "shunt",
             "formation"
           ],
+          "track_id": null,
           "availability": "available",
           "unavailable_until_s": null,
           "active_operation_id": null
@@ -299,6 +303,7 @@
             "inspection",
             "preparation"
           ],
+          "track_id": null,
           "availability": "available",
           "unavailable_until_s": null,
           "active_operation_id": null
@@ -310,6 +315,7 @@
             "inspection",
             "preparation"
           ],
+          "track_id": null,
           "availability": "available",
           "unavailable_until_s": null,
           "active_operation_id": null
@@ -320,6 +326,7 @@
           "capabilities": [
             "cargo"
           ],
+          "track_id": null,
           "availability": "available",
           "unavailable_until_s": null,
           "active_operation_id": null
@@ -330,6 +337,7 @@
           "capabilities": [
             "cargo"
           ],
+          "track_id": null,
           "availability": "available",
           "unavailable_until_s": null,
           "active_operation_id": null

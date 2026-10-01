@@ -417,6 +417,25 @@
           "minimum": 0,
           "title": "At S",
           "type": "integer"
+        },
+        "available_from_s": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Available From S",
+          "type": "integer"
+        },
+        "available_to_s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Available To S"
         }
       },
       "required": [
@@ -825,6 +844,19 @@
           },
           "title": "Changes",
           "type": "array"
+        },
+        "horizon_s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Horizon S"
         }
       },
       "required": [
@@ -1095,6 +1127,21 @@
           },
           "title": "Capabilities",
           "type": "array"
+        },
+        "track_id": {
+          "anyOf": [
+            {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Track Id"
         },
         "availability": {
           "default": "available",
@@ -1435,6 +1482,19 @@
           },
           "title": "Routes",
           "type": "array"
+        },
+        "horizon_s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Horizon S"
         }
       },
       "required": [
