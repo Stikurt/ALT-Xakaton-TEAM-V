@@ -1,0 +1,2311 @@
+{
+  "schema_version": 1,
+  "id": "uzel-12",
+  "horizon_s": 7200,
+  "view_box": [
+    0,
+    0,
+    1400,
+    900
+  ],
+  "assumptions": [
+    "Учебная модель, не система управления реальной железной дорогой.",
+    "Локомотивы между заданиями условно перемещаются без отдельного маршрута.",
+    "Один состав на пути; целевой путь резервируется, исходный удерживается до конца движения."
+  ],
+  "tracks": [
+    {
+      "id": "P01",
+      "kind": "passenger",
+      "usable_length_m": 500,
+      "geometry": [
+        [
+          320,
+          120
+        ],
+        [
+          1080,
+          120
+        ]
+      ],
+      "availability": "open",
+      "closed_until_s": null,
+      "occupant_train_id": null
+    },
+    {
+      "id": "P02",
+      "kind": "passenger",
+      "usable_length_m": 500,
+      "geometry": [
+        [
+          320,
+          180
+        ],
+        [
+          1080,
+          180
+        ]
+      ],
+      "availability": "open",
+      "closed_until_s": null,
+      "occupant_train_id": null
+    },
+    {
+      "id": "P03",
+      "kind": "freight",
+      "usable_length_m": 900,
+      "geometry": [
+        [
+          320,
+          240
+        ],
+        [
+          1080,
+          240
+        ]
+      ],
+      "availability": "open",
+      "closed_until_s": null,
+      "occupant_train_id": null
+    },
+    {
+      "id": "P04",
+      "kind": "freight",
+      "usable_length_m": 900,
+      "geometry": [
+        [
+          320,
+          300
+        ],
+        [
+          1080,
+          300
+        ]
+      ],
+      "availability": "open",
+      "closed_until_s": null,
+      "occupant_train_id": null
+    },
+    {
+      "id": "P05",
+      "kind": "freight",
+      "usable_length_m": 900,
+      "geometry": [
+        [
+          320,
+          360
+        ],
+        [
+          1080,
+          360
+        ]
+      ],
+      "availability": "open",
+      "closed_until_s": null,
+      "occupant_train_id": null
+    },
+    {
+      "id": "P06",
+      "kind": "freight",
+      "usable_length_m": 900,
+      "geometry": [
+        [
+          320,
+          420
+        ],
+        [
+          1080,
+          420
+        ]
+      ],
+      "availability": "open",
+      "closed_until_s": null,
+      "occupant_train_id": null
+    },
+    {
+      "id": "P07",
+      "kind": "storage",
+      "usable_length_m": 900,
+      "geometry": [
+        [
+          320,
+          480
+        ],
+        [
+          1080,
+          480
+        ]
+      ],
+      "availability": "open",
+      "closed_until_s": null,
+      "occupant_train_id": null
+    },
+    {
+      "id": "P08",
+      "kind": "storage",
+      "usable_length_m": 900,
+      "geometry": [
+        [
+          320,
+          540
+        ],
+        [
+          1080,
+          540
+        ]
+      ],
+      "availability": "open",
+      "closed_until_s": null,
+      "occupant_train_id": null
+    },
+    {
+      "id": "P09",
+      "kind": "storage",
+      "usable_length_m": 900,
+      "geometry": [
+        [
+          320,
+          600
+        ],
+        [
+          1080,
+          600
+        ]
+      ],
+      "availability": "open",
+      "closed_until_s": null,
+      "occupant_train_id": null
+    },
+    {
+      "id": "P10",
+      "kind": "cargo",
+      "usable_length_m": 700,
+      "geometry": [
+        [
+          320,
+          660
+        ],
+        [
+          1080,
+          660
+        ]
+      ],
+      "availability": "open",
+      "closed_until_s": null,
+      "occupant_train_id": null
+    },
+    {
+      "id": "P11",
+      "kind": "cargo",
+      "usable_length_m": 700,
+      "geometry": [
+        [
+          320,
+          720
+        ],
+        [
+          1080,
+          720
+        ]
+      ],
+      "availability": "open",
+      "closed_until_s": null,
+      "occupant_train_id": null
+    },
+    {
+      "id": "P12",
+      "kind": "locomotive",
+      "usable_length_m": 150,
+      "geometry": [
+        [
+          320,
+          780
+        ],
+        [
+          1080,
+          780
+        ]
+      ],
+      "availability": "open",
+      "closed_until_s": null,
+      "occupant_train_id": null
+    }
+  ],
+  "routes": [
+    {
+      "id": "R_W_P01",
+      "from_id": "W",
+      "to_id": "P01",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 120,
+      "polyline": [
+        [
+          40,
+          450
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          120
+        ],
+        [
+          700,
+          120
+        ]
+      ]
+    },
+    {
+      "id": "R_P01_E",
+      "from_id": "P01",
+      "to_id": "E",
+      "conflict_zone_ids": [
+        "GE"
+      ],
+      "duration_s": 120,
+      "polyline": [
+        [
+          700,
+          120
+        ],
+        [
+          1080,
+          120
+        ],
+        [
+          1220,
+          450
+        ],
+        [
+          1360,
+          450
+        ]
+      ]
+    },
+    {
+      "id": "R_W_P02",
+      "from_id": "W",
+      "to_id": "P02",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 120,
+      "polyline": [
+        [
+          40,
+          450
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          180
+        ],
+        [
+          700,
+          180
+        ]
+      ]
+    },
+    {
+      "id": "R_P02_E",
+      "from_id": "P02",
+      "to_id": "E",
+      "conflict_zone_ids": [
+        "GE"
+      ],
+      "duration_s": 120,
+      "polyline": [
+        [
+          700,
+          180
+        ],
+        [
+          1080,
+          180
+        ],
+        [
+          1220,
+          450
+        ],
+        [
+          1360,
+          450
+        ]
+      ]
+    },
+    {
+      "id": "R_W_P03",
+      "from_id": "W",
+      "to_id": "P03",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 120,
+      "polyline": [
+        [
+          40,
+          450
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          240
+        ],
+        [
+          700,
+          240
+        ]
+      ]
+    },
+    {
+      "id": "R_P03_E",
+      "from_id": "P03",
+      "to_id": "E",
+      "conflict_zone_ids": [
+        "GE"
+      ],
+      "duration_s": 120,
+      "polyline": [
+        [
+          700,
+          240
+        ],
+        [
+          1080,
+          240
+        ],
+        [
+          1220,
+          450
+        ],
+        [
+          1360,
+          450
+        ]
+      ]
+    },
+    {
+      "id": "R_W_P04",
+      "from_id": "W",
+      "to_id": "P04",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 120,
+      "polyline": [
+        [
+          40,
+          450
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          300
+        ],
+        [
+          700,
+          300
+        ]
+      ]
+    },
+    {
+      "id": "R_P04_E",
+      "from_id": "P04",
+      "to_id": "E",
+      "conflict_zone_ids": [
+        "GE"
+      ],
+      "duration_s": 120,
+      "polyline": [
+        [
+          700,
+          300
+        ],
+        [
+          1080,
+          300
+        ],
+        [
+          1220,
+          450
+        ],
+        [
+          1360,
+          450
+        ]
+      ]
+    },
+    {
+      "id": "R_W_P05",
+      "from_id": "W",
+      "to_id": "P05",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 120,
+      "polyline": [
+        [
+          40,
+          450
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          360
+        ],
+        [
+          700,
+          360
+        ]
+      ]
+    },
+    {
+      "id": "R_P05_E",
+      "from_id": "P05",
+      "to_id": "E",
+      "conflict_zone_ids": [
+        "GE"
+      ],
+      "duration_s": 120,
+      "polyline": [
+        [
+          700,
+          360
+        ],
+        [
+          1080,
+          360
+        ],
+        [
+          1220,
+          450
+        ],
+        [
+          1360,
+          450
+        ]
+      ]
+    },
+    {
+      "id": "R_W_P06",
+      "from_id": "W",
+      "to_id": "P06",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 120,
+      "polyline": [
+        [
+          40,
+          450
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          420
+        ],
+        [
+          700,
+          420
+        ]
+      ]
+    },
+    {
+      "id": "R_P06_E",
+      "from_id": "P06",
+      "to_id": "E",
+      "conflict_zone_ids": [
+        "GE"
+      ],
+      "duration_s": 120,
+      "polyline": [
+        [
+          700,
+          420
+        ],
+        [
+          1080,
+          420
+        ],
+        [
+          1220,
+          450
+        ],
+        [
+          1360,
+          450
+        ]
+      ]
+    },
+    {
+      "id": "R_P03_P10",
+      "from_id": "P03",
+      "to_id": "P10",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          240
+        ],
+        [
+          320,
+          240
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          700,
+          660
+        ]
+      ]
+    },
+    {
+      "id": "R_P10_P03",
+      "from_id": "P10",
+      "to_id": "P03",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          660
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          240
+        ],
+        [
+          700,
+          240
+        ]
+      ]
+    },
+    {
+      "id": "R_P03_P11",
+      "from_id": "P03",
+      "to_id": "P11",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          240
+        ],
+        [
+          320,
+          240
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          700,
+          720
+        ]
+      ]
+    },
+    {
+      "id": "R_P11_P03",
+      "from_id": "P11",
+      "to_id": "P03",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          720
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          240
+        ],
+        [
+          700,
+          240
+        ]
+      ]
+    },
+    {
+      "id": "R_P04_P10",
+      "from_id": "P04",
+      "to_id": "P10",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          300
+        ],
+        [
+          320,
+          300
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          700,
+          660
+        ]
+      ]
+    },
+    {
+      "id": "R_P10_P04",
+      "from_id": "P10",
+      "to_id": "P04",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          660
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          300
+        ],
+        [
+          700,
+          300
+        ]
+      ]
+    },
+    {
+      "id": "R_P04_P11",
+      "from_id": "P04",
+      "to_id": "P11",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          300
+        ],
+        [
+          320,
+          300
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          700,
+          720
+        ]
+      ]
+    },
+    {
+      "id": "R_P11_P04",
+      "from_id": "P11",
+      "to_id": "P04",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          720
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          300
+        ],
+        [
+          700,
+          300
+        ]
+      ]
+    },
+    {
+      "id": "R_P05_P10",
+      "from_id": "P05",
+      "to_id": "P10",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          360
+        ],
+        [
+          320,
+          360
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          700,
+          660
+        ]
+      ]
+    },
+    {
+      "id": "R_P10_P05",
+      "from_id": "P10",
+      "to_id": "P05",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          660
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          360
+        ],
+        [
+          700,
+          360
+        ]
+      ]
+    },
+    {
+      "id": "R_P05_P11",
+      "from_id": "P05",
+      "to_id": "P11",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          360
+        ],
+        [
+          320,
+          360
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          700,
+          720
+        ]
+      ]
+    },
+    {
+      "id": "R_P11_P05",
+      "from_id": "P11",
+      "to_id": "P05",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          720
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          360
+        ],
+        [
+          700,
+          360
+        ]
+      ]
+    },
+    {
+      "id": "R_P06_P10",
+      "from_id": "P06",
+      "to_id": "P10",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          420
+        ],
+        [
+          320,
+          420
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          700,
+          660
+        ]
+      ]
+    },
+    {
+      "id": "R_P10_P06",
+      "from_id": "P10",
+      "to_id": "P06",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          660
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          420
+        ],
+        [
+          700,
+          420
+        ]
+      ]
+    },
+    {
+      "id": "R_P06_P11",
+      "from_id": "P06",
+      "to_id": "P11",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          420
+        ],
+        [
+          320,
+          420
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          700,
+          720
+        ]
+      ]
+    },
+    {
+      "id": "R_P11_P06",
+      "from_id": "P11",
+      "to_id": "P06",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          720
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          420
+        ],
+        [
+          700,
+          420
+        ]
+      ]
+    },
+    {
+      "id": "R_P10_P07",
+      "from_id": "P10",
+      "to_id": "P07",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          660
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          480
+        ],
+        [
+          700,
+          480
+        ]
+      ]
+    },
+    {
+      "id": "R_P07_P10",
+      "from_id": "P07",
+      "to_id": "P10",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          480
+        ],
+        [
+          320,
+          480
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          700,
+          660
+        ]
+      ]
+    },
+    {
+      "id": "R_P10_P08",
+      "from_id": "P10",
+      "to_id": "P08",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          660
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          540
+        ],
+        [
+          700,
+          540
+        ]
+      ]
+    },
+    {
+      "id": "R_P08_P10",
+      "from_id": "P08",
+      "to_id": "P10",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          540
+        ],
+        [
+          320,
+          540
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          700,
+          660
+        ]
+      ]
+    },
+    {
+      "id": "R_P10_P09",
+      "from_id": "P10",
+      "to_id": "P09",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          660
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          600
+        ],
+        [
+          700,
+          600
+        ]
+      ]
+    },
+    {
+      "id": "R_P09_P10",
+      "from_id": "P09",
+      "to_id": "P10",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          600
+        ],
+        [
+          320,
+          600
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          660
+        ],
+        [
+          700,
+          660
+        ]
+      ]
+    },
+    {
+      "id": "R_P11_P07",
+      "from_id": "P11",
+      "to_id": "P07",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          720
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          480
+        ],
+        [
+          700,
+          480
+        ]
+      ]
+    },
+    {
+      "id": "R_P07_P11",
+      "from_id": "P07",
+      "to_id": "P11",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          480
+        ],
+        [
+          320,
+          480
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          700,
+          720
+        ]
+      ]
+    },
+    {
+      "id": "R_P11_P08",
+      "from_id": "P11",
+      "to_id": "P08",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          720
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          540
+        ],
+        [
+          700,
+          540
+        ]
+      ]
+    },
+    {
+      "id": "R_P08_P11",
+      "from_id": "P08",
+      "to_id": "P11",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          540
+        ],
+        [
+          320,
+          540
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          700,
+          720
+        ]
+      ]
+    },
+    {
+      "id": "R_P11_P09",
+      "from_id": "P11",
+      "to_id": "P09",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          720
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          600
+        ],
+        [
+          700,
+          600
+        ]
+      ]
+    },
+    {
+      "id": "R_P09_P11",
+      "from_id": "P09",
+      "to_id": "P11",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          600
+        ],
+        [
+          320,
+          600
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          720
+        ],
+        [
+          700,
+          720
+        ]
+      ]
+    },
+    {
+      "id": "R_P07_P03",
+      "from_id": "P07",
+      "to_id": "P03",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          480
+        ],
+        [
+          320,
+          480
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          240
+        ],
+        [
+          700,
+          240
+        ]
+      ]
+    },
+    {
+      "id": "R_P03_P07",
+      "from_id": "P03",
+      "to_id": "P07",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          240
+        ],
+        [
+          320,
+          240
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          480
+        ],
+        [
+          700,
+          480
+        ]
+      ]
+    },
+    {
+      "id": "R_P07_P04",
+      "from_id": "P07",
+      "to_id": "P04",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          480
+        ],
+        [
+          320,
+          480
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          300
+        ],
+        [
+          700,
+          300
+        ]
+      ]
+    },
+    {
+      "id": "R_P04_P07",
+      "from_id": "P04",
+      "to_id": "P07",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          300
+        ],
+        [
+          320,
+          300
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          480
+        ],
+        [
+          700,
+          480
+        ]
+      ]
+    },
+    {
+      "id": "R_P07_P05",
+      "from_id": "P07",
+      "to_id": "P05",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          480
+        ],
+        [
+          320,
+          480
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          360
+        ],
+        [
+          700,
+          360
+        ]
+      ]
+    },
+    {
+      "id": "R_P05_P07",
+      "from_id": "P05",
+      "to_id": "P07",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          360
+        ],
+        [
+          320,
+          360
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          480
+        ],
+        [
+          700,
+          480
+        ]
+      ]
+    },
+    {
+      "id": "R_P07_P06",
+      "from_id": "P07",
+      "to_id": "P06",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          480
+        ],
+        [
+          320,
+          480
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          420
+        ],
+        [
+          700,
+          420
+        ]
+      ]
+    },
+    {
+      "id": "R_P06_P07",
+      "from_id": "P06",
+      "to_id": "P07",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          420
+        ],
+        [
+          320,
+          420
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          480
+        ],
+        [
+          700,
+          480
+        ]
+      ]
+    },
+    {
+      "id": "R_P08_P03",
+      "from_id": "P08",
+      "to_id": "P03",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          540
+        ],
+        [
+          320,
+          540
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          240
+        ],
+        [
+          700,
+          240
+        ]
+      ]
+    },
+    {
+      "id": "R_P03_P08",
+      "from_id": "P03",
+      "to_id": "P08",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          240
+        ],
+        [
+          320,
+          240
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          540
+        ],
+        [
+          700,
+          540
+        ]
+      ]
+    },
+    {
+      "id": "R_P08_P04",
+      "from_id": "P08",
+      "to_id": "P04",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          540
+        ],
+        [
+          320,
+          540
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          300
+        ],
+        [
+          700,
+          300
+        ]
+      ]
+    },
+    {
+      "id": "R_P04_P08",
+      "from_id": "P04",
+      "to_id": "P08",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          300
+        ],
+        [
+          320,
+          300
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          540
+        ],
+        [
+          700,
+          540
+        ]
+      ]
+    },
+    {
+      "id": "R_P08_P05",
+      "from_id": "P08",
+      "to_id": "P05",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          540
+        ],
+        [
+          320,
+          540
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          360
+        ],
+        [
+          700,
+          360
+        ]
+      ]
+    },
+    {
+      "id": "R_P05_P08",
+      "from_id": "P05",
+      "to_id": "P08",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          360
+        ],
+        [
+          320,
+          360
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          540
+        ],
+        [
+          700,
+          540
+        ]
+      ]
+    },
+    {
+      "id": "R_P08_P06",
+      "from_id": "P08",
+      "to_id": "P06",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          540
+        ],
+        [
+          320,
+          540
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          420
+        ],
+        [
+          700,
+          420
+        ]
+      ]
+    },
+    {
+      "id": "R_P06_P08",
+      "from_id": "P06",
+      "to_id": "P08",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          420
+        ],
+        [
+          320,
+          420
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          540
+        ],
+        [
+          700,
+          540
+        ]
+      ]
+    },
+    {
+      "id": "R_P09_P03",
+      "from_id": "P09",
+      "to_id": "P03",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          600
+        ],
+        [
+          320,
+          600
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          240
+        ],
+        [
+          700,
+          240
+        ]
+      ]
+    },
+    {
+      "id": "R_P03_P09",
+      "from_id": "P03",
+      "to_id": "P09",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          240
+        ],
+        [
+          320,
+          240
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          600
+        ],
+        [
+          700,
+          600
+        ]
+      ]
+    },
+    {
+      "id": "R_P09_P04",
+      "from_id": "P09",
+      "to_id": "P04",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          600
+        ],
+        [
+          320,
+          600
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          300
+        ],
+        [
+          700,
+          300
+        ]
+      ]
+    },
+    {
+      "id": "R_P04_P09",
+      "from_id": "P04",
+      "to_id": "P09",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          300
+        ],
+        [
+          320,
+          300
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          600
+        ],
+        [
+          700,
+          600
+        ]
+      ]
+    },
+    {
+      "id": "R_P09_P05",
+      "from_id": "P09",
+      "to_id": "P05",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          600
+        ],
+        [
+          320,
+          600
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          360
+        ],
+        [
+          700,
+          360
+        ]
+      ]
+    },
+    {
+      "id": "R_P05_P09",
+      "from_id": "P05",
+      "to_id": "P09",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          360
+        ],
+        [
+          320,
+          360
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          600
+        ],
+        [
+          700,
+          600
+        ]
+      ]
+    },
+    {
+      "id": "R_P09_P06",
+      "from_id": "P09",
+      "to_id": "P06",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          600
+        ],
+        [
+          320,
+          600
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          420
+        ],
+        [
+          700,
+          420
+        ]
+      ]
+    },
+    {
+      "id": "R_P06_P09",
+      "from_id": "P06",
+      "to_id": "P09",
+      "conflict_zone_ids": [
+        "GW"
+      ],
+      "duration_s": 180,
+      "polyline": [
+        [
+          700,
+          420
+        ],
+        [
+          320,
+          420
+        ],
+        [
+          180,
+          450
+        ],
+        [
+          320,
+          600
+        ],
+        [
+          700,
+          600
+        ]
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "id": "L01",
+      "kind": "locomotive",
+      "capabilities": [
+        "shunt"
+      ],
+      "availability": "available",
+      "unavailable_until_s": null,
+      "active_operation_id": null
+    },
+    {
+      "id": "L02",
+      "kind": "locomotive",
+      "capabilities": [
+        "shunt"
+      ],
+      "availability": "available",
+      "unavailable_until_s": null,
+      "active_operation_id": null
+    },
+    {
+      "id": "B01",
+      "kind": "crew",
+      "capabilities": [
+        "shunt",
+        "formation"
+      ],
+      "availability": "available",
+      "unavailable_until_s": null,
+      "active_operation_id": null
+    },
+    {
+      "id": "B02",
+      "kind": "crew",
+      "capabilities": [
+        "shunt",
+        "formation"
+      ],
+      "availability": "available",
+      "unavailable_until_s": null,
+      "active_operation_id": null
+    },
+    {
+      "id": "B03",
+      "kind": "crew",
+      "capabilities": [
+        "inspection",
+        "preparation"
+      ],
+      "availability": "available",
+      "unavailable_until_s": null,
+      "active_operation_id": null
+    },
+    {
+      "id": "B04",
+      "kind": "crew",
+      "capabilities": [
+        "inspection",
+        "preparation"
+      ],
+      "availability": "available",
+      "unavailable_until_s": null,
+      "active_operation_id": null
+    },
+    {
+      "id": "F10",
+      "kind": "cargo_front",
+      "capabilities": [
+        "cargo"
+      ],
+      "availability": "available",
+      "unavailable_until_s": null,
+      "active_operation_id": null
+    },
+    {
+      "id": "F11",
+      "kind": "cargo_front",
+      "capabilities": [
+        "cargo"
+      ],
+      "availability": "available",
+      "unavailable_until_s": null,
+      "active_operation_id": null
+    }
+  ],
+  "trains": [
+    {
+      "id": "T01",
+      "kind": "passenger",
+      "length_m": 350,
+      "priority": 3,
+      "scheduled_arrival_s": 0,
+      "expected_arrival_s": 0,
+      "scheduled_departure_s": 600,
+      "status": "scheduled",
+      "track_id": null,
+      "movement": null
+    }
+  ],
+  "operations": [
+    {
+      "id": "T01_01_arrival",
+      "train_id": "T01",
+      "kind": "arrival",
+      "duration_s": 120,
+      "predecessor_ids": [],
+      "status": "pending",
+      "actual_start_s": null,
+      "actual_end_s": null,
+      "wait_reason": null
+    },
+    {
+      "id": "T01_02_dwell",
+      "train_id": "T01",
+      "kind": "dwell",
+      "duration_s": 360,
+      "predecessor_ids": [
+        "T01_01_arrival"
+      ],
+      "status": "pending",
+      "actual_start_s": null,
+      "actual_end_s": null,
+      "wait_reason": null
+    },
+    {
+      "id": "T01_03_departure",
+      "train_id": "T01",
+      "kind": "departure",
+      "duration_s": 120,
+      "predecessor_ids": [
+        "T01_02_dwell"
+      ],
+      "status": "pending",
+      "actual_start_s": null,
+      "actual_end_s": null,
+      "wait_reason": null
+    }
+  ]
+}

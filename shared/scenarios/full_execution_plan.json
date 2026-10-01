@@ -1,0 +1,759 @@
+{
+  "id": "full-execution-fixture",
+  "run_id": "fixture-full",
+  "based_on_version": 0,
+  "strategy": "fixed-execution-fixture",
+  "status": "feasible",
+  "unassigned": [],
+  "assignments": [
+    {
+      "operation_id": "T01_01_arrival",
+      "start_s": 0,
+      "end_s": 120,
+      "track_id": "P01",
+      "route_id": "R_W_P01",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T01_02_dwell",
+      "start_s": 120,
+      "end_s": 480,
+      "track_id": "P01",
+      "route_id": null,
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T01_03_departure",
+      "start_s": 480,
+      "end_s": 600,
+      "track_id": "P01",
+      "route_id": "R_P01_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T02_01_arrival",
+      "start_s": 120,
+      "end_s": 240,
+      "track_id": "P05",
+      "route_id": "R_W_P05",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T02_02_inspection",
+      "start_s": 240,
+      "end_s": 720,
+      "track_id": "P05",
+      "route_id": null,
+      "resource_ids": [
+        "B04"
+      ]
+    },
+    {
+      "operation_id": "T02_03_preparation",
+      "start_s": 720,
+      "end_s": 900,
+      "track_id": "P05",
+      "route_id": null,
+      "resource_ids": [
+        "B04"
+      ]
+    },
+    {
+      "operation_id": "T02_04_departure",
+      "start_s": 1080,
+      "end_s": 1200,
+      "track_id": "P05",
+      "route_id": "R_P05_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T03_01_arrival",
+      "start_s": 240,
+      "end_s": 360,
+      "track_id": "P03",
+      "route_id": "R_W_P03",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T03_02_inspection",
+      "start_s": 360,
+      "end_s": 840,
+      "track_id": "P03",
+      "route_id": null,
+      "resource_ids": [
+        "B03"
+      ]
+    },
+    {
+      "operation_id": "T03_03_shunt_to_cargo",
+      "start_s": 840,
+      "end_s": 1020,
+      "track_id": "P10",
+      "route_id": "R_P03_P10",
+      "resource_ids": [
+        "L01",
+        "B01"
+      ]
+    },
+    {
+      "operation_id": "T03_04_cargo",
+      "start_s": 1020,
+      "end_s": 1920,
+      "track_id": "P10",
+      "route_id": null,
+      "resource_ids": [
+        "F10"
+      ]
+    },
+    {
+      "operation_id": "T03_05_shunt_to_storage",
+      "start_s": 1920,
+      "end_s": 2100,
+      "track_id": "P07",
+      "route_id": "R_P10_P07",
+      "resource_ids": [
+        "L01",
+        "B01"
+      ]
+    },
+    {
+      "operation_id": "T03_06_formation",
+      "start_s": 2100,
+      "end_s": 2400,
+      "track_id": "P07",
+      "route_id": null,
+      "resource_ids": [
+        "B01"
+      ]
+    },
+    {
+      "operation_id": "T03_07_shunt_to_departure",
+      "start_s": 2400,
+      "end_s": 2580,
+      "track_id": "P04",
+      "route_id": "R_P07_P04",
+      "resource_ids": [
+        "L01",
+        "B01"
+      ]
+    },
+    {
+      "operation_id": "T03_08_preparation",
+      "start_s": 2580,
+      "end_s": 2760,
+      "track_id": "P04",
+      "route_id": null,
+      "resource_ids": [
+        "B03"
+      ]
+    },
+    {
+      "operation_id": "T03_09_departure",
+      "start_s": 3180,
+      "end_s": 3300,
+      "track_id": "P04",
+      "route_id": "R_P04_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T04_01_arrival",
+      "start_s": 480,
+      "end_s": 600,
+      "track_id": "P02",
+      "route_id": "R_W_P02",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T04_02_dwell",
+      "start_s": 600,
+      "end_s": 960,
+      "track_id": "P02",
+      "route_id": null,
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T04_03_departure",
+      "start_s": 960,
+      "end_s": 1080,
+      "track_id": "P02",
+      "route_id": "R_P02_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T05_01_arrival",
+      "start_s": 600,
+      "end_s": 720,
+      "track_id": "P06",
+      "route_id": "R_W_P06",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T05_02_inspection",
+      "start_s": 900,
+      "end_s": 1380,
+      "track_id": "P06",
+      "route_id": null,
+      "resource_ids": [
+        "B04"
+      ]
+    },
+    {
+      "operation_id": "T05_03_preparation",
+      "start_s": 1380,
+      "end_s": 1560,
+      "track_id": "P06",
+      "route_id": null,
+      "resource_ids": [
+        "B04"
+      ]
+    },
+    {
+      "operation_id": "T05_04_departure",
+      "start_s": 1560,
+      "end_s": 1680,
+      "track_id": "P06",
+      "route_id": "R_P06_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T06_01_arrival",
+      "start_s": 1020,
+      "end_s": 1140,
+      "track_id": "P03",
+      "route_id": "R_W_P03",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T06_02_inspection",
+      "start_s": 1140,
+      "end_s": 1620,
+      "track_id": "P03",
+      "route_id": null,
+      "resource_ids": [
+        "B03"
+      ]
+    },
+    {
+      "operation_id": "T06_03_shunt_to_cargo",
+      "start_s": 1620,
+      "end_s": 1800,
+      "track_id": "P11",
+      "route_id": "R_P03_P11",
+      "resource_ids": [
+        "L02",
+        "B02"
+      ]
+    },
+    {
+      "operation_id": "T06_04_cargo",
+      "start_s": 1800,
+      "end_s": 2700,
+      "track_id": "P11",
+      "route_id": null,
+      "resource_ids": [
+        "F11"
+      ]
+    },
+    {
+      "operation_id": "T06_05_shunt_to_storage",
+      "start_s": 2760,
+      "end_s": 2940,
+      "track_id": "P08",
+      "route_id": "R_P11_P08",
+      "resource_ids": [
+        "L02",
+        "B02"
+      ]
+    },
+    {
+      "operation_id": "T06_06_formation",
+      "start_s": 2940,
+      "end_s": 3240,
+      "track_id": "P08",
+      "route_id": null,
+      "resource_ids": [
+        "B02"
+      ]
+    },
+    {
+      "operation_id": "T06_07_shunt_to_departure",
+      "start_s": 3300,
+      "end_s": 3480,
+      "track_id": "P04",
+      "route_id": "R_P08_P04",
+      "resource_ids": [
+        "L02",
+        "B02"
+      ]
+    },
+    {
+      "operation_id": "T06_08_preparation",
+      "start_s": 3540,
+      "end_s": 3720,
+      "track_id": "P04",
+      "route_id": null,
+      "resource_ids": [
+        "B03"
+      ]
+    },
+    {
+      "operation_id": "T06_09_departure",
+      "start_s": 3780,
+      "end_s": 3900,
+      "track_id": "P04",
+      "route_id": "R_P04_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T07_01_arrival",
+      "start_s": 1140,
+      "end_s": 1260,
+      "track_id": "P01",
+      "route_id": "R_W_P01",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T07_02_dwell",
+      "start_s": 1260,
+      "end_s": 1620,
+      "track_id": "P01",
+      "route_id": null,
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T07_03_departure",
+      "start_s": 1680,
+      "end_s": 1800,
+      "track_id": "P01",
+      "route_id": "R_P01_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T08_01_arrival",
+      "start_s": 1260,
+      "end_s": 1380,
+      "track_id": "P05",
+      "route_id": "R_W_P05",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T08_02_inspection",
+      "start_s": 1560,
+      "end_s": 2040,
+      "track_id": "P05",
+      "route_id": null,
+      "resource_ids": [
+        "B04"
+      ]
+    },
+    {
+      "operation_id": "T08_03_preparation",
+      "start_s": 2040,
+      "end_s": 2220,
+      "track_id": "P05",
+      "route_id": null,
+      "resource_ids": [
+        "B04"
+      ]
+    },
+    {
+      "operation_id": "T08_04_departure",
+      "start_s": 2220,
+      "end_s": 2340,
+      "track_id": "P05",
+      "route_id": "R_P05_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T09_01_arrival",
+      "start_s": 1800,
+      "end_s": 1920,
+      "track_id": "P03",
+      "route_id": "R_W_P03",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T09_02_inspection",
+      "start_s": 1920,
+      "end_s": 2400,
+      "track_id": "P03",
+      "route_id": null,
+      "resource_ids": [
+        "B03"
+      ]
+    },
+    {
+      "operation_id": "T09_03_shunt_to_cargo",
+      "start_s": 2580,
+      "end_s": 2760,
+      "track_id": "P10",
+      "route_id": "R_P03_P10",
+      "resource_ids": [
+        "L01",
+        "B01"
+      ]
+    },
+    {
+      "operation_id": "T09_04_cargo",
+      "start_s": 2760,
+      "end_s": 3660,
+      "track_id": "P10",
+      "route_id": null,
+      "resource_ids": [
+        "F10"
+      ]
+    },
+    {
+      "operation_id": "T09_05_shunt_to_storage",
+      "start_s": 3720,
+      "end_s": 3900,
+      "track_id": "P09",
+      "route_id": "R_P10_P09",
+      "resource_ids": [
+        "L01",
+        "B01"
+      ]
+    },
+    {
+      "operation_id": "T09_06_formation",
+      "start_s": 3900,
+      "end_s": 4200,
+      "track_id": "P09",
+      "route_id": null,
+      "resource_ids": [
+        "B01"
+      ]
+    },
+    {
+      "operation_id": "T09_07_shunt_to_departure",
+      "start_s": 4200,
+      "end_s": 4380,
+      "track_id": "P04",
+      "route_id": "R_P09_P04",
+      "resource_ids": [
+        "L01",
+        "B01"
+      ]
+    },
+    {
+      "operation_id": "T09_08_preparation",
+      "start_s": 4500,
+      "end_s": 4680,
+      "track_id": "P04",
+      "route_id": null,
+      "resource_ids": [
+        "B03"
+      ]
+    },
+    {
+      "operation_id": "T09_09_departure",
+      "start_s": 4680,
+      "end_s": 4800,
+      "track_id": "P04",
+      "route_id": "R_P04_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T10_01_arrival",
+      "start_s": 2100,
+      "end_s": 2220,
+      "track_id": "P06",
+      "route_id": "R_W_P06",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T10_02_inspection",
+      "start_s": 2220,
+      "end_s": 2700,
+      "track_id": "P06",
+      "route_id": null,
+      "resource_ids": [
+        "B04"
+      ]
+    },
+    {
+      "operation_id": "T10_03_preparation",
+      "start_s": 2700,
+      "end_s": 2880,
+      "track_id": "P06",
+      "route_id": null,
+      "resource_ids": [
+        "B04"
+      ]
+    },
+    {
+      "operation_id": "T10_04_departure",
+      "start_s": 2880,
+      "end_s": 3000,
+      "track_id": "P06",
+      "route_id": "R_P06_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T11_01_arrival",
+      "start_s": 2220,
+      "end_s": 2340,
+      "track_id": "P02",
+      "route_id": "R_W_P02",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T11_02_dwell",
+      "start_s": 2340,
+      "end_s": 2700,
+      "track_id": "P02",
+      "route_id": null,
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T11_03_departure",
+      "start_s": 2700,
+      "end_s": 2820,
+      "track_id": "P02",
+      "route_id": "R_P02_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T12_01_arrival",
+      "start_s": 2940,
+      "end_s": 3060,
+      "track_id": "P03",
+      "route_id": "R_W_P03",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T12_02_inspection",
+      "start_s": 3060,
+      "end_s": 3540,
+      "track_id": "P03",
+      "route_id": null,
+      "resource_ids": [
+        "B03"
+      ]
+    },
+    {
+      "operation_id": "T12_03_shunt_to_cargo",
+      "start_s": 3540,
+      "end_s": 3720,
+      "track_id": "P11",
+      "route_id": "R_P03_P11",
+      "resource_ids": [
+        "L02",
+        "B02"
+      ]
+    },
+    {
+      "operation_id": "T12_04_cargo",
+      "start_s": 3720,
+      "end_s": 4620,
+      "track_id": "P11",
+      "route_id": null,
+      "resource_ids": [
+        "F11"
+      ]
+    },
+    {
+      "operation_id": "T12_05_shunt_to_storage",
+      "start_s": 4680,
+      "end_s": 4860,
+      "track_id": "P07",
+      "route_id": "R_P11_P07",
+      "resource_ids": [
+        "L02",
+        "B02"
+      ]
+    },
+    {
+      "operation_id": "T12_06_formation",
+      "start_s": 4860,
+      "end_s": 5160,
+      "track_id": "P07",
+      "route_id": null,
+      "resource_ids": [
+        "B02"
+      ]
+    },
+    {
+      "operation_id": "T12_07_shunt_to_departure",
+      "start_s": 5160,
+      "end_s": 5340,
+      "track_id": "P04",
+      "route_id": "R_P07_P04",
+      "resource_ids": [
+        "L02",
+        "B02"
+      ]
+    },
+    {
+      "operation_id": "T12_08_preparation",
+      "start_s": 5340,
+      "end_s": 5520,
+      "track_id": "P04",
+      "route_id": null,
+      "resource_ids": [
+        "B03"
+      ]
+    },
+    {
+      "operation_id": "T12_09_departure",
+      "start_s": 5520,
+      "end_s": 5640,
+      "track_id": "P04",
+      "route_id": "R_P04_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T13_01_arrival",
+      "start_s": 3060,
+      "end_s": 3180,
+      "track_id": "P05",
+      "route_id": "R_W_P05",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T13_02_inspection",
+      "start_s": 3180,
+      "end_s": 3660,
+      "track_id": "P05",
+      "route_id": null,
+      "resource_ids": [
+        "B04"
+      ]
+    },
+    {
+      "operation_id": "T13_03_preparation",
+      "start_s": 3660,
+      "end_s": 3840,
+      "track_id": "P05",
+      "route_id": null,
+      "resource_ids": [
+        "B04"
+      ]
+    },
+    {
+      "operation_id": "T13_04_departure",
+      "start_s": 3900,
+      "end_s": 4020,
+      "track_id": "P05",
+      "route_id": "R_P05_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T14_01_arrival",
+      "start_s": 3180,
+      "end_s": 3300,
+      "track_id": "P01",
+      "route_id": "R_W_P01",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T14_02_dwell",
+      "start_s": 3300,
+      "end_s": 3660,
+      "track_id": "P01",
+      "route_id": null,
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T14_03_departure",
+      "start_s": 3660,
+      "end_s": 3780,
+      "track_id": "P01",
+      "route_id": "R_P01_E",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T15_01_arrival",
+      "start_s": 3900,
+      "end_s": 4020,
+      "track_id": "P03",
+      "route_id": "R_W_P03",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T15_02_inspection",
+      "start_s": 4020,
+      "end_s": 4500,
+      "track_id": "P03",
+      "route_id": null,
+      "resource_ids": [
+        "B03"
+      ]
+    },
+    {
+      "operation_id": "T15_03_shunt_to_cargo",
+      "start_s": 4500,
+      "end_s": 4680,
+      "track_id": "P10",
+      "route_id": "R_P03_P10",
+      "resource_ids": [
+        "L01",
+        "B01"
+      ]
+    },
+    {
+      "operation_id": "T15_04_cargo",
+      "start_s": 4680,
+      "end_s": 5580,
+      "track_id": "P10",
+      "route_id": null,
+      "resource_ids": [
+        "F10"
+      ]
+    },
+    {
+      "operation_id": "T15_05_shunt_to_storage",
+      "start_s": 5580,
+      "end_s": 5760,
+      "track_id": "P08",
+      "route_id": "R_P10_P08",
+      "resource_ids": [
+        "L01",
+        "B01"
+      ]
+    },
+    {
+      "operation_id": "T15_06_formation",
+      "start_s": 5760,
+      "end_s": 6060,
+      "track_id": "P08",
+      "route_id": null,
+      "resource_ids": [
+        "B01"
+      ]
+    },
+    {
+      "operation_id": "T15_07_shunt_to_departure",
+      "start_s": 6060,
+      "end_s": 6240,
+      "track_id": "P04",
+      "route_id": "R_P08_P04",
+      "resource_ids": [
+        "L01",
+        "B01"
+      ]
+    },
+    {
+      "operation_id": "T15_08_preparation",
+      "start_s": 6240,
+      "end_s": 6420,
+      "track_id": "P04",
+      "route_id": null,
+      "resource_ids": [
+        "B03"
+      ]
+    },
+    {
+      "operation_id": "T15_09_departure",
+      "start_s": 6600,
+      "end_s": 6720,
+      "track_id": "P04",
+      "route_id": "R_P04_E",
+      "resource_ids": []
+    }
+  ],
+  "metrics": {},
+  "explanations": [
+    "Fixed execution regression fixture; requires validation by participant Н before production use."
+  ]
+}
