@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
+Json = dict[str, Any]
+MOVING = {"arrival", "departure", "shunt_to_cargo", "shunt_to_storage", "shunt_to_departure"}
+
 
 def get_value(obj: Any, name: str, default=None):
     if obj is None:
@@ -35,402 +38,544 @@ def make_violation(
     }
 
 
-def find_track(snapshot, track_id: str):
-    for track in get_value(snapshot, "tracks", []):
-        if get_value(track, "id") == track_id:
-            return track
-    return None
+def _context(value: Json) -> tuple[Json, Json, Json, Json, Json]:
+    """Return snapshot, topology, reservations, busy_zones, running_assignments."""
+    if isinstance(value, dict) and isinstance(value.get("snapshot"), dict):
+        return (
+            value["snapshot"],
+            value.get("topology") or {},
+            value.get("reservations") or {},
+            value.get("busy_zones") or {},
+            value.get("running_assignments") or {},
+        )
+    return (
+        value,
+        value.get("topology") or value,
+        value.get("reservations") or {},
+        value.get("busy_zones") or {},
+        value.get("running_assignments") or {},
+    )
 
 
-def find_route(snapshot, route_id: str):
-    for route in get_value(snapshot, "routes", []):
-        if get_value(route, "id") == route_id:
-            return route
-
-    topology = get_value(snapshot, "topology")
-    if topology:
-        for route in get_value(topology, "routes", []):
-            if get_value(route, "id") == route_id:
-                return route
-    return None
+def _index(items, key="id"):
+    return {get_value(x, key): x for x in (items or []) if get_value(x, key) is not None}
 
 
-def find_train(snapshot, train_id: str):
-    for train in get_value(snapshot, "trains", []):
-        if get_value(train, "id") == train_id:
-            return train
-    return None
+def _maps(context: Json):
+    snapshot, topology, reservations, busy_zones, running = _context(context)
+    tracks = _index(get_value(snapshot, "tracks", []))
+    trains = _index(get_value(snapshot, "trains", []))
+    resources = _index(get_value(snapshot, "resources", []))
+    operations = _index(get_value(snapshot, "operations", []))
+    routes = _index(get_value(topology, "routes", get_value(snapshot, "routes", [])))
+    return snapshot, topology, reservations, busy_zones, running, tracks, trains, resources, operations, routes
 
 
-def find_resource(snapshot, resource_id: str):
-    for resource in get_value(snapshot, "resources", []):
-        if get_value(resource, "id") == resource_id:
-            return resource
-    return None
+def _resource_need(kind: str):
+    if kind.startswith("shunt_"):
+        return [("locomotive", "shunt"), ("crew", "shunt")]
+    if kind == "inspection":
+        return [("crew", "inspection")]
+    if kind == "preparation":
+        return [("crew", "preparation")]
+    if kind == "formation":
+        return [("crew", "formation")]
+    if kind == "cargo":
+        return [("cargo_front", "cargo")]
+    return []
 
 
-def find_operation(snapshot, operation_id: str):
-    for operation in get_value(snapshot, "operations", []):
-        if get_value(operation, "id") == operation_id:
-            return operation
-    return None
+def _expected_track_kind(train_kind: str, operation_kind: str):
+    if operation_kind in ("arrival", "departure"):
+        return "passenger" if train_kind == "passenger" else "freight"
+    return {
+        "shunt_to_cargo": "cargo",
+        "cargo": "cargo",
+        "shunt_to_storage": "storage",
+        "formation": "storage",
+        "shunt_to_departure": "freight",
+    }.get(operation_kind)
 
 
-def can_start(snapshot, assignment):
-    reasons = []
+def _topological_for_train(operations: list[Json]) -> list[Json]:
+    by_id = {o["id"]: o for o in operations}
+    done: set[str] = set()
+    result: list[Json] = []
+    while len(result) < len(operations):
+        ready = [
+            o for o in operations
+            if o["id"] not in done
+            and all(p not in by_id or p in done for p in (o.get("predecessor_ids") or []))
+        ]
+        if not ready:
+            return sorted(operations, key=lambda x: x["id"])
+        ready.sort(key=lambda x: x["id"])
+        o = ready[0]
+        done.add(o["id"])
+        result.append(o)
+    return result
 
-    operation_id = get_value(assignment, "operation_id")
+
+def _can_start_conflicts(context: Json, operation: Json, assignment: Json) -> list[Json]:
+    (
+        snapshot, topology, reservations, busy_zones, running,
+        tracks, trains, resources, operations, routes,
+    ) = _maps(context)
+
+    problems: list[Json] = []
+    oid = get_value(operation, "id")
+    tid = get_value(operation, "train_id")
+    train = trains.get(tid)
     start_s = get_value(assignment, "start_s")
     end_s = get_value(assignment, "end_s")
     track_id = get_value(assignment, "track_id")
     route_id = get_value(assignment, "route_id")
     resource_ids = get_value(assignment, "resource_ids", []) or []
-    sim_time_s = get_value(snapshot, "sim_time_s", 0)
+    now = get_value(snapshot, "sim_time_s", 0)
 
-    operation = find_operation(snapshot, operation_id)
+    if train is None:
+        return [make_violation("NO_FEASIBLE_SLOT", f"Неизвестный поезд {tid}", operation_ids=[oid])]
 
-    if operation is None:
-        reasons.append(
-            make_violation(
-                "UNKNOWN_OPERATION",
-                f"Операция {operation_id} не существует.",
-                operation_ids=[operation_id],
-            )
-        )
-        return {"allowed": False, "reasons": reasons}
+    if start_s is None or end_s is None or end_s <= start_s:
+        problems.append(make_violation("NO_FEASIBLE_SLOT", "Некорректный интервал назначения",
+                                       operation_ids=[oid], start_s=start_s, end_s=end_s))
+        return problems
 
-    train_id = get_value(operation, "train_id")
-    train = find_train(snapshot, train_id)
+    if end_s - start_s != get_value(operation, "duration_s", end_s - start_s):
+        problems.append(make_violation("NO_FEASIBLE_SLOT", "Длительность назначения не совпадает с операцией",
+                                       operation_ids=[oid], start_s=start_s, end_s=end_s))
 
-    if start_s is None or end_s is None:
-        reasons.append(
-            make_violation(
-                "INVALID_INTERVAL",
-                "У назначения отсутствует start_s или end_s.",
-                operation_ids=[operation_id],
-            )
-        )
-        return {"allowed": False, "reasons": reasons}
+    for pred_id in get_value(operation, "predecessor_ids", []) or []:
+        pred = operations.get(pred_id)
+        if pred is None or get_value(pred, "status") != "completed":
+            problems.append(make_violation(
+                "PREDECESSOR_INCOMPLETE",
+                f"Предшествующая операция {pred_id} ещё не завершена",
+                operation_ids=[pred_id, oid],
+            ))
 
-    if end_s <= start_s:
-        reasons.append(
-            make_violation(
-                "INVALID_INTERVAL",
-                "Интервал должен иметь положительную длительность.",
-                operation_ids=[operation_id],
-                start_s=start_s,
-                end_s=end_s,
-            )
-        )
+    track = tracks.get(track_id)
+    if track is None:
+        problems.append(make_violation("NO_FEASIBLE_SLOT", f"Неизвестный путь {track_id}",
+                                       entity_ids=[track_id], operation_ids=[oid]))
+        return problems
 
-    if start_s < sim_time_s:
-        reasons.append(
-            make_violation(
-                "START_IN_PAST",
-                (
-                    f"Операция {operation_id} начинается "
-                    f"в {start_s} сек., но текущее время {sim_time_s} сек."
-                ),
-                operation_ids=[operation_id],
-                start_s=start_s,
-                end_s=end_s,
-            )
-        )
+    if get_value(track, "usable_length_m", 0) < get_value(train, "length_m", 0):
+        problems.append(make_violation("NO_FEASIBLE_SLOT", "Поезд длиннее полезной длины пути",
+                                       entity_ids=[tid, track_id], operation_ids=[oid]))
 
-    predecessor_ids = get_value(operation, "predecessor_ids", []) or []
+    kind = get_value(operation, "kind", "")
+    expected_kind = _expected_track_kind(get_value(train, "kind", ""), kind)
+    if expected_kind and get_value(track, "kind") != expected_kind:
+        problems.append(make_violation("NO_FEASIBLE_SLOT", "Назначение пути несовместимо с операцией",
+                                       entity_ids=[track_id], operation_ids=[oid]))
 
-    for predecessor_id in predecessor_ids:
-        predecessor = find_operation(snapshot, predecessor_id)
+    if kind == "arrival":
+        if get_value(train, "status") != "waiting_entry" or now < get_value(train, "expected_arrival_s", 0):
+            problems.append(make_violation("PREDECESSOR_INCOMPLETE", "Поезд ещё не прибыл к W",
+                                           entity_ids=[tid], operation_ids=[oid]))
+    elif get_value(train, "status") != "on_track":
+        problems.append(make_violation("PREDECESSOR_INCOMPLETE", "Поезд не находится на станционном пути",
+                                       entity_ids=[tid], operation_ids=[oid]))
 
-        if predecessor is None:
-            reasons.append(
-                make_violation(
-                    "PREDECESSOR_INCOMPLETE",
-                    f"Предшественник {predecessor_id} отсутствует.",
-                    operation_ids=[predecessor_id, operation_id],
-                )
-            )
-            continue
+    if kind == "departure" and get_value(train, "kind") in ("passenger", "transit"):
+        if now + get_value(operation, "duration_s", 0) < get_value(train, "scheduled_departure_s", 0):
+            problems.append(make_violation("NO_FEASIBLE_SLOT", "Раннее отправление запрещено",
+                                           entity_ids=[tid], operation_ids=[oid]))
 
-        predecessor_status = get_value(predecessor, "status")
-        predecessor_end = get_value(predecessor, "actual_end_s")
-
-        if predecessor_status != "completed" and predecessor_end is None:
-            reasons.append(
-                make_violation(
-                    "PREDECESSOR_INCOMPLETE",
-                    (
-                        f"Операция {operation_id} не может начаться, "
-                        f"потому что {predecessor_id} ещё не завершена."
-                    ),
-                    operation_ids=[predecessor_id, operation_id],
-                )
-            )
-
-    if track_id:
-        track = find_track(snapshot, track_id)
-
-        if track is None:
-            reasons.append(
-                make_violation(
-                    "UNKNOWN_TRACK",
-                    f"Путь {track_id} не существует.",
-                    entity_ids=[track_id],
-                    operation_ids=[operation_id],
-                )
-            )
-        else:
-            availability = get_value(track, "availability", "open")
-            closed_until_s = get_value(track, "closed_until_s", 0) or 0
-
-            if availability == "closed" and start_s < closed_until_s:
-                reasons.append(
-                    make_violation(
-                        "TRACK_CLOSED",
-                        f"Путь {track_id} закрыт до {closed_until_s} сек.",
-                        entity_ids=[track_id],
-                        operation_ids=[operation_id],
-                        start_s=start_s,
-                        end_s=end_s,
-                    )
-                )
-
-            occupant_train_id = get_value(track, "occupant_train_id")
-
-            if occupant_train_id is not None and occupant_train_id != train_id:
-                reasons.append(
-                    make_violation(
-                        "TRACK_OCCUPIED",
-                        f"Путь {track_id} уже занят поездом {occupant_train_id}.",
-                        entity_ids=[track_id, occupant_train_id],
-                        operation_ids=[operation_id],
-                    )
-                )
-
-            if train is not None:
-                train_length = get_value(train, "length_m", 0)
-                track_length = get_value(track, "usable_length_m", 0)
-
-                if train_length > track_length:
-                    reasons.append(
-                        make_violation(
-                            "TRACK_TOO_SHORT",
-                            (
-                                f"Поезд {train_id} имеет длину {train_length} м, "
-                                f"а путь {track_id} имеет длину {track_length} м."
-                            ),
-                            entity_ids=[train_id, track_id],
-                            operation_ids=[operation_id],
-                        )
-                    )
-
-    for resource_id in resource_ids:
-        resource = find_resource(snapshot, resource_id)
-
-        if resource is None:
-            reasons.append(
-                make_violation(
-                    "UNKNOWN_RESOURCE",
-                    f"Ресурс {resource_id} не существует.",
-                    entity_ids=[resource_id],
-                    operation_ids=[operation_id],
-                )
-            )
-            continue
-
-        availability = get_value(resource, "availability", "available")
-        unavailable_until_s = get_value(resource, "unavailable_until_s", 0) or 0
-
-        if availability != "available" and start_s < unavailable_until_s:
-            reasons.append(
-                make_violation(
-                    "RESOURCE_UNAVAILABLE",
-                    f"Ресурс {resource_id} недоступен до {unavailable_until_s} сек.",
-                    entity_ids=[resource_id],
-                    operation_ids=[operation_id],
-                )
-            )
-
-        active_operation_id = get_value(resource, "active_operation_id")
-
-        if active_operation_id is not None and active_operation_id != operation_id:
-            reasons.append(
-                make_violation(
-                    "RESOURCE_UNAVAILABLE",
-                    (
-                        f"Ресурс {resource_id} уже используется "
-                        f"операцией {active_operation_id}."
-                    ),
-                    entity_ids=[resource_id],
-                    operation_ids=[operation_id, active_operation_id],
-                )
-            )
-
-    if route_id:
-        route = find_route(snapshot, route_id)
-
+    if kind in MOVING:
+        route = routes.get(route_id)
         if route is None:
-            reasons.append(
-                make_violation(
-                    "UNKNOWN_ROUTE",
-                    f"Маршрут {route_id} не существует.",
-                    entity_ids=[route_id],
-                    operation_ids=[operation_id],
-                )
-            )
+            problems.append(make_violation("NO_FEASIBLE_SLOT", "Неизвестный маршрут",
+                                           entity_ids=[route_id], operation_ids=[oid]))
+        else:
+            actual_from = "W" if kind == "arrival" else get_value(train, "track_id")
+            if get_value(route, "from_id") != actual_from:
+                problems.append(make_violation("NO_FEASIBLE_SLOT", "Маршрут не начинается в фактическом положении поезда",
+                                               entity_ids=[route_id], operation_ids=[oid]))
+            if kind == "departure":
+                if get_value(route, "to_id") != "E" or get_value(route, "from_id") != track_id:
+                    problems.append(make_violation("NO_FEASIBLE_SLOT", "Неверный маршрут отправления",
+                                                   entity_ids=[route_id, track_id], operation_ids=[oid]))
+            else:
+                if get_value(route, "to_id") != track_id:
+                    problems.append(make_violation("NO_FEASIBLE_SLOT", "Целевой путь не соответствует маршруту",
+                                                   entity_ids=[route_id, track_id], operation_ids=[oid]))
 
-    return {"allowed": len(reasons) == 0, "reasons": reasons}
+            for zone in get_value(route, "conflict_zone_ids", []) or []:
+                owner = busy_zones.get(zone)
+                if owner not in (None, oid):
+                    problems.append(make_violation("ROUTE_BUSY", f"Конфликтная зона {zone} занята",
+                                                   entity_ids=[zone], operation_ids=[oid, owner]))
+
+        if kind != "departure":
+            if get_value(track, "availability") == "closed":
+                problems.append(make_violation("TRACK_CLOSED", "Целевой путь закрыт для новых входов",
+                                               entity_ids=[track_id], operation_ids=[oid]))
+            occupant = get_value(track, "occupant_train_id")
+            reserved_by = reservations.get(track_id)
+            if occupant not in (None, tid) or reserved_by not in (None, oid):
+                problems.append(make_violation("TRACK_OCCUPIED", "Целевой путь занят или зарезервирован",
+                                               entity_ids=[track_id], operation_ids=[oid]))
+    else:
+        if route_id is not None:
+            problems.append(make_violation("NO_FEASIBLE_SLOT", "У неподвижной операции не должно быть маршрута",
+                                           operation_ids=[oid]))
+        if get_value(train, "track_id") != track_id:
+            problems.append(make_violation("NO_FEASIBLE_SLOT", "Нельзя выполнять операцию на другом пути",
+                                           entity_ids=[track_id], operation_ids=[oid]))
+
+    if kind != "arrival":
+        source = tracks.get(get_value(train, "track_id"))
+        if source and get_value(source, "occupant_train_id") != tid:
+            problems.append(make_violation("TRACK_OCCUPIED", "Поезд не владеет исходным путём",
+                                           entity_ids=[get_value(train, "track_id")], operation_ids=[oid]))
+
+    selected = []
+    for rid in resource_ids:
+        r = resources.get(rid)
+        if r is None:
+            problems.append(make_violation("RESOURCE_UNAVAILABLE", f"Неизвестный ресурс {rid}",
+                                           entity_ids=[rid], operation_ids=[oid]))
+            continue
+        selected.append(r)
+        if get_value(r, "availability") != "available" or get_value(r, "active_operation_id"):
+            problems.append(make_violation("RESOURCE_UNAVAILABLE", f"Ресурс {rid} занят или недоступен",
+                                           entity_ids=[rid], operation_ids=[oid]))
+
+    for resource_kind, capability in _resource_need(kind):
+        if not any(
+            get_value(r, "kind") == resource_kind
+            and capability in (get_value(r, "capabilities", []) or [])
+            for r in selected
+        ):
+            problems.append(make_violation(
+                "RESOURCE_UNAVAILABLE",
+                f"Не назначен ресурс {resource_kind}/{capability}",
+                operation_ids=[oid],
+            ))
+
+    if kind == "cargo" and f"F{track_id[1:]}" not in resource_ids:
+        problems.append(make_violation("RESOURCE_UNAVAILABLE", "Грузовой фронт не соответствует пути",
+                                       entity_ids=[track_id], operation_ids=[oid]))
+
+    return problems
 
 
-def validate_plan(snapshot, plan):
-    violations = []
-    assignments = get_value(plan, "assignments", []) or []
+def can_start(context: Json, operation_or_assignment: Json, assignment: Json | None = None):
+    """Simulation contract: can_start(context, operation, assignment) -> list[conflict].
 
-    for assignment in assignments:
-        result = can_start(snapshot, assignment)
-        violations.extend(result["reasons"])
-
-    operation_assignments = {}
-
-    for assignment in assignments:
-        operation_id = get_value(assignment, "operation_id")
-
-        if operation_id in operation_assignments:
-            violations.append(
-                make_violation(
-                    "DOUBLE_ASSIGNMENT",
-                    f"Операция {operation_id} назначена более одного раза.",
-                    operation_ids=[operation_id],
-                )
-            )
-
-        operation_assignments[operation_id] = assignment
-
-    for i in range(len(assignments)):
-        assignment_a = assignments[i]
-
-        for j in range(i + 1, len(assignments)):
-            assignment_b = assignments[j]
-
-            start_a = get_value(assignment_a, "start_s")
-            end_a = get_value(assignment_a, "end_s")
-            start_b = get_value(assignment_b, "start_s")
-            end_b = get_value(assignment_b, "end_s")
-
-            if None in (start_a, end_a, start_b, end_b):
-                continue
-
-            if not intervals_overlap(start_a, end_a, start_b, end_b):
-                continue
-
-            track_a = get_value(assignment_a, "track_id")
-            track_b = get_value(assignment_b, "track_id")
-
-            if track_a and track_a == track_b:
-                violations.append(
-                    make_violation(
-                        "TRACK_OCCUPIED",
-                        f"Путь {track_a} назначен двум операциям одновременно.",
-                        entity_ids=[track_a],
-                        operation_ids=[
-                            get_value(assignment_a, "operation_id"),
-                            get_value(assignment_b, "operation_id"),
-                        ],
-                        start_s=max(start_a, start_b),
-                        end_s=min(end_a, end_b),
-                    )
-                )
-
-            resources_a = set(get_value(assignment_a, "resource_ids", []) or [])
-            resources_b = set(get_value(assignment_b, "resource_ids", []) or [])
-
-            for resource_id in resources_a & resources_b:
-                violations.append(
-                    make_violation(
-                        "RESOURCE_UNAVAILABLE",
-                        (
-                            f"Ресурс {resource_id} используется одновременно "
-                            f"двумя операциями."
-                        ),
-                        entity_ids=[resource_id],
-                        operation_ids=[
-                            get_value(assignment_a, "operation_id"),
-                            get_value(assignment_b, "operation_id"),
-                        ],
-                    )
-                )
-
-            route_a_id = get_value(assignment_a, "route_id")
-            route_b_id = get_value(assignment_b, "route_id")
-
-            if route_a_id and route_b_id:
-                route_a = find_route(snapshot, route_a_id)
-                route_b = find_route(snapshot, route_b_id)
-
-                if route_a and route_b:
-                    zones_a = set(get_value(route_a, "conflict_zone_ids", []) or [])
-                    zones_b = set(get_value(route_b, "conflict_zone_ids", []) or [])
-
-                    if zones_a & zones_b:
-                        violations.append(
-                            make_violation(
-                                "ROUTE_BUSY",
-                                f"Маршруты {route_a_id} и {route_b_id} конфликтуют.",
-                                entity_ids=[route_a_id, route_b_id],
-                                operation_ids=[
-                                    get_value(assignment_a, "operation_id"),
-                                    get_value(assignment_b, "operation_id"),
-                                ],
-                            )
-                        )
-
-    for assignment in assignments:
-        operation_id = get_value(assignment, "operation_id")
-        operation = find_operation(snapshot, operation_id)
-
+    Legacy local-test form can_start(snapshot, assignment) is kept temporarily and returns
+    {"allowed": bool, "reasons": [...]}.
+    """
+    if assignment is None:
+        snapshot = context
+        legacy_assignment = operation_or_assignment
+        operations = _index(get_value(snapshot, "operations", []))
+        operation = operations.get(get_value(legacy_assignment, "operation_id"))
         if operation is None:
+            reasons = [make_violation(
+                "NO_FEASIBLE_SLOT",
+                f"Операция {get_value(legacy_assignment, 'operation_id')} не существует",
+                operation_ids=[get_value(legacy_assignment, "operation_id")],
+            )]
+        else:
+            reasons = _can_start_conflicts(snapshot, operation, legacy_assignment)
+        return {"allowed": not reasons, "reasons": reasons}
+
+    return _can_start_conflicts(context, operation_or_assignment, assignment)
+
+
+def validate_plan(context: Json, plan: Json) -> list[Json]:
+    (
+        snapshot, topology, reservations, busy_zones, running,
+        tracks, trains, resources, operations, routes,
+    ) = _maps(context)
+
+    problems: list[Json] = []
+    now = get_value(snapshot, "sim_time_s", 0)
+    assignments = get_value(plan, "assignments", []) or []
+    by_operation: dict[str, Json] = {}
+
+    for a in assignments:
+        oid = get_value(a, "operation_id")
+        if oid in by_operation:
+            problems.append(make_violation("NO_FEASIBLE_SLOT", f"Операция {oid} назначена дважды",
+                                           operation_ids=[oid]))
+            continue
+        by_operation[oid] = a
+
+        op = operations.get(oid)
+        if op is None:
+            problems.append(make_violation("NO_FEASIBLE_SLOT", f"Неизвестная операция {oid}",
+                                           operation_ids=[oid]))
             continue
 
-        current_start = get_value(assignment, "start_s")
-        predecessor_ids = get_value(operation, "predecessor_ids", []) or []
+        start_s, end_s = get_value(a, "start_s"), get_value(a, "end_s")
+        if type(start_s) is not int or type(end_s) is not int or end_s <= start_s:
+            problems.append(make_violation("NO_FEASIBLE_SLOT", "Некорректный интервал",
+                                           operation_ids=[oid], start_s=start_s, end_s=end_s))
+            continue
 
-        for predecessor_id in predecessor_ids:
-            predecessor = find_operation(snapshot, predecessor_id)
+        if end_s - start_s != get_value(op, "duration_s"):
+            problems.append(make_violation("NO_FEASIBLE_SLOT", "Длительность назначения не совпадает с операцией",
+                                           operation_ids=[oid], start_s=start_s, end_s=end_s))
 
-            if predecessor and get_value(predecessor, "status") == "completed":
+        if get_value(op, "status") == "pending" and start_s < now:
+            problems.append(make_violation("STALE_PLAN", "Будущая операция начинается в прошлом",
+                                           operation_ids=[oid], start_s=start_s, end_s=end_s))
+
+        tid = get_value(op, "train_id")
+        train = trains.get(tid)
+        track_id = get_value(a, "track_id")
+        track = tracks.get(track_id)
+        if train is None or track is None:
+            problems.append(make_violation("NO_FEASIBLE_SLOT", "Неизвестный поезд или путь",
+                                           entity_ids=[tid, track_id], operation_ids=[oid]))
+            continue
+
+        if get_value(track, "usable_length_m", 0) < get_value(train, "length_m", 0):
+            problems.append(make_violation("NO_FEASIBLE_SLOT", "Поезд длиннее полезной длины пути",
+                                           entity_ids=[tid, track_id], operation_ids=[oid]))
+
+        kind = get_value(op, "kind", "")
+        expected_kind = _expected_track_kind(get_value(train, "kind", ""), kind)
+        if expected_kind and get_value(track, "kind") != expected_kind:
+            problems.append(make_violation("NO_FEASIBLE_SLOT", "Назначение пути несовместимо с операцией",
+                                           entity_ids=[track_id], operation_ids=[oid]))
+
+        route_id = get_value(a, "route_id")
+        if kind in MOVING:
+            route = routes.get(route_id)
+            if route is None or get_value(route, "duration_s") != get_value(op, "duration_s"):
+                problems.append(make_violation("NO_FEASIBLE_SLOT", "Неизвестный маршрут или неверная длительность",
+                                               entity_ids=[route_id], operation_ids=[oid]))
+            elif kind == "departure":
+                if get_value(route, "from_id") != track_id or get_value(route, "to_id") != "E":
+                    problems.append(make_violation("NO_FEASIBLE_SLOT", "Путь не соответствует маршруту отправления",
+                                                   entity_ids=[route_id, track_id], operation_ids=[oid]))
+            elif get_value(route, "to_id") != track_id:
+                problems.append(make_violation("NO_FEASIBLE_SLOT", "Целевой путь не соответствует маршруту",
+                                               entity_ids=[route_id, track_id], operation_ids=[oid]))
+        elif route_id is not None:
+            problems.append(make_violation("NO_FEASIBLE_SLOT", "У неподвижной операции не должно быть маршрута",
+                                           operation_ids=[oid]))
+
+        resource_ids = get_value(a, "resource_ids", []) or []
+        if len(resource_ids) != len(set(resource_ids)):
+            problems.append(make_violation("RESOURCE_UNAVAILABLE", "Ресурс указан дважды",
+                                           operation_ids=[oid]))
+
+        selected = []
+        for rid in resource_ids:
+            resource = resources.get(rid)
+            if resource is None:
+                problems.append(make_violation("RESOURCE_UNAVAILABLE", f"Неизвестный ресурс {rid}",
+                                               entity_ids=[rid], operation_ids=[oid]))
                 continue
-
-            predecessor_assignment = operation_assignments.get(predecessor_id)
-
-            if predecessor_assignment is None:
-                violations.append(
-                    make_violation(
-                        "PREDECESSOR_INCOMPLETE",
-                        (
-                            f"Для операции {operation_id} не запланирован "
-                            f"предшественник {predecessor_id}."
-                        ),
-                        operation_ids=[predecessor_id, operation_id],
-                    )
-                )
-                continue
-
-            predecessor_end = get_value(predecessor_assignment, "end_s")
-
-            if (
-                predecessor_end is not None
-                and current_start is not None
-                and predecessor_end > current_start
+            selected.append(resource)
+            unavailable_until = get_value(resource, "unavailable_until_s")
+            if get_value(resource, "availability") != "available" and (
+                unavailable_until is None or start_s < unavailable_until
             ):
-                violations.append(
-                    make_violation(
-                        "PREDECESSOR_INCOMPLETE",
-                        (
-                            f"Операция {operation_id} начинается раньше "
-                            f"завершения {predecessor_id}."
-                        ),
-                        operation_ids=[predecessor_id, operation_id],
-                    )
-                )
+                problems.append(make_violation("RESOURCE_UNAVAILABLE", f"Ресурс {rid} недоступен",
+                                               entity_ids=[rid], operation_ids=[oid]))
 
-    return violations
+        for resource_kind, capability in _resource_need(kind):
+            if not any(
+                get_value(r, "kind") == resource_kind
+                and capability in (get_value(r, "capabilities", []) or [])
+                for r in selected
+            ):
+                problems.append(make_violation("RESOURCE_UNAVAILABLE",
+                                               f"Не назначен ресурс {resource_kind}/{capability}",
+                                               operation_ids=[oid]))
+
+        if kind == "cargo" and f"F{track_id[1:]}" not in resource_ids:
+            problems.append(make_violation("RESOURCE_UNAVAILABLE", "Грузовой фронт не соответствует пути",
+                                           entity_ids=[track_id], operation_ids=[oid]))
+
+    required = {
+        oid for oid, op in operations.items()
+        if get_value(op, "status") == "pending"
+    }
+    missing = sorted(required - set(by_operation))
+    for oid in missing:
+        problems.append(make_violation("NO_FEASIBLE_SLOT", "Будущая операция отсутствует в полном плане",
+                                       operation_ids=[oid]))
+
+    # Predecessor timing and arrival/early-departure rules.
+    actual_end = {
+        oid: get_value(op, "actual_end_s")
+        for oid, op in operations.items()
+        if get_value(op, "status") == "completed"
+    }
+    for oid, ra in running.items():
+        actual_end[oid] = get_value(ra, "end_s")
+
+    for oid, a in by_operation.items():
+        op = operations.get(oid)
+        if not op:
+            continue
+        start_s, end_s = a["start_s"], a["end_s"]
+        train = trains[get_value(op, "train_id")]
+
+        for pred_id in get_value(op, "predecessor_ids", []) or []:
+            pred_end = actual_end.get(pred_id)
+            if pred_end is None and pred_id in by_operation:
+                pred_end = get_value(by_operation[pred_id], "end_s")
+            if pred_end is None or pred_end > start_s:
+                problems.append(make_violation("PREDECESSOR_INCOMPLETE",
+                                               f"Предшественник {pred_id} не завершён к старту {oid}",
+                                               operation_ids=[pred_id, oid]))
+
+        if get_value(op, "kind") == "arrival" and start_s < get_value(train, "expected_arrival_s", 0):
+            problems.append(make_violation("NO_FEASIBLE_SLOT", "Приём назначен раньше прибытия поезда",
+                                           entity_ids=[get_value(train, "id")], operation_ids=[oid]))
+
+        if get_value(op, "kind") == "departure" and get_value(train, "kind") in ("passenger", "transit"):
+            if end_s < get_value(train, "scheduled_departure_s", 0):
+                problems.append(make_violation("NO_FEASIBLE_SLOT", "Раннее отправление запрещено",
+                                               entity_ids=[get_value(train, "id")], operation_ids=[oid]))
+
+    # Resource and route-zone overlap.
+    resource_usage: dict[str, list[tuple[int, int, str]]] = {}
+    zone_usage: dict[str, list[tuple[int, int, str]]] = {}
+
+    for oid, a in by_operation.items():
+        op = operations.get(oid)
+        if not op:
+            continue
+        for rid in get_value(a, "resource_ids", []) or []:
+            resource_usage.setdefault(rid, []).append((a["start_s"], a["end_s"], oid))
+        if get_value(op, "kind") in MOVING:
+            route = routes.get(get_value(a, "route_id"))
+            if route:
+                for zone in get_value(route, "conflict_zone_ids", []) or []:
+                    zone_usage.setdefault(zone, []).append((a["start_s"], a["end_s"], oid))
+
+    for rid, items in resource_usage.items():
+        items.sort()
+        for i in range(len(items)):
+            for j in range(i + 1, len(items)):
+                if intervals_overlap(items[i][0], items[i][1], items[j][0], items[j][1]):
+                    problems.append(make_violation("RESOURCE_UNAVAILABLE",
+                                                   f"Ресурс {rid} назначен одновременно",
+                                                   entity_ids=[rid],
+                                                   operation_ids=[items[i][2], items[j][2]]))
+
+    for zone, items in zone_usage.items():
+        items.sort()
+        for i in range(len(items)):
+            for j in range(i + 1, len(items)):
+                if intervals_overlap(items[i][0], items[i][1], items[j][0], items[j][1]):
+                    problems.append(make_violation("ROUTE_BUSY",
+                                                   f"Конфликтная зона {zone} используется одновременно",
+                                                   entity_ids=[zone],
+                                                   operation_ids=[items[i][2], items[j][2]]))
+
+    # Track continuity + hold intervals between movements.
+    occupancy: dict[str, list[tuple[int, int, str]]] = {}
+    horizon = get_value(topology, "horizon_s", now + 7200)
+
+    for tid, train in trains.items():
+        pending_ops = [
+            operations[oid] for oid in by_operation
+            if oid in operations and get_value(operations[oid], "train_id") == tid
+        ]
+        ordered = _topological_for_train(pending_ops)
+
+        current_track = get_value(train, "track_id")
+        hold_start = now if current_track else None
+
+        # If a running movement exists, use its destination as the future position.
+        for roid, ra in running.items():
+            rop = operations.get(roid)
+            if rop and get_value(rop, "train_id") == tid and get_value(rop, "kind") in MOVING:
+                rr = routes.get(get_value(ra, "route_id"))
+                if current_track:
+                    occupancy.setdefault(current_track, []).append((now, get_value(ra, "end_s"), tid))
+                if rr and get_value(rr, "to_id") != "E":
+                    current_track = get_value(rr, "to_id")
+                    hold_start = now
+                else:
+                    current_track, hold_start = None, None
+
+        for op in ordered:
+            oid = get_value(op, "id")
+            a = by_operation[oid]
+            kind = get_value(op, "kind")
+            track_id = get_value(a, "track_id")
+            route = routes.get(get_value(a, "route_id")) if kind in MOVING else None
+
+            if kind == "arrival":
+                if current_track is not None:
+                    problems.append(make_violation("NO_FEASIBLE_SLOT", "Повторный приём поезда на путь",
+                                                   entity_ids=[tid], operation_ids=[oid]))
+                if route and get_value(route, "from_id") != "W":
+                    problems.append(make_violation("NO_FEASIBLE_SLOT", "Маршрут приёма должен начинаться в W",
+                                                   operation_ids=[oid]))
+                current_track, hold_start = track_id, a["start_s"]
+
+            elif kind == "departure":
+                if current_track != track_id:
+                    problems.append(make_violation("NO_FEASIBLE_SLOT", "Отправление не с текущего пути",
+                                                   entity_ids=[tid, track_id], operation_ids=[oid]))
+                if current_track is not None:
+                    occupancy.setdefault(current_track, []).append((hold_start or now, a["end_s"], tid))
+                current_track, hold_start = None, None
+
+            elif kind.startswith("shunt_"):
+                if current_track is None or not route or get_value(route, "from_id") != current_track:
+                    problems.append(make_violation("NO_FEASIBLE_SLOT", "Маневровый маршрут не начинается с текущего пути",
+                                                   entity_ids=[tid], operation_ids=[oid]))
+                if current_track is not None:
+                    occupancy.setdefault(current_track, []).append((hold_start or now, a["end_s"], tid))
+                current_track, hold_start = track_id, a["start_s"]
+
+            else:
+                if current_track != track_id:
+                    problems.append(make_violation("NO_FEASIBLE_SLOT", "Неподвижная операция назначена не на текущий путь",
+                                                   entity_ids=[tid, track_id], operation_ids=[oid]))
+
+        if current_track is not None:
+            occupancy.setdefault(current_track, []).append((hold_start or now, horizon, tid))
+
+    for track_id, items in occupancy.items():
+        track = tracks.get(track_id)
+        if not track:
+            continue
+        items.sort()
+        closed_until = get_value(track, "closed_until_s")
+        for start_s, end_s, tid in items:
+            # Closed track may remain occupied; only future entries are prohibited.
+            if closed_until and get_value(track, "availability") == "closed":
+                train = trains.get(tid)
+                if get_value(train, "track_id") != track_id and start_s < closed_until:
+                    problems.append(make_violation("TRACK_CLOSED", f"Путь {track_id} закрыт до {closed_until}",
+                                                   entity_ids=[track_id, tid], start_s=start_s, end_s=end_s))
+        for i in range(len(items)):
+            for j in range(i + 1, len(items)):
+                if items[i][2] == items[j][2]:
+                    continue
+                if intervals_overlap(items[i][0], items[i][1], items[j][0], items[j][1]):
+                    problems.append(make_violation("TRACK_OCCUPIED",
+                                                   f"Путь {track_id} удерживается двумя поездами одновременно",
+                                                   entity_ids=[track_id, items[i][2], items[j][2]],
+                                                   start_s=max(items[i][0], items[j][0]),
+                                                   end_s=min(items[i][1], items[j][1])))
+
+    return problems
+
+
+class RulesAdapter:
+    """Object expected by backend.app.simulation.engine.Rules."""
+
+    def can_start(self, context: Json, operation: Json, assignment: Json) -> list[Json]:
+        return _can_start_conflicts(context, operation, assignment)
+
+    def validate_plan(self, context: Json, plan: Json) -> list[Json]:
+        return validate_plan(context, plan)
+
+
+RULES = RulesAdapter()
