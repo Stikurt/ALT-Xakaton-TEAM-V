@@ -180,6 +180,7 @@ export class Station {
   }
 
   incident(kind: string, target: string, duration = 600, delay = 300): [number, string, string] {
+    kind = ({ delay_train: 'delay', locomotive_unavailable: 'loco_unavailable' } as Record<string, string>)[kind] ?? kind // имена контракта И
     const t = this.sim_time_s
     let msg = ''
     if (kind === 'delay') {

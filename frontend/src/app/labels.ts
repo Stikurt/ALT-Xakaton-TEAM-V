@@ -21,7 +21,7 @@ export const TRACK_KIND: Record<string, string> = {
   cargo: 'Погрузка и выгрузка', loco: 'Стоянка локомотивов',
 }
 export const RES_KIND: Record<string, string> = {
-  shunting_loco: 'Маневровый локомотив', shunting_crew: 'Составительская бригада', inspection_crew: 'Бригада осмотра',
+  shunting_loco: 'Маневровый локомотив', shunting_crew: 'Составительская бригада', inspection_crew: 'Бригада осмотра', cargo_front: 'Грузовой фронт',
 }
 export const STRATEGY: Record<string, string> = {
   passenger_first: 'Пассажирские вперёд', earliest_departure: 'Раньше по отправлению',
@@ -39,7 +39,8 @@ export function fmtT(s: number | null | undefined): string {
   const ss = String(sec).padStart(2, '0')
   return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`
 }
-export function fmtDur(s: number): string {
+export function fmtDur(s: number | null | undefined): string {
+  if (s === null || s === undefined) return '—'
   if (!s) return '0 с'
   const m = Math.floor(s / 60)
   const sec = s % 60
@@ -62,7 +63,6 @@ export function useSimNow(maxFps = 60): number {
       }
       if (!clock.paused) raf = requestAnimationFrame(frame)
     }
-    setNow(estimateSim(clock, performance.now()))
     raf = requestAnimationFrame(frame)
     return () => cancelAnimationFrame(raf)
   }, [clock, maxFps])

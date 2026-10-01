@@ -264,6 +264,7 @@ class Station:
 
     # ---------- сбои ----------
     def incident(self, kind, target_id, duration_s=600, delay_s=300):
+        kind = {"delay_train": "delay", "locomotive_unavailable": "loco_unavailable"}.get(kind, kind)  # имена контракта И
         t = self.sim_time_s
         if kind == "delay":
             tr = next((x for x in self.trains if x["id"] == target_id), None)

@@ -54,8 +54,8 @@ export interface Assignment {
 }
 export interface Explanation { train_id: string; code: string; operation_ids: string[]; message: string }
 export interface PlanMetrics {
-  total_delay_s: number; max_delay_s: number; unassigned_count: number; changed_count: number
-  delayed_trains: number; forecast_departures: Record<string, number>; delays: Record<string, number>
+  total_delay_s: number | null; max_delay_s: number | null; unassigned_count: number; changed_count: number | null
+  delayed_trains: number | null; forecast_departures: Record<string, number>; delays: Record<string, number>
 }
 export type PlanStatus = 'feasible' | 'partial' | 'infeasible' | 'timeout'
 export interface Plan {
@@ -63,7 +63,7 @@ export interface Plan {
   strategy: 'passenger_first' | 'earliest_departure'; status: PlanStatus; timed_out: boolean
   assignments: Assignment[]; unassigned: { train_id: string; code: string; message: string }[]
   metrics: PlanMetrics; explanations: Explanation[]; violations: { code: string; message: string }[]
-  calc_ms: number; identical_to_other?: boolean; index_forecast: StationIndex | null
+  calc_ms: number | null; identical_to_other?: boolean; index_forecast: StationIndex | null
 }
 export interface Conflict {
   id: string; code: ConflictCode; severity: 'high' | 'medium' | 'low'; kind: 'execution' | 'plan'

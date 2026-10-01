@@ -2,6 +2,7 @@
 import { create } from 'zustand'
 import { api, HttpError, type User } from '../api/client'
 import { connectWs, type WsStatus } from '../api/ws'
+import { normalizePlan, normalizeSnapshot, normalizeState } from '../api/adapt'
 import type { ClockSync, IncidentCmd, Plan, Snapshot, StationIndex, Topology, WsEnvelope } from '../api/types'
 
 export type Selection =
@@ -39,6 +40,8 @@ interface State {
   auth: 'checking' | 'anonymous' | 'signed_in'
   user: User | null
   authError: string | null
+  noAuthBackend: boolean
+  httpPolling: boolean
   topology: Topology | null
   snapshot: Snapshot | null
   loadError: string | null
@@ -88,10 +91,30 @@ let toastSeq = 0
 let stopWs: (() => void) | null = null
 let historySeq = 0
 let historyTimer: number | undefined
+let activePlanCache: Plan | null = null
+let pendingPlanId: string | null = null
+
+const samePlan = (a: Plan, b: Plan) => {
+  const k = (p: Plan) => p.assignments.map((x) => `${x.operation_id}|${x.start_s}|${x.track_id}|${x.resource_ids.join()}`).sort().join(';')
+  return k(a) === k(b)
+}
 
 export const useStore = create<State>((set, get) => {
   const applySnapshot = (snap: Snapshot, topo?: Topology) => {
     const prev = get().snapshot
+    if (!snap.active_plan && snap.active_plan_id) {
+      // backend И отдаёт только active_plan_id — подставляем ранее загруженный план или загружаем его
+      const cached = activePlanCache?.id === snap.active_plan_id ? activePlanCache : null
+      if (cached) snap = { ...snap, active_plan: cached }
+      else if (pendingPlanId !== snap.active_plan_id) {
+        pendingPlanId = snap.active_plan_id
+        api.plan(snap.active_plan_id).then((p) => {
+          activePlanCache = p
+          const cur = get().snapshot
+          if (cur && cur.active_plan_id === p.id) set({ snapshot: { ...cur, active_plan: p } })
+        }, () => { pendingPlanId = null })
+      }
+    }
     const runChanged = prev && prev.run_id !== snap.run_id
     set((s) => ({
       snapshot: snap,
@@ -134,7 +157,22 @@ export const useStore = create<State>((set, get) => {
   const startSession = () => {
     stopWs?.()
     void refetch()
-    stopWs = connectWs({
+    let offlineSince: number | null = null
+    // Если WebSocket недоступен (у backend ещё нет /ws), раз в 2 с читаем снимок по HTTP. Команды остаются заблокированы.
+    const tick = window.setInterval(() => {
+      const st = get()
+      if (st.conn === 'online') {
+        offlineSince = null
+        if (st.httpPolling) set({ httpPolling: false })
+        return
+      }
+      offlineSince ??= Date.now()
+      if (Date.now() - offlineSince > 3000) {
+        if (!st.httpPolling) set({ httpPolling: true })
+        void refetch()
+      }
+    }, 2000)
+    const stopInner = connectWs({
       onMessage: onWs,
       onStatus: (s) => {
         if (s === 'offline') {
@@ -145,6 +183,11 @@ export const useStore = create<State>((set, get) => {
       },
       onGap: () => void refetch(),
     })
+    stopWs = () => {
+      stopInner()
+      window.clearInterval(tick)
+      set({ httpPolling: false })
+    }
   }
 
   const onWs = (m: WsEnvelope) => {
@@ -155,12 +198,12 @@ export const useStore = create<State>((set, get) => {
     }
     switch (m.type) {
       case 'snapshot': {
-        const p = m.payload as { snapshot: Snapshot; topology: Topology }
-        applySnapshot(p.snapshot, p.topology)
+        const n = normalizeState(m.payload)
+        applySnapshot(n.snapshot, n.topology)
         break
       }
       case 'state_updated':
-        applySnapshot((m.payload as { snapshot: Snapshot }).snapshot)
+        applySnapshot(normalizeSnapshot((m.payload as { snapshot: unknown }).snapshot, get().topology))
         break
       case 'clock_sync':
         syncClock(m.payload as ClockSync)
@@ -169,20 +212,38 @@ export const useStore = create<State>((set, get) => {
         set((s) => ({ replan: { ...s.replan, status: 'running', job_id: (m.payload as { job_id: string }).job_id, error: null } }))
         break
       case 'replan_finished': {
-        const p = m.payload as { job_id: string; plans: Plan[]; identical: boolean; calc_ms: number; baseline_index: StationIndex | null }
-        set({
-          replan: {
-            status: 'done', job_id: p.job_id, plans: p.plans, identical: p.identical, calc_ms: p.calc_ms,
-            error: null, finished_at_epoch: p.plans[0]?.based_on_epoch ?? null, baseline: p.baseline_index ?? null,
-          },
-          compareOpen: get().history ? get().compareOpen : true,
-        })
+        const p = m.payload as {
+          job_id: string; plan_ids: string[]; plans?: unknown[]; identical?: boolean; calc_ms?: number
+          baseline_index?: StationIndex | null; stale?: boolean
+        }
+        void (async () => {
+          const ops = get().snapshot?.operations
+          // backend И присылает только plan_ids — варианты читаются через GET /api/plans/{id}
+          let plans: Plan[]
+          try {
+            plans = p.plans ? p.plans.map((x) => normalizePlan(x, ops)) : await Promise.all(p.plan_ids.map((id) => api.plan(id)))
+          } catch {
+            set((s) => ({ replan: { ...s.replan, status: 'failed', error: 'Не удалось получить варианты плана' } }))
+            get().toast('error', 'Расчёт завершён, но варианты не загрузились. Нажмите «Пересчитать».')
+            return
+          }
+          const identical = p.identical ?? (plans.length === 2 && samePlan(plans[0], plans[1]))
+          set({
+            replan: {
+              status: 'done', job_id: p.job_id, plans, identical, calc_ms: p.calc_ms ?? null, error: null,
+              finished_at_epoch: p.stale ? -999 : plans[0]?.based_on_epoch ?? null, baseline: p.baseline_index ?? null,
+            },
+            compareOpen: get().history ? get().compareOpen : true,
+          })
+        })()
         break
       }
-      case 'replan_failed':
-        set((s) => ({ replan: { ...s.replan, status: 'failed', error: (m.payload as { message: string }).message } }))
-        get().toast('error', 'Пересчёт не удался: ' + (m.payload as { message: string }).message)
+      case 'replan_failed': {
+        const msg = (m.payload as { message?: string }).message ?? 'причина не указана'
+        set((s) => ({ replan: { ...s.replan, status: 'failed', error: msg } }))
+        get().toast('error', 'Пересчёт не удался: ' + msg)
         break
+      }
       case 'simulation_error':
         get().toast('error', 'Симуляция остановлена: ' + ((m.payload as { message?: string }).message ?? 'ошибка сервера'))
         break
@@ -230,7 +291,7 @@ export const useStore = create<State>((set, get) => {
       try {
         const r = await api.history(snap.run_id, at_s)
         if (seq !== historySeq || !get().history) return
-        set((s) => ({ history: s.history && { ...s.history, snapshot: r.snapshot, loading: false, error: null, from_s: r.available_from_s, to_s: r.available_to_s } }))
+        set((s) => ({ history: s.history && { ...s.history, at_s: r.snapshot.sim_time_s, snapshot: r.snapshot, loading: false, error: null, from_s: r.available_from_s, to_s: r.available_to_s } }))
       } catch (e) {
         if (seq !== historySeq) return
         set((s) => ({ history: s.history && { ...s.history, loading: false, error: e instanceof HttpError ? e.body.message : 'Нет связи' } }))
@@ -242,6 +303,8 @@ export const useStore = create<State>((set, get) => {
     auth: 'checking',
     user: null,
     authError: null,
+    noAuthBackend: false,
+    httpPolling: false,
     topology: null,
     snapshot: null,
     loadError: null,
@@ -267,7 +330,20 @@ export const useStore = create<State>((set, get) => {
           set({ auth: 'signed_in', user })
           startSession()
         },
-        () => set({ auth: 'anonymous' }),
+        async (e) => {
+          // Backend без входа (этап 1 у И): /api/me ещё нет, но чтение открыто — работаем как наблюдатель.
+          if (e instanceof HttpError && (e.status === 404 || e.status === 405)) {
+            try {
+              await api.state()
+              set({ auth: 'signed_in', user: { username: 'без входа', role: 'viewer' }, noAuthBackend: true })
+              startSession()
+              return
+            } catch {
+              /* падаем на экран входа */
+            }
+          }
+          set({ auth: 'anonymous' })
+        },
       )
       return () => {
         stopWs?.()

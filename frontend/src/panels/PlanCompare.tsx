@@ -7,7 +7,7 @@ import { selectRole } from '../app/store'
 import { Factors, IndexGauge } from './RightPanel'
 import s from './panels.module.css'
 
-const rank = (p: Plan) => [p.status === 'feasible' ? 0 : 1, p.metrics.unassigned_count, p.metrics.total_delay_s, p.metrics.changed_count]
+const rank = (p: Plan) => [p.status === 'feasible' ? 0 : 1, p.metrics.unassigned_count, p.metrics.total_delay_s ?? 0, p.metrics.changed_count ?? 0]
 const better = (a: Plan, b: Plan) => {
   const ra = rank(a), rb = rank(b)
   for (let i = 0; i < ra.length; i++) if (ra[i] !== rb[i]) return ra[i] < rb[i]
@@ -89,17 +89,15 @@ function PlanCard(props: {
   return (
     <div className={`${s.planCard} ${props.best ? s.planBest : ''} ${props.previewing ? s.planPreview : ''}`}>
       <div className={s.planHead}>
-        <div>
-          <div className={s.planTitle}>{props.identical ? 'Обе стратегии' : STRATEGY[p.strategy]}</div>
-          <div className="muted mono" style={{ fontSize: 11 }}>{p.id} · расчёт {p.calc_ms} мс</div>
-        </div>
+        <div className={s.planTitle}>{props.identical ? 'Обе стратегии' : STRATEGY[p.strategy]}</div>
         <div className={s.chips}>
-          {props.best && <span className="chip chip-info">рекомендуем</span>}
           <span className={p.status === 'feasible' ? 'chip chip-ok' : 'chip chip-bad'}>
-            {p.status === 'feasible' ? 'допустимый' : p.status === 'partial' ? 'неполный' : p.status}
+            {p.status === 'feasible' ? 'допустимый' : p.status === 'partial' ? 'неполный' : p.status === 'timeout' ? 'тайм-аут' : 'недопустимый'}
           </span>
+          {props.best && <span className="chip chip-info">рекомендуем</span>}
           {p.timed_out && <span className="chip chip-wait">по тайм-ауту</span>}
         </div>
+        <div className="muted mono" style={{ fontSize: 11 }}>{p.id}{p.calc_ms !== null ? ` · расчёт ${p.calc_ms} мс` : ''}</div>
       </div>
       {p.index_forecast && (
         <div className={s.planIdx}>
@@ -119,10 +117,10 @@ function PlanCard(props: {
         <Metric label="Суммарная задержка" value={fmtDur(m.total_delay_s)} />
         <Metric label="Макс. задержка" value={fmtDur(m.max_delay_s)} />
         <Metric label="Не размещено" value={String(m.unassigned_count)} bad={m.unassigned_count > 0} />
-        <Metric label="Переназначений" value={String(m.changed_count)} />
+        <Metric label="Переназначений" value={m.changed_count === null ? '—' : String(m.changed_count)} />
       </div>
       {p.unassigned.length > 0 && (
-        <ul className={s.unassigned}>{p.unassigned.map((u) => <li key={u.train_id}>{u.message}</li>)}</ul>
+        <ul className={s.unassigned}>{p.unassigned.map((u, i) => <li key={i}>{u.message}</li>)}</ul>
       )}
       {p.violations.length > 0 && (
         <ul className={s.unassigned}>{p.violations.slice(0, 4).map((v, i) => <li key={i}>{v.message}</li>)}</ul>
@@ -131,7 +129,7 @@ function PlanCard(props: {
       {p.explanations.length === 0 ? <p className={s.empty}>Будущие назначения не изменились</p> : (
         <ul className={s.expl}>
           {expl.map((e) => (
-            <li key={e.train_id}>
+            <li key={`${e.train_id}-${e.code}-${e.message.length}`}>
               <span className={`chip ${e.code === 'RESCHEDULED' ? 'chip-muted' : 'chip-wait'}`}>{e.train_id}</span> {e.message}
             </li>
           ))}

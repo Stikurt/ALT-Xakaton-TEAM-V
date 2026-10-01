@@ -106,13 +106,17 @@ function ConflictsCard() {
       {!history && replan.status === 'running' && <div className={s.banner}><span className={s.spinner} />Считаем два варианта плана</div>}
       {!history && replan.status === 'done' && !stale && (
         <button className={s.bannerAction} onClick={() => setCompareOpen(true)}>
-          <span>Готово {replan.identical ? '1 вариант' : `${replan.plans.length} варианта`} · {replan.calc_ms} мс</span>
+          <span>Готово: {replan.identical || replan.plans.length === 1 ? '1 вариант' : `${replan.plans.length} варианта`}{replan.calc_ms !== null ? ` · ${replan.calc_ms} мс` : ''}</span>
           <span>Сравнить <span className="kbd">C</span></span>
         </button>
       )}
       {!history && stale && <div className={s.bannerWarn}>Варианты устарели: после расчёта обстановка изменилась.</div>}
       {list.length === 0 ? (
-        <p className={s.empty}>Конфликтов нет. Принятый план исполняется без ожиданий.</p>
+        <p className={s.empty}>
+          {snap.active_plan_id
+            ? 'Конфликтов нет. Принятый план исполняется без ожиданий.'
+            : 'Конфликтов нет, но принятого плана пока нет: запуск станции станет доступен после расчёта и принятия плана.'}
+        </p>
       ) : (
         <ul className={s.conflicts}>
           {list.map((c) => (
