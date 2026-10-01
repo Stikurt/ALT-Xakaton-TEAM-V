@@ -24,6 +24,19 @@ React 19 + Vite 8, Node 22.
 (`X-CSRF-Token` из ответа `/api/login` и `/api/me`) и Origin — `docs/auth.md`.
 Запуск по-прежнему привязан к `127.0.0.1`.
 
+## Быстрый старт на Windows (двойной щелчок)
+
+Нужны Python 3.12 (подойдут 3.13/3.14), Node.js 22 и запущенный Docker Desktop.
+
+1. `setup.cmd` — один раз: окружение Python, зависимости, `.env` с секретами, PostgreSQL в Docker,
+   миграции и начальный план 15 поездов. Пароли пользователей — в `ПАРОЛИ-ДЕМО.txt` (не в git).
+2. `start.cmd` — каждый раз: база, backend (окно «backend :8000»), frontend (окно «frontend :5173»)
+   и браузер на http://localhost:5173.
+3. `stop.cmd` — остановить базу (данные сохраняются). Окна backend/frontend закрыть вручную.
+4. `demo-offline.cmd` — запасной вариант без Python, Docker и сети: один HTML со встроенным мок-сервером.
+
+Новый прогон с начала — кнопка «Сброс» в интерфейсе.
+
 ## Быстрый старт (Linux/macOS, bash)
 
 ```bash
