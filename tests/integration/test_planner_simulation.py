@@ -28,7 +28,7 @@ def test_real_station_planner_and_simulation_contract():
         2.0,
     )
 
-    assert candidate["status"] == "feasible", {"unassigned": candidate["unassigned"], "violations": candidate["violations"][:10]}
+    assert candidate["status"] == "feasible", {"unassigned": candidate["unassigned"], "locals": [a for a in candidate["assignments"] if a["operation_id"].startswith(("T03_", "T06_", "T09_", "T12_", "T15_"))], "violations": candidate["violations"][:10]}
     assert candidate["unassigned"] == [], candidate
     assert candidate["violations"] == [], candidate
 
