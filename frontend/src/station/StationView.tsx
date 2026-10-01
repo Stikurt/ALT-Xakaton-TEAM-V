@@ -114,7 +114,7 @@ export default function StationView(p: StationViewProps) {
   const plannedForSelected: Assignment[] = useMemo(() => {
     if (p.selection?.type !== 'train') return []
     const src = p.previewPlan?.assignments ?? snap.active_plan?.assignments ?? []
-    return src.filter((a) => a.train_id === p.selection!.id && pendingMoves.has(a.operation_id) && a.route_id)
+    return src.filter((a) => a.train_id === p.selection!.id && pendingMoves.has(a.operation_id) && a.route_id).sort((a, b) => a.start_s - b.start_s)
   }, [p.selection, p.previewPlan, snap.active_plan, pendingMoves])
 
   const previewChanged: Assignment[] = useMemo(() => {
@@ -145,7 +145,7 @@ export default function StationView(p: StationViewProps) {
         {p.viewMode === 'history' && <span className={s.historyBadge}>ИСТОРИЯ · {fmtT(snap.sim_time_s)}</span>}
         {snap.paused && p.viewMode !== 'history' && <span className={s.pauseBadge}>ПАУЗА</span>}
         {p.viewMode === 'preview' && <span className={s.previewBadge}>ПРОСМОТР ВАРИАНТА · ПРОГНОЗ</span>}
-        {p.frozen && <span className={s.frozenBadge}>Нет связи — последнее подтверждённое состояние</span>}
+        {p.frozen && <span className={s.frozenBadge} title="Движение заморожено на последнем подтверждённом состоянии">Нет связи</span>}
         <div className={s.toolbarRight}>
           <button className="btn btn-sm" onClick={() => zoom(1 / 1.25)} aria-label="Приблизить"><Icon name="plus" size={14} /></button>
           <button className="btn btn-sm" onClick={() => zoom(1.25)} aria-label="Отдалить"><Icon name="minus" size={14} /></button>
@@ -260,9 +260,13 @@ export default function StationView(p: StationViewProps) {
         })}
 
         {/* плановые маршруты выбранного поезда — пунктир */}
-        {plannedForSelected.map((a) => {
+        {plannedForSelected.map((a, i) => {
           const r = routes[a.route_id!]
-          return r ? <path key={'pl' + a.operation_id} d={toPath(r.polyline)} className={p.previewPlan ? s.routePreview : s.routePlan} /> : null
+          // ближайшее перемещение — ярким пунктиром, дальнейшие — бледнее, чтобы наложения не сливались в сплошную линию
+          return r ? (
+            <path key={'pl' + a.operation_id} d={toPath(r.polyline)} className={p.previewPlan ? s.routePreview : s.routePlan}
+              style={i === 0 ? undefined : { opacity: 0.28, strokeWidth: 2 }} />
+          ) : null
         })}
         {/* изменённые маршруты варианта — пунктир фиолетовый */}
         {previewChanged.map((a) => {

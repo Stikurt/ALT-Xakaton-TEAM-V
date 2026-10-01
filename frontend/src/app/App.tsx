@@ -49,6 +49,7 @@ function Workspace() {
   const nav = useStore((x) => x.nav)
   const history = useStore((x) => x.history)
   const previewPlan = useStore(selectPreviewPlan)
+  const httpPolling = useStore((x) => x.httpPolling)
   const [timelineOpen, setTimelineOpen] = useState(true)
   useHotkeys()
 
@@ -83,7 +84,7 @@ function Workspace() {
               previewPlan={previewPlan}
               viewMode={mode}
               highlightIds={highlightIds}
-              frozen={!history && conn !== 'online'}
+              frozen={!history && conn !== 'online' && !httpPolling}
               getSimTime={getSimTime}
               onSelect={select}
             />

@@ -64,6 +64,7 @@ input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px s
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-primary { background: var(--occupied); border-color: var(--occupied); color: #04121a; font-weight: 700; }
 .btn-primary:hover:not(:disabled) { background: #7af0ff; box-shadow: var(--glow-cyan); }
+.btn-primary:disabled { background: var(--panel-2); border-color: var(--border-strong); color: var(--muted); opacity: 1; }
 .btn-danger { background: transparent; border-color: rgba(255, 77, 94, 0.6); color: #ff8c97; }
 .btn-danger:hover:not(:disabled) { background: var(--closed-soft); box-shadow: 0 0 14px rgba(255, 77, 94, .25); }
 .btn-accent { background: transparent; border-color: var(--preview); color: #ff8fca; }

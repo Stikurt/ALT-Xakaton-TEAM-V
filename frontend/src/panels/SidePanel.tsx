@@ -34,7 +34,7 @@ function Trains() {
             <td>{TRAIN_KIND_SHORT[t.kind]}</td>
             <td>
               <span className={t.wait_reason ? s.warnTxt : t.status === 'departed' ? 'muted' : ''}>
-                {t.wait_reason ? 'ждёт' : TRAIN_STATUS[t.status]}
+                {t.wait_reason ? 'ждёт' : t.status === 'scheduled' ? 'ожидается' : t.status === 'waiting_entry' ? 'у W' : TRAIN_STATUS[t.status]}
               </span>
               {t.track_id && <span className="muted"> · {t.track_id}</span>}
             </td>

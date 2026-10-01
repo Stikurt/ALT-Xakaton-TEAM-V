@@ -42,7 +42,10 @@ export function useHotkeys() {
       else if (k === 's' || k === 'S' || k === 'ы' || k === 'Ы') st.setIncidentOpen(true)
       else if (k === 'r' || k === 'R' || k === 'к' || k === 'К') void st.requestReplan()
       else if ((k === 'c' || k === 'C' || k === 'с' || k === 'С') && st.replan.plans.length) st.setCompareOpen(!st.compareOpen)
-      else if (k === 'h' || k === 'H' || k === 'р' || k === 'Р') (st.history ? st.closeHistory() : st.openHistory())
+      else if (k === 'h' || k === 'H' || k === 'р' || k === 'Р') {
+        if (st.history) st.closeHistory()
+        else st.openHistory()
+      }
       else if (k === '?' || k === ',') st.setHelpOpen(!st.helpOpen)
     }
     window.addEventListener('keydown', onKey)

@@ -75,7 +75,7 @@ export default function Timeline() {
         {ticks.map((t) => (
           <g key={t}>
             <line x1={x(t)} x2={x(t)} y1={18} y2={H} className={t % 1800 === 0 ? s.tickMajor : s.tick} />
-            <text x={x(t) + 3} y={12} className={s.tickLabel}>{fmtT(t)}</text>
+            {Math.abs(x(t) - x(now)) > 34 && <text x={x(t) + 3} y={12} className={s.tickLabel}>{fmtT(t)}</text>}
           </g>
         ))}
         {rows.map((r, i) => (
@@ -126,6 +126,9 @@ export default function Timeline() {
         <rect x={x(now) - 23} y={1} width={46} height={14} rx={2} className={s.nowTag} />
         <text x={x(now)} y={11.5} textAnchor="middle" className={s.nowText}>{fmtT(now)}</text>
       </svg>
+      {bars.length === 0 && (
+        <div className={s.emptyNote}>Назначений нет: принятого плана ещё нет. Полосы появятся после расчёта и принятия плана.</div>
+      )}
       <div className={s.legend}>
         <span><i className={s.lgFact} />факт</span>
         <span><i className={s.lgPlan} />принятый план</span>

@@ -20,6 +20,8 @@ export default function TopBar() {
   const setHelpOpen = useStore((x) => x.setHelpOpen)
   const openCsv = useStore((x) => x.openCsv)
   const logout = useStore((x) => x.logout)
+  const httpPolling = useStore((x) => x.httpPolling)
+  const noAuth = useStore((x) => x.noAuthBackend)
   const now = useSimNow(10)
   const [confirmReset, setConfirmReset] = useState(false)
   const offline = conn !== 'online'
@@ -38,7 +40,7 @@ export default function TopBar() {
         </svg>
         <div>
           <div className={s.brandName}>УЗЕЛ 12</div>
-          <div className={s.brandSub}>{transport().demo ? 'демо в браузере' : 'учебная станция'} · <span className="mono">{snap.run_id}</span></div>
+          <div className={s.brandSub}>{transport().demo ? 'демо в браузере' : 'учебная станция'} · <span className="mono" title={snap.run_id}>{snap.run_id.length > 12 ? snap.run_id.slice(0, 8) + '…' : snap.run_id}</span></div>
         </div>
       </div>
 
@@ -96,22 +98,25 @@ export default function TopBar() {
             <span>{INDEX_CAT[idx.category]}</span>
           </div>
         )}
-        <div className={`${s.conn} ${offline ? s.connBad : s.connOk}`} role="status">
+        <div className={`${s.conn} ${!offline ? s.connOk : httpPolling ? s.connWarn : s.connBad}`} role="status"
+          title={httpPolling ? 'WebSocket недоступен: снимок читается по HTTP раз в 2 с, команды заблокированы' : undefined}>
           <i />
-          <span>{conn === 'online' ? 'На связи' : conn === 'connecting' ? 'Подключение' : 'Нет связи'}</span>
-          {offline && lastUpdate && <span className="muted mono">{new Date(lastUpdate).toLocaleTimeString('ru-RU')}</span>}
+          <span>{conn === 'online' ? 'На связи' : httpPolling ? 'Только HTTP' : conn === 'connecting' ? 'Подключение' : 'Нет связи'}</span>
+          {offline && lastUpdate && <span className="muted mono" title="Время последнего подтверждённого снимка">{new Date(lastUpdate).toLocaleTimeString('ru-RU')}</span>}
         </div>
         <div className={s.user}>
           <div>
             <div className={s.userName}>{user?.username}</div>
-            <div className={s.userRole}>{ROLE_LABEL[role]}</div>
+            <div className={s.userRole}>{noAuth ? 'backend без входа' : ROLE_LABEL[role]}</div>
           </div>
           <button className="btn btn-ghost btn-sm" onClick={() => setHelpOpen(true)} aria-label="Горячие клавиши" title="?">
             <Icon name="keyboard" />
           </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => logout()} aria-label="Выйти" title="Выйти">
-            <Icon name="logout" />
-          </button>
+          {!noAuth && (
+            <button className="btn btn-ghost btn-sm" onClick={() => logout()} aria-label="Выйти" title="Выйти">
+              <Icon name="logout" />
+            </button>
+          )}
         </div>
       </div>
     </header>

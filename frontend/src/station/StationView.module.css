@@ -1,6 +1,6 @@
 .wrap { position: relative; width: 100%; height: 100%; background: transparent; overflow: hidden; display: flex; flex-direction: column; }
 .toolbar { flex: none; display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--border); background: transparent; min-height: 40px; }
-.toolbarRight { margin-left: auto; display: flex; gap: 6px; }
+.toolbarRight { margin-left: auto; display: flex; gap: 6px; flex: none; }
 .svgBox { position: relative; flex: 1; min-height: 0; }
 .svg { width: 100%; height: 100%; display: block; cursor: grab; user-select: none; touch-action: none; }
 .svg:active { cursor: grabbing; }
@@ -63,7 +63,7 @@
 .modeBadgePreview { fill: var(--preview); font: 700 18px var(--font); letter-spacing: .08em; }
 
 .legend {
-  display: flex; flex-wrap: wrap; gap: 12px; font-size: 11.5px; color: var(--text-2);
+  display: flex; flex-wrap: nowrap; gap: 10px; white-space: nowrap; overflow: hidden; min-width: 0; font-size: 11.5px; color: var(--text-2);
 }
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .legend i { display: inline-block; width: 18px; height: 5px; border-radius: 3px; }
@@ -79,3 +79,4 @@
 
 .previewBadge { padding: 3px 10px; border-radius: 3px; font-family: var(--display) !important; letter-spacing: .1em; background: var(--preview-soft); border: 1px solid var(--preview); color: #e9d5ff; font-weight: 700; font-size: 11.5px; white-space: nowrap; }
 .historyBadge { padding: 3px 10px; border-radius: 3px; background: var(--wait-soft); border: 1px solid var(--wait); color: var(--wait); font: 700 11px var(--display); letter-spacing: .12em; white-space: nowrap; }
+@media (max-width: 1500px) { .legend span:nth-child(n+5) { display: none; } }

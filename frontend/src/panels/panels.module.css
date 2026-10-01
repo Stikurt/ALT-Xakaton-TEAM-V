@@ -5,11 +5,11 @@
   grid-area: top; display: flex; align-items: center; gap: 20px; padding: 0 16px;
   background: linear-gradient(180deg, #0c1122, var(--bg-2)); border-bottom: 1px solid var(--border); min-width: 0;
 }
-.brand { display: flex; align-items: center; gap: 10px; min-width: 176px; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; flex: none; white-space: nowrap; }
 .brandMark { color: var(--occupied); filter: drop-shadow(0 0 6px rgba(46, 230, 255, .55)); }
 .brandName { font: 700 15px var(--display); letter-spacing: .2em; }
 .brandSub { font-size: 11px; color: var(--muted); }
-.clock { display: flex; flex-direction: column; line-height: 1.05; min-width: 108px; padding-left: 14px; border-left: 1px solid var(--border); }
+.clock { display: flex; flex-direction: column; line-height: 1.05; min-width: 108px; white-space: nowrap; padding-left: 14px; border-left: 1px solid var(--border); }
 .clockValue { font-size: 23px; font-weight: 800; letter-spacing: .02em; color: var(--text-2); transition: color .2s, text-shadow .2s; }
 .clock[data-running='true'] .clockValue { color: var(--occupied); text-shadow: 0 0 14px rgba(46, 230, 255, .55); }
 .clock[data-history='true'] .clockValue { color: var(--wait); text-shadow: 0 0 14px rgba(255, 181, 59, .45); }
@@ -22,7 +22,7 @@
 .seg button:hover:not(:disabled) { color: var(--text); }
 .segOn { background: var(--occupied-soft) !important; color: var(--occupied) !important; box-shadow: inset 0 -2px 0 var(--occupied); }
 .sep { width: 1px; height: 24px; background: var(--border); margin: 0 2px; }
-.topRight { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.topRight { margin-left: auto; display: flex; align-items: center; gap: 14px; min-width: 0; }
 .idxMini { display: flex; align-items: baseline; gap: 6px; padding: 3px 10px; border-radius: 3px; border: 1px solid; font: 600 11px var(--display); letter-spacing: .08em; text-transform: uppercase; }
 .idxMini .mono { font-size: 15px; font-weight: 800; letter-spacing: 0; }
 .cat_norm { color: var(--ok); border-color: rgba(109, 255, 176, .35); }
@@ -32,8 +32,10 @@
 .conn i { width: 7px; height: 7px; border-radius: 50%; }
 .connOk i { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 .connBad { color: #ff8c97; }
+.connWarn { color: var(--wait); }
+.connWarn i { background: var(--wait); box-shadow: 0 0 8px var(--wait); }
 .connBad i { background: var(--closed); box-shadow: 0 0 8px var(--closed); animation: blink 1s infinite; }
-.user { display: flex; align-items: center; gap: 4px; padding-left: 14px; border-left: 1px solid var(--border); }
+.user { display: flex; align-items: center; gap: 4px; padding-left: 14px; border-left: 1px solid var(--border); white-space: nowrap; }
 .userName { font: 600 12px var(--mono); }
 .userRole { font-size: 10.5px; color: var(--muted); margin-right: 4px; }
 @keyframes blink { 50% { opacity: .3 } }
@@ -166,7 +168,8 @@ button.chip { cursor: pointer; background: transparent; }
 .planCard { border: 1px solid var(--border-strong); border-radius: 5px; padding: 14px; background: var(--panel); display: flex; flex-direction: column; gap: 10px; }
 .planBest { border-color: rgba(46, 230, 255, .55); }
 .planPreview { border-color: var(--preview); box-shadow: var(--glow-pink); }
-.planHead { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.planHead { display: grid; gap: 6px; }
+.planHead .chips { margin: 0; }
 .planTitle { font-weight: 700; font-size: 14.5px; }
 .planIdx { display: flex; align-items: center; gap: 12px; }
 .delta { font-size: 12px; font-weight: 700; margin-top: 4px; color: var(--muted); }
@@ -198,7 +201,7 @@ button.chip { cursor: pointer; background: transparent; }
 .side { width: 340px; flex: none; border-right: 1px solid var(--border); background: var(--bg-2); padding: 14px; overflow-y: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
 .table th { text-align: left; color: var(--muted); font: 600 10px var(--display); letter-spacing: .1em; text-transform: uppercase; padding: 6px; border-bottom: 1px solid var(--border-strong); position: sticky; top: 0; background: var(--bg-2); }
-.table td { padding: 7px 6px; border-bottom: 1px solid var(--border); }
+.table td { padding: 7px 6px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .table tbody tr { cursor: pointer; }
 .table tbody tr:hover { background: var(--panel); }
 .rowOn { background: var(--occupied-soft) !important; box-shadow: inset 2px 0 0 var(--occupied); }
@@ -220,8 +223,8 @@ button.chip { cursor: pointer; background: transparent; }
 .loginNote { margin: 14px 0 0; font-size: 11px; color: var(--muted); }
 
 /* ---------- уведомления ---------- */
-.toasts { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); display: grid; gap: 8px; z-index: 60; }
-.toast { padding: 9px 14px; border-radius: 4px; font-weight: 500; cursor: pointer; max-width: 560px; background: var(--panel); border: 1px solid var(--border-strong); box-shadow: 0 12px 40px rgba(0, 0, 0, .55); }
+.toasts { position: fixed; bottom: 46px; left: 84px; display: grid; gap: 8px; z-index: 60; justify-items: start; max-width: min(520px, 40vw); }
+.toast { padding: 9px 14px; border-radius: 4px; font-weight: 500; cursor: pointer; background: var(--panel); border: 1px solid var(--border-strong); box-shadow: 0 12px 40px rgba(0, 0, 0, .55); }
 .toast_ok { border-color: rgba(109, 255, 176, .55); box-shadow: 0 12px 40px rgba(0, 0, 0, .55), 0 0 14px rgba(109, 255, 176, .15); }
 .toast_error { border-color: rgba(255, 77, 94, .6); color: #ffc2c8; box-shadow: 0 12px 40px rgba(0, 0, 0, .55), 0 0 14px rgba(255, 77, 94, .2); }
 
@@ -236,4 +239,15 @@ button.chip { cursor: pointer; background: transparent; }
   .compareGrid { grid-template-columns: minmax(0, 1fr); }
   .side { width: 100%; }
   .historyBar { flex-wrap: wrap; }
+}
+
+@media (max-width: 1500px) {
+  .topbar { gap: 14px; padding: 0 12px; }
+  .controls { gap: 6px; }
+  .topRight { gap: 10px; }
+  .brandSub { display: none; }
+}
+@media (max-width: 1400px) {
+  .idxMini > span:last-child { display: none; }
+  .controls :global(.btn) { padding: 0 9px; }
 }
