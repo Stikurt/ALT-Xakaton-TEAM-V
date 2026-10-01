@@ -1,0 +1,31 @@
+.app {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 360px;
+  grid-template-rows: 54px minmax(0, 1fr) 240px;
+  grid-template-areas: 'top top top' 'nav center right' 'nav bottom right';
+  height: 100vh;
+}
+.app[data-timeline='closed'] { grid-template-rows: 54px minmax(0, 1fr) 30px; }
+.center { grid-area: center; display: flex; min-width: 0; min-height: 0; border-bottom: 1px solid var(--border); }
+.station { flex: 1; min-width: 0; min-height: 0; }
+.bottom { grid-area: bottom; display: flex; flex-direction: column; min-height: 0; background: var(--bg-2); }
+.bottomToggle {
+  height: 30px; flex: none; text-align: left; padding: 0 12px; background: transparent; border: 0;
+  border-bottom: 1px solid var(--border); color: var(--text-2); font-weight: 600; cursor: pointer; font-size: 12px;
+  letter-spacing: .03em;
+}
+.bottomToggle:hover { color: var(--text); }
+
+.loading { height: 100vh; display: grid; place-items: center; }
+.loadingCard { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 28px 32px; max-width: 420px; text-align: center; }
+.logo { font: 800 20px var(--mono); letter-spacing: .12em; margin-bottom: 8px; }
+
+@media (max-width: 1280px) {
+  .app { grid-template-columns: 56px minmax(0, 1fr) 320px; }
+}
+@media (max-width: 1100px) {
+  .app { grid-template-columns: 48px minmax(0, 1fr) 280px; grid-template-rows: 54px minmax(0, 1fr) 200px; }
+}
+@media (max-height: 820px) {
+  .app { grid-template-rows: 54px minmax(0, 1fr) 200px; }
+}

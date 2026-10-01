@@ -1,0 +1,2874 @@
+{
+ "schema_version": 1,
+ "run_id": "RUN-696ae6",
+ "state_version": 3,
+ "epoch": 2,
+ "last_seq": 4,
+ "sim_time_s": 60,
+ "speed": 1,
+ "paused": false,
+ "trains": [
+  {
+   "id": "T01",
+   "kind": "passenger",
+   "length_m": 350,
+   "priority": 3,
+   "scheduled_arrival_s": 0,
+   "scheduled_departure_s": 600,
+   "expected_arrival_s": 0,
+   "status": "moving",
+   "track_id": null,
+   "movement": {
+    "route_id": "R_W_P01",
+    "started_at_s": 0,
+    "expected_end_at_s": 120
+   },
+   "current_operation_id": "T01-01-arrival",
+   "wait_reason": null,
+   "forecast_departure_s": 600,
+   "delay_s": 0,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T02",
+   "kind": "transit",
+   "length_m": 750,
+   "priority": 2,
+   "scheduled_arrival_s": 120,
+   "scheduled_departure_s": 1200,
+   "expected_arrival_s": 120,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 1200,
+   "delay_s": 0,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T03",
+   "kind": "local",
+   "length_m": 600,
+   "priority": 1,
+   "scheduled_arrival_s": 240,
+   "scheduled_departure_s": 3300,
+   "expected_arrival_s": 240,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 4920,
+   "delay_s": 1620,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T04",
+   "kind": "passenger",
+   "length_m": 350,
+   "priority": 3,
+   "scheduled_arrival_s": 480,
+   "scheduled_departure_s": 1080,
+   "expected_arrival_s": 480,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 1080,
+   "delay_s": 0,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T05",
+   "kind": "transit",
+   "length_m": 800,
+   "priority": 2,
+   "scheduled_arrival_s": 600,
+   "scheduled_departure_s": 1680,
+   "expected_arrival_s": 600,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 1800,
+   "delay_s": 120,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T06",
+   "kind": "local",
+   "length_m": 650,
+   "priority": 1,
+   "scheduled_arrival_s": 720,
+   "scheduled_departure_s": 3900,
+   "expected_arrival_s": 720,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 5580,
+   "delay_s": 1680,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T07",
+   "kind": "passenger",
+   "length_m": 350,
+   "priority": 3,
+   "scheduled_arrival_s": 1080,
+   "scheduled_departure_s": 1680,
+   "expected_arrival_s": 1080,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 1680,
+   "delay_s": 0,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T08",
+   "kind": "transit",
+   "length_m": 750,
+   "priority": 2,
+   "scheduled_arrival_s": 1200,
+   "scheduled_departure_s": 2280,
+   "expected_arrival_s": 1200,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 2280,
+   "delay_s": 0,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T09",
+   "kind": "local",
+   "length_m": 600,
+   "priority": 1,
+   "scheduled_arrival_s": 1320,
+   "scheduled_departure_s": 4680,
+   "expected_arrival_s": 1320,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 6240,
+   "delay_s": 1560,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T10",
+   "kind": "transit",
+   "length_m": 800,
+   "priority": 2,
+   "scheduled_arrival_s": 1680,
+   "scheduled_departure_s": 2760,
+   "expected_arrival_s": 1680,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 2760,
+   "delay_s": 0,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T11",
+   "kind": "passenger",
+   "length_m": 350,
+   "priority": 3,
+   "scheduled_arrival_s": 1920,
+   "scheduled_departure_s": 2520,
+   "expected_arrival_s": 1920,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 2520,
+   "delay_s": 0,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T12",
+   "kind": "local",
+   "length_m": 650,
+   "priority": 1,
+   "scheduled_arrival_s": 2160,
+   "scheduled_departure_s": 5640,
+   "expected_arrival_s": 2160,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 6900,
+   "delay_s": 1260,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T13",
+   "kind": "transit",
+   "length_m": 750,
+   "priority": 2,
+   "scheduled_arrival_s": 2400,
+   "scheduled_departure_s": 3480,
+   "expected_arrival_s": 2400,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 3480,
+   "delay_s": 0,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T14",
+   "kind": "passenger",
+   "length_m": 350,
+   "priority": 3,
+   "scheduled_arrival_s": 2760,
+   "scheduled_departure_s": 3360,
+   "expected_arrival_s": 2760,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 3360,
+   "delay_s": 0,
+   "actual_departure_s": null
+  },
+  {
+   "id": "T15",
+   "kind": "local",
+   "length_m": 600,
+   "priority": 1,
+   "scheduled_arrival_s": 3000,
+   "scheduled_departure_s": 6720,
+   "expected_arrival_s": 3000,
+   "status": "scheduled",
+   "track_id": null,
+   "movement": null,
+   "current_operation_id": null,
+   "wait_reason": null,
+   "forecast_departure_s": 7560,
+   "delay_s": 840,
+   "actual_departure_s": null
+  }
+ ],
+ "tracks": [
+  {
+   "id": "P01",
+   "kind": "passenger",
+   "usable_length_m": 500,
+   "availability": "open",
+   "closed_until_s": null,
+   "occupant_train_id": "T01"
+  },
+  {
+   "id": "P02",
+   "kind": "passenger",
+   "usable_length_m": 500,
+   "availability": "open",
+   "closed_until_s": null,
+   "occupant_train_id": null
+  },
+  {
+   "id": "P03",
+   "kind": "freight",
+   "usable_length_m": 900,
+   "availability": "open",
+   "closed_until_s": null,
+   "occupant_train_id": null
+  },
+  {
+   "id": "P04",
+   "kind": "freight",
+   "usable_length_m": 900,
+   "availability": "open",
+   "closed_until_s": null,
+   "occupant_train_id": null
+  },
+  {
+   "id": "P05",
+   "kind": "freight",
+   "usable_length_m": 900,
+   "availability": "open",
+   "closed_until_s": null,
+   "occupant_train_id": null
+  },
+  {
+   "id": "P06",
+   "kind": "freight",
+   "usable_length_m": 900,
+   "availability": "open",
+   "closed_until_s": null,
+   "occupant_train_id": null
+  },
+  {
+   "id": "P07",
+   "kind": "staging",
+   "usable_length_m": 900,
+   "availability": "open",
+   "closed_until_s": null,
+   "occupant_train_id": null
+  },
+  {
+   "id": "P08",
+   "kind": "staging",
+   "usable_length_m": 900,
+   "availability": "open",
+   "closed_until_s": null,
+   "occupant_train_id": null
+  },
+  {
+   "id": "P09",
+   "kind": "staging",
+   "usable_length_m": 900,
+   "availability": "open",
+   "closed_until_s": null,
+   "occupant_train_id": null
+  },
+  {
+   "id": "P10",
+   "kind": "cargo",
+   "usable_length_m": 700,
+   "availability": "open",
+   "closed_until_s": null,
+   "occupant_train_id": null
+  },
+  {
+   "id": "P11",
+   "kind": "cargo",
+   "usable_length_m": 700,
+   "availability": "open",
+   "closed_until_s": null,
+   "occupant_train_id": null
+  },
+  {
+   "id": "P12",
+   "kind": "loco",
+   "usable_length_m": 150,
+   "availability": "open",
+   "closed_until_s": null,
+   "occupant_train_id": null
+  }
+ ],
+ "resources": [
+  {
+   "id": "L01",
+   "kind": "shunting_loco",
+   "capabilities": [
+    "shunt"
+   ],
+   "availability": "available",
+   "unavailable_until_s": null,
+   "active_operation_id": null
+  },
+  {
+   "id": "L02",
+   "kind": "shunting_loco",
+   "capabilities": [
+    "shunt"
+   ],
+   "availability": "available",
+   "unavailable_until_s": null,
+   "active_operation_id": null
+  },
+  {
+   "id": "B01",
+   "kind": "shunting_crew",
+   "capabilities": [
+    "shunt",
+    "formation"
+   ],
+   "availability": "available",
+   "unavailable_until_s": null,
+   "active_operation_id": null
+  },
+  {
+   "id": "B02",
+   "kind": "shunting_crew",
+   "capabilities": [
+    "shunt",
+    "formation"
+   ],
+   "availability": "available",
+   "unavailable_until_s": null,
+   "active_operation_id": null
+  },
+  {
+   "id": "B03",
+   "kind": "inspection_crew",
+   "capabilities": [
+    "inspection",
+    "preparation"
+   ],
+   "availability": "available",
+   "unavailable_until_s": null,
+   "active_operation_id": null
+  },
+  {
+   "id": "B04",
+   "kind": "inspection_crew",
+   "capabilities": [
+    "inspection",
+    "preparation"
+   ],
+   "availability": "available",
+   "unavailable_until_s": null,
+   "active_operation_id": null
+  }
+ ],
+ "zones": [
+  {
+   "id": "GW",
+   "active_operation_id": "T01-01-arrival"
+  },
+  {
+   "id": "GE",
+   "active_operation_id": null
+  }
+ ],
+ "operations": [
+  {
+   "id": "T01-01-arrival",
+   "train_id": "T01",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "running",
+   "actual_start_s": 0,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T01-02-stop",
+   "train_id": "T01",
+   "kind": "stop",
+   "duration_s": 360,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T01-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T01-03-departure",
+   "train_id": "T01",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 1,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T01-02-stop"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T02-01-arrival",
+   "train_id": "T02",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T02-02-inspection",
+   "train_id": "T02",
+   "kind": "inspection",
+   "duration_s": 480,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T02-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T02-03-preparation",
+   "train_id": "T02",
+   "kind": "preparation",
+   "duration_s": 180,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T02-02-inspection"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T02-04-departure",
+   "train_id": "T02",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 1,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T02-03-preparation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T03-01-arrival",
+   "train_id": "T03",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T03-02-inspection",
+   "train_id": "T03",
+   "kind": "inspection",
+   "duration_s": 480,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T03-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T03-03-shunt",
+   "train_id": "T03",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 1,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T03-02-inspection"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T03-04-cargo",
+   "train_id": "T03",
+   "kind": "cargo",
+   "duration_s": 900,
+   "stage": 1,
+   "is_move": null,
+   "predecessor_ids": [
+    "T03-03-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T03-05-shunt",
+   "train_id": "T03",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 2,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T03-04-cargo"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T03-06-formation",
+   "train_id": "T03",
+   "kind": "formation",
+   "duration_s": 300,
+   "stage": 2,
+   "is_move": null,
+   "predecessor_ids": [
+    "T03-05-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B12"
+   ]
+  },
+  {
+   "id": "T03-07-shunt",
+   "train_id": "T03",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 3,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T03-06-formation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T03-08-preparation",
+   "train_id": "T03",
+   "kind": "preparation",
+   "duration_s": 180,
+   "stage": 3,
+   "is_move": null,
+   "predecessor_ids": [
+    "T03-07-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T03-09-departure",
+   "train_id": "T03",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 4,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T03-08-preparation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T04-01-arrival",
+   "train_id": "T04",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T04-02-stop",
+   "train_id": "T04",
+   "kind": "stop",
+   "duration_s": 360,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T04-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T04-03-departure",
+   "train_id": "T04",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 1,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T04-02-stop"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T05-01-arrival",
+   "train_id": "T05",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T05-02-inspection",
+   "train_id": "T05",
+   "kind": "inspection",
+   "duration_s": 480,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T05-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T05-03-preparation",
+   "train_id": "T05",
+   "kind": "preparation",
+   "duration_s": 180,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T05-02-inspection"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T05-04-departure",
+   "train_id": "T05",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 1,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T05-03-preparation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T06-01-arrival",
+   "train_id": "T06",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T06-02-inspection",
+   "train_id": "T06",
+   "kind": "inspection",
+   "duration_s": 480,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T06-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T06-03-shunt",
+   "train_id": "T06",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 1,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T06-02-inspection"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T06-04-cargo",
+   "train_id": "T06",
+   "kind": "cargo",
+   "duration_s": 900,
+   "stage": 1,
+   "is_move": null,
+   "predecessor_ids": [
+    "T06-03-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T06-05-shunt",
+   "train_id": "T06",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 2,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T06-04-cargo"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T06-06-formation",
+   "train_id": "T06",
+   "kind": "formation",
+   "duration_s": 300,
+   "stage": 2,
+   "is_move": null,
+   "predecessor_ids": [
+    "T06-05-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B12"
+   ]
+  },
+  {
+   "id": "T06-07-shunt",
+   "train_id": "T06",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 3,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T06-06-formation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T06-08-preparation",
+   "train_id": "T06",
+   "kind": "preparation",
+   "duration_s": 180,
+   "stage": 3,
+   "is_move": null,
+   "predecessor_ids": [
+    "T06-07-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T06-09-departure",
+   "train_id": "T06",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 4,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T06-08-preparation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T07-01-arrival",
+   "train_id": "T07",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T07-02-stop",
+   "train_id": "T07",
+   "kind": "stop",
+   "duration_s": 360,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T07-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T07-03-departure",
+   "train_id": "T07",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 1,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T07-02-stop"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T08-01-arrival",
+   "train_id": "T08",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T08-02-inspection",
+   "train_id": "T08",
+   "kind": "inspection",
+   "duration_s": 480,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T08-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T08-03-preparation",
+   "train_id": "T08",
+   "kind": "preparation",
+   "duration_s": 180,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T08-02-inspection"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T08-04-departure",
+   "train_id": "T08",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 1,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T08-03-preparation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T09-01-arrival",
+   "train_id": "T09",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T09-02-inspection",
+   "train_id": "T09",
+   "kind": "inspection",
+   "duration_s": 480,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T09-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T09-03-shunt",
+   "train_id": "T09",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 1,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T09-02-inspection"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T09-04-cargo",
+   "train_id": "T09",
+   "kind": "cargo",
+   "duration_s": 900,
+   "stage": 1,
+   "is_move": null,
+   "predecessor_ids": [
+    "T09-03-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T09-05-shunt",
+   "train_id": "T09",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 2,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T09-04-cargo"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T09-06-formation",
+   "train_id": "T09",
+   "kind": "formation",
+   "duration_s": 300,
+   "stage": 2,
+   "is_move": null,
+   "predecessor_ids": [
+    "T09-05-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B12"
+   ]
+  },
+  {
+   "id": "T09-07-shunt",
+   "train_id": "T09",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 3,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T09-06-formation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T09-08-preparation",
+   "train_id": "T09",
+   "kind": "preparation",
+   "duration_s": 180,
+   "stage": 3,
+   "is_move": null,
+   "predecessor_ids": [
+    "T09-07-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T09-09-departure",
+   "train_id": "T09",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 4,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T09-08-preparation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T10-01-arrival",
+   "train_id": "T10",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T10-02-inspection",
+   "train_id": "T10",
+   "kind": "inspection",
+   "duration_s": 480,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T10-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T10-03-preparation",
+   "train_id": "T10",
+   "kind": "preparation",
+   "duration_s": 180,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T10-02-inspection"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T10-04-departure",
+   "train_id": "T10",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 1,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T10-03-preparation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T11-01-arrival",
+   "train_id": "T11",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T11-02-stop",
+   "train_id": "T11",
+   "kind": "stop",
+   "duration_s": 360,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T11-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T11-03-departure",
+   "train_id": "T11",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 1,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T11-02-stop"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T12-01-arrival",
+   "train_id": "T12",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T12-02-inspection",
+   "train_id": "T12",
+   "kind": "inspection",
+   "duration_s": 480,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T12-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T12-03-shunt",
+   "train_id": "T12",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 1,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T12-02-inspection"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T12-04-cargo",
+   "train_id": "T12",
+   "kind": "cargo",
+   "duration_s": 900,
+   "stage": 1,
+   "is_move": null,
+   "predecessor_ids": [
+    "T12-03-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T12-05-shunt",
+   "train_id": "T12",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 2,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T12-04-cargo"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T12-06-formation",
+   "train_id": "T12",
+   "kind": "formation",
+   "duration_s": 300,
+   "stage": 2,
+   "is_move": null,
+   "predecessor_ids": [
+    "T12-05-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B12"
+   ]
+  },
+  {
+   "id": "T12-07-shunt",
+   "train_id": "T12",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 3,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T12-06-formation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T12-08-preparation",
+   "train_id": "T12",
+   "kind": "preparation",
+   "duration_s": 180,
+   "stage": 3,
+   "is_move": null,
+   "predecessor_ids": [
+    "T12-07-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T12-09-departure",
+   "train_id": "T12",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 4,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T12-08-preparation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T13-01-arrival",
+   "train_id": "T13",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T13-02-inspection",
+   "train_id": "T13",
+   "kind": "inspection",
+   "duration_s": 480,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T13-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T13-03-preparation",
+   "train_id": "T13",
+   "kind": "preparation",
+   "duration_s": 180,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T13-02-inspection"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T13-04-departure",
+   "train_id": "T13",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 1,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T13-03-preparation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T14-01-arrival",
+   "train_id": "T14",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T14-02-stop",
+   "train_id": "T14",
+   "kind": "stop",
+   "duration_s": 360,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T14-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T14-03-departure",
+   "train_id": "T14",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 1,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T14-02-stop"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T15-01-arrival",
+   "train_id": "T15",
+   "kind": "arrival",
+   "duration_s": 120,
+   "stage": 0,
+   "is_move": "arrival",
+   "predecessor_ids": [],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T15-02-inspection",
+   "train_id": "T15",
+   "kind": "inspection",
+   "duration_s": 480,
+   "stage": 0,
+   "is_move": null,
+   "predecessor_ids": [
+    "T15-01-arrival"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T15-03-shunt",
+   "train_id": "T15",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 1,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T15-02-inspection"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T15-04-cargo",
+   "train_id": "T15",
+   "kind": "cargo",
+   "duration_s": 900,
+   "stage": 1,
+   "is_move": null,
+   "predecessor_ids": [
+    "T15-03-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  },
+  {
+   "id": "T15-05-shunt",
+   "train_id": "T15",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 2,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T15-04-cargo"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T15-06-formation",
+   "train_id": "T15",
+   "kind": "formation",
+   "duration_s": 300,
+   "stage": 2,
+   "is_move": null,
+   "predecessor_ids": [
+    "T15-05-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B12"
+   ]
+  },
+  {
+   "id": "T15-07-shunt",
+   "train_id": "T15",
+   "kind": "shunt",
+   "duration_s": 180,
+   "stage": 3,
+   "is_move": "shunt",
+   "predecessor_ids": [
+    "T15-06-formation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "L",
+    "B12"
+   ]
+  },
+  {
+   "id": "T15-08-preparation",
+   "train_id": "T15",
+   "kind": "preparation",
+   "duration_s": 180,
+   "stage": 3,
+   "is_move": null,
+   "predecessor_ids": [
+    "T15-07-shunt"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": [
+    "B34"
+   ]
+  },
+  {
+   "id": "T15-09-departure",
+   "train_id": "T15",
+   "kind": "departure",
+   "duration_s": 120,
+   "stage": 4,
+   "is_move": "departure",
+   "predecessor_ids": [
+    "T15-08-preparation"
+   ],
+   "status": "pending",
+   "actual_start_s": null,
+   "actual_end_s": null,
+   "wait_reason": null,
+   "groups": []
+  }
+ ],
+ "active_plan_id": "PL-a3e7ea4f",
+ "active_plan": {
+  "id": "PL-a3e7ea4f",
+  "run_id": "RUN-696ae6",
+  "based_on_version": 1,
+  "based_on_epoch": 1,
+  "based_on_time_s": 0,
+  "strategy": "earliest_departure",
+  "timed_out": false,
+  "assignments": [
+   {
+    "operation_id": "T01-01-arrival",
+    "train_id": "T01",
+    "kind": "arrival",
+    "start_s": 0,
+    "end_s": 120,
+    "track_id": "P01",
+    "route_id": "R_W_P01",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T01-02-stop",
+    "train_id": "T01",
+    "kind": "stop",
+    "start_s": 120,
+    "end_s": 480,
+    "track_id": "P01",
+    "route_id": null,
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T02-01-arrival",
+    "train_id": "T02",
+    "kind": "arrival",
+    "start_s": 120,
+    "end_s": 240,
+    "track_id": "P03",
+    "route_id": "R_W_P03",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T02-02-inspection",
+    "train_id": "T02",
+    "kind": "inspection",
+    "start_s": 240,
+    "end_s": 720,
+    "track_id": "P03",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T01-03-departure",
+    "train_id": "T01",
+    "kind": "departure",
+    "start_s": 480,
+    "end_s": 600,
+    "track_id": "P01",
+    "route_id": "R_P01_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T04-01-arrival",
+    "train_id": "T04",
+    "kind": "arrival",
+    "start_s": 480,
+    "end_s": 600,
+    "track_id": "P02",
+    "route_id": "R_W_P02",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T04-02-stop",
+    "train_id": "T04",
+    "kind": "stop",
+    "start_s": 600,
+    "end_s": 960,
+    "track_id": "P02",
+    "route_id": null,
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T05-01-arrival",
+    "train_id": "T05",
+    "kind": "arrival",
+    "start_s": 600,
+    "end_s": 720,
+    "track_id": "P04",
+    "route_id": "R_W_P04",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T02-03-preparation",
+    "train_id": "T02",
+    "kind": "preparation",
+    "start_s": 720,
+    "end_s": 900,
+    "track_id": "P03",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T05-02-inspection",
+    "train_id": "T05",
+    "kind": "inspection",
+    "start_s": 720,
+    "end_s": 1200,
+    "track_id": "P04",
+    "route_id": null,
+    "resource_ids": [
+     "B04"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T06-01-arrival",
+    "train_id": "T06",
+    "kind": "arrival",
+    "start_s": 720,
+    "end_s": 840,
+    "track_id": "P06",
+    "route_id": "R_W_P06",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T04-03-departure",
+    "train_id": "T04",
+    "kind": "departure",
+    "start_s": 960,
+    "end_s": 1080,
+    "track_id": "P02",
+    "route_id": "R_P02_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T02-04-departure",
+    "train_id": "T02",
+    "kind": "departure",
+    "start_s": 1080,
+    "end_s": 1200,
+    "track_id": "P03",
+    "route_id": "R_P03_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T07-01-arrival",
+    "train_id": "T07",
+    "kind": "arrival",
+    "start_s": 1080,
+    "end_s": 1200,
+    "track_id": "P01",
+    "route_id": "R_W_P01",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T05-03-preparation",
+    "train_id": "T05",
+    "kind": "preparation",
+    "start_s": 1200,
+    "end_s": 1380,
+    "track_id": "P04",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T07-02-stop",
+    "train_id": "T07",
+    "kind": "stop",
+    "start_s": 1200,
+    "end_s": 1560,
+    "track_id": "P01",
+    "route_id": null,
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T08-01-arrival",
+    "train_id": "T08",
+    "kind": "arrival",
+    "start_s": 1200,
+    "end_s": 1320,
+    "track_id": "P03",
+    "route_id": "R_W_P03",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T08-02-inspection",
+    "train_id": "T08",
+    "kind": "inspection",
+    "start_s": 1320,
+    "end_s": 1800,
+    "track_id": "P03",
+    "route_id": null,
+    "resource_ids": [
+     "B04"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T07-03-departure",
+    "train_id": "T07",
+    "kind": "departure",
+    "start_s": 1560,
+    "end_s": 1680,
+    "track_id": "P01",
+    "route_id": "R_P01_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T05-04-departure",
+    "train_id": "T05",
+    "kind": "departure",
+    "start_s": 1680,
+    "end_s": 1800,
+    "track_id": "P04",
+    "route_id": "R_P04_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T08-03-preparation",
+    "train_id": "T08",
+    "kind": "preparation",
+    "start_s": 1800,
+    "end_s": 1980,
+    "track_id": "P03",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T10-01-arrival",
+    "train_id": "T10",
+    "kind": "arrival",
+    "start_s": 1800,
+    "end_s": 1920,
+    "track_id": "P04",
+    "route_id": "R_W_P04",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T10-02-inspection",
+    "train_id": "T10",
+    "kind": "inspection",
+    "start_s": 1920,
+    "end_s": 2400,
+    "track_id": "P04",
+    "route_id": null,
+    "resource_ids": [
+     "B04"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T11-01-arrival",
+    "train_id": "T11",
+    "kind": "arrival",
+    "start_s": 1920,
+    "end_s": 2040,
+    "track_id": "P01",
+    "route_id": "R_W_P01",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T11-02-stop",
+    "train_id": "T11",
+    "kind": "stop",
+    "start_s": 2040,
+    "end_s": 2400,
+    "track_id": "P01",
+    "route_id": null,
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T08-04-departure",
+    "train_id": "T08",
+    "kind": "departure",
+    "start_s": 2160,
+    "end_s": 2280,
+    "track_id": "P03",
+    "route_id": "R_P03_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T03-01-arrival",
+    "train_id": "T03",
+    "kind": "arrival",
+    "start_s": 2280,
+    "end_s": 2400,
+    "track_id": "P03",
+    "route_id": "R_W_P03",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T03-02-inspection",
+    "train_id": "T03",
+    "kind": "inspection",
+    "start_s": 2400,
+    "end_s": 2880,
+    "track_id": "P03",
+    "route_id": null,
+    "resource_ids": [
+     "B04"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T10-03-preparation",
+    "train_id": "T10",
+    "kind": "preparation",
+    "start_s": 2400,
+    "end_s": 2580,
+    "track_id": "P04",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T11-03-departure",
+    "train_id": "T11",
+    "kind": "departure",
+    "start_s": 2400,
+    "end_s": 2520,
+    "track_id": "P01",
+    "route_id": "R_P01_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T13-01-arrival",
+    "train_id": "T13",
+    "kind": "arrival",
+    "start_s": 2400,
+    "end_s": 2520,
+    "track_id": "P05",
+    "route_id": "R_W_P05",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T13-02-inspection",
+    "train_id": "T13",
+    "kind": "inspection",
+    "start_s": 2580,
+    "end_s": 3060,
+    "track_id": "P05",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T10-04-departure",
+    "train_id": "T10",
+    "kind": "departure",
+    "start_s": 2640,
+    "end_s": 2760,
+    "track_id": "P04",
+    "route_id": "R_P04_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T14-01-arrival",
+    "train_id": "T14",
+    "kind": "arrival",
+    "start_s": 2760,
+    "end_s": 2880,
+    "track_id": "P01",
+    "route_id": "R_W_P01",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T03-03-shunt",
+    "train_id": "T03",
+    "kind": "shunt",
+    "start_s": 2880,
+    "end_s": 3060,
+    "track_id": "P10",
+    "route_id": "R_P03_P10",
+    "resource_ids": [
+     "L01",
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T06-02-inspection",
+    "train_id": "T06",
+    "kind": "inspection",
+    "start_s": 2880,
+    "end_s": 3360,
+    "track_id": "P06",
+    "route_id": null,
+    "resource_ids": [
+     "B04"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T14-02-stop",
+    "train_id": "T14",
+    "kind": "stop",
+    "start_s": 2880,
+    "end_s": 3240,
+    "track_id": "P01",
+    "route_id": null,
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T03-04-cargo",
+    "train_id": "T03",
+    "kind": "cargo",
+    "start_s": 3060,
+    "end_s": 3960,
+    "track_id": "P10",
+    "route_id": null,
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T09-01-arrival",
+    "train_id": "T09",
+    "kind": "arrival",
+    "start_s": 3060,
+    "end_s": 3180,
+    "track_id": "P03",
+    "route_id": "R_W_P03",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T13-03-preparation",
+    "train_id": "T13",
+    "kind": "preparation",
+    "start_s": 3060,
+    "end_s": 3240,
+    "track_id": "P05",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T12-01-arrival",
+    "train_id": "T12",
+    "kind": "arrival",
+    "start_s": 3180,
+    "end_s": 3300,
+    "track_id": "P04",
+    "route_id": "R_W_P04",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T09-02-inspection",
+    "train_id": "T09",
+    "kind": "inspection",
+    "start_s": 3240,
+    "end_s": 3720,
+    "track_id": "P03",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T14-03-departure",
+    "train_id": "T14",
+    "kind": "departure",
+    "start_s": 3240,
+    "end_s": 3360,
+    "track_id": "P01",
+    "route_id": "R_P01_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T06-03-shunt",
+    "train_id": "T06",
+    "kind": "shunt",
+    "start_s": 3360,
+    "end_s": 3540,
+    "track_id": "P11",
+    "route_id": "R_P06_P11",
+    "resource_ids": [
+     "L01",
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T12-02-inspection",
+    "train_id": "T12",
+    "kind": "inspection",
+    "start_s": 3360,
+    "end_s": 3840,
+    "track_id": "P04",
+    "route_id": null,
+    "resource_ids": [
+     "B04"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T13-04-departure",
+    "train_id": "T13",
+    "kind": "departure",
+    "start_s": 3360,
+    "end_s": 3480,
+    "track_id": "P05",
+    "route_id": "R_P05_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T06-04-cargo",
+    "train_id": "T06",
+    "kind": "cargo",
+    "start_s": 3540,
+    "end_s": 4440,
+    "track_id": "P11",
+    "route_id": null,
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T15-01-arrival",
+    "train_id": "T15",
+    "kind": "arrival",
+    "start_s": 3540,
+    "end_s": 3660,
+    "track_id": "P05",
+    "route_id": "R_W_P05",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T15-02-inspection",
+    "train_id": "T15",
+    "kind": "inspection",
+    "start_s": 3720,
+    "end_s": 4200,
+    "track_id": "P05",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T03-05-shunt",
+    "train_id": "T03",
+    "kind": "shunt",
+    "start_s": 3960,
+    "end_s": 4140,
+    "track_id": "P07",
+    "route_id": "R_P10_P07",
+    "resource_ids": [
+     "L01",
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T03-06-formation",
+    "train_id": "T03",
+    "kind": "formation",
+    "start_s": 4140,
+    "end_s": 4440,
+    "track_id": "P07",
+    "route_id": null,
+    "resource_ids": [
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T09-03-shunt",
+    "train_id": "T09",
+    "kind": "shunt",
+    "start_s": 4140,
+    "end_s": 4320,
+    "track_id": "P10",
+    "route_id": "R_P03_P10",
+    "resource_ids": [
+     "L01",
+     "B02"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T09-04-cargo",
+    "train_id": "T09",
+    "kind": "cargo",
+    "start_s": 4320,
+    "end_s": 5220,
+    "track_id": "P10",
+    "route_id": null,
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T03-07-shunt",
+    "train_id": "T03",
+    "kind": "shunt",
+    "start_s": 4440,
+    "end_s": 4620,
+    "track_id": "P03",
+    "route_id": "R_P07_P03",
+    "resource_ids": [
+     "L01",
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T03-08-preparation",
+    "train_id": "T03",
+    "kind": "preparation",
+    "start_s": 4620,
+    "end_s": 4800,
+    "track_id": "P03",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T06-05-shunt",
+    "train_id": "T06",
+    "kind": "shunt",
+    "start_s": 4620,
+    "end_s": 4800,
+    "track_id": "P07",
+    "route_id": "R_P11_P07",
+    "resource_ids": [
+     "L01",
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T03-09-departure",
+    "train_id": "T03",
+    "kind": "departure",
+    "start_s": 4800,
+    "end_s": 4920,
+    "track_id": "P03",
+    "route_id": "R_P03_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T06-06-formation",
+    "train_id": "T06",
+    "kind": "formation",
+    "start_s": 4800,
+    "end_s": 5100,
+    "track_id": "P07",
+    "route_id": null,
+    "resource_ids": [
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T12-03-shunt",
+    "train_id": "T12",
+    "kind": "shunt",
+    "start_s": 4800,
+    "end_s": 4980,
+    "track_id": "P11",
+    "route_id": "R_P04_P11",
+    "resource_ids": [
+     "L01",
+     "B02"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T12-04-cargo",
+    "train_id": "T12",
+    "kind": "cargo",
+    "start_s": 4980,
+    "end_s": 5880,
+    "track_id": "P11",
+    "route_id": null,
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T06-07-shunt",
+    "train_id": "T06",
+    "kind": "shunt",
+    "start_s": 5100,
+    "end_s": 5280,
+    "track_id": "P03",
+    "route_id": "R_P07_P03",
+    "resource_ids": [
+     "L01",
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T06-08-preparation",
+    "train_id": "T06",
+    "kind": "preparation",
+    "start_s": 5280,
+    "end_s": 5460,
+    "track_id": "P03",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T09-05-shunt",
+    "train_id": "T09",
+    "kind": "shunt",
+    "start_s": 5280,
+    "end_s": 5460,
+    "track_id": "P07",
+    "route_id": "R_P10_P07",
+    "resource_ids": [
+     "L01",
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T06-09-departure",
+    "train_id": "T06",
+    "kind": "departure",
+    "start_s": 5460,
+    "end_s": 5580,
+    "track_id": "P03",
+    "route_id": "R_P03_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T09-06-formation",
+    "train_id": "T09",
+    "kind": "formation",
+    "start_s": 5460,
+    "end_s": 5760,
+    "track_id": "P07",
+    "route_id": null,
+    "resource_ids": [
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T15-03-shunt",
+    "train_id": "T15",
+    "kind": "shunt",
+    "start_s": 5460,
+    "end_s": 5640,
+    "track_id": "P10",
+    "route_id": "R_P05_P10",
+    "resource_ids": [
+     "L01",
+     "B02"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T15-04-cargo",
+    "train_id": "T15",
+    "kind": "cargo",
+    "start_s": 5640,
+    "end_s": 6540,
+    "track_id": "P10",
+    "route_id": null,
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T09-07-shunt",
+    "train_id": "T09",
+    "kind": "shunt",
+    "start_s": 5760,
+    "end_s": 5940,
+    "track_id": "P03",
+    "route_id": "R_P07_P03",
+    "resource_ids": [
+     "L01",
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T09-08-preparation",
+    "train_id": "T09",
+    "kind": "preparation",
+    "start_s": 5940,
+    "end_s": 6120,
+    "track_id": "P03",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T12-05-shunt",
+    "train_id": "T12",
+    "kind": "shunt",
+    "start_s": 5940,
+    "end_s": 6120,
+    "track_id": "P07",
+    "route_id": "R_P11_P07",
+    "resource_ids": [
+     "L01",
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T09-09-departure",
+    "train_id": "T09",
+    "kind": "departure",
+    "start_s": 6120,
+    "end_s": 6240,
+    "track_id": "P03",
+    "route_id": "R_P03_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T12-06-formation",
+    "train_id": "T12",
+    "kind": "formation",
+    "start_s": 6120,
+    "end_s": 6420,
+    "track_id": "P07",
+    "route_id": null,
+    "resource_ids": [
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T12-07-shunt",
+    "train_id": "T12",
+    "kind": "shunt",
+    "start_s": 6420,
+    "end_s": 6600,
+    "track_id": "P03",
+    "route_id": "R_P07_P03",
+    "resource_ids": [
+     "L01",
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T12-08-preparation",
+    "train_id": "T12",
+    "kind": "preparation",
+    "start_s": 6600,
+    "end_s": 6780,
+    "track_id": "P03",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T15-05-shunt",
+    "train_id": "T15",
+    "kind": "shunt",
+    "start_s": 6600,
+    "end_s": 6780,
+    "track_id": "P07",
+    "route_id": "R_P10_P07",
+    "resource_ids": [
+     "L01",
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T12-09-departure",
+    "train_id": "T12",
+    "kind": "departure",
+    "start_s": 6780,
+    "end_s": 6900,
+    "track_id": "P03",
+    "route_id": "R_P03_E",
+    "resource_ids": [],
+    "fixed": false
+   },
+   {
+    "operation_id": "T15-06-formation",
+    "train_id": "T15",
+    "kind": "formation",
+    "start_s": 6780,
+    "end_s": 7080,
+    "track_id": "P07",
+    "route_id": null,
+    "resource_ids": [
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T15-07-shunt",
+    "train_id": "T15",
+    "kind": "shunt",
+    "start_s": 7080,
+    "end_s": 7260,
+    "track_id": "P03",
+    "route_id": "R_P07_P03",
+    "resource_ids": [
+     "L01",
+     "B01"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T15-08-preparation",
+    "train_id": "T15",
+    "kind": "preparation",
+    "start_s": 7260,
+    "end_s": 7440,
+    "track_id": "P03",
+    "route_id": null,
+    "resource_ids": [
+     "B03"
+    ],
+    "fixed": false
+   },
+   {
+    "operation_id": "T15-09-departure",
+    "train_id": "T15",
+    "kind": "departure",
+    "start_s": 7440,
+    "end_s": 7560,
+    "track_id": "P03",
+    "route_id": "R_P03_E",
+    "resource_ids": [],
+    "fixed": false
+   }
+  ],
+  "unassigned": [],
+  "calc_ms": 9,
+  "violations": [],
+  "status": "feasible",
+  "metrics": {
+   "total_delay_s": 7080,
+   "max_delay_s": 1680,
+   "unassigned_count": 0,
+   "changed_count": 0,
+   "delayed_trains": 6,
+   "forecast_departures": {
+    "T01": 600,
+    "T04": 1080,
+    "T02": 1200,
+    "T07": 1680,
+    "T05": 1800,
+    "T08": 2280,
+    "T11": 2520,
+    "T10": 2760,
+    "T14": 3360,
+    "T13": 3480,
+    "T03": 4920,
+    "T06": 5580,
+    "T09": 6240,
+    "T12": 6900,
+    "T15": 7560
+   },
+   "delays": {
+    "T01": 0,
+    "T04": 0,
+    "T02": 0,
+    "T07": 0,
+    "T05": 120,
+    "T08": 0,
+    "T11": 0,
+    "T10": 0,
+    "T14": 0,
+    "T13": 0,
+    "T03": 1620,
+    "T06": 1680,
+    "T09": 1560,
+    "T12": 1260,
+    "T15": 840
+   }
+  },
+  "explanations": [],
+  "status_applied": "active"
+ },
+ "conflicts": [],
+ "queue": [],
+ "index": {
+  "value": 100,
+  "category": "norm",
+  "window_s": 60,
+  "factors": [
+   {
+    "id": "delay",
+    "label": "Задержка отправления",
+    "penalty": null,
+    "weight": 0.35,
+    "contribution": null,
+    "no_data": true
+   },
+   {
+    "id": "on_time",
+    "label": "Выполнение отправлений",
+    "penalty": null,
+    "weight": 0.25,
+    "contribution": null,
+    "no_data": true
+   },
+   {
+    "id": "utilization",
+    "label": "Перегрузка путей",
+    "penalty": 0,
+    "weight": 0.15,
+    "contribution": 0.0
+   },
+   {
+    "id": "conflicts",
+    "label": "Конфликты плана",
+    "penalty": 0.0,
+    "weight": 0.15,
+    "contribution": 0.0
+   },
+   {
+    "id": "idle",
+    "label": "Простой из-за ожидания",
+    "penalty": 0.0,
+    "weight": 0.1,
+    "contribution": 0.0
+   }
+  ],
+  "kind": "fact"
+ },
+ "incidents": []
+}

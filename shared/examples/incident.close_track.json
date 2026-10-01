@@ -1,0 +1,7 @@
+{
+ "command_id": "cmd-0001",
+ "run_id": "RUN-696ae6",
+ "kind": "close_track",
+ "target_id": "P04",
+ "duration_s": 600
+}

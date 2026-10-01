@@ -1,0 +1,14 @@
+{
+ "schema_version": 1,
+ "run_id": "RUN-696ae6",
+ "ws_seq": 43,
+ "state_version": 3,
+ "type": "clock_sync",
+ "payload": {
+  "sim_time_s": 61,
+  "sim_time_exact": 61.4,
+  "speed": 1,
+  "paused": false,
+  "server_mono_ms": 123456
+ }
+}
