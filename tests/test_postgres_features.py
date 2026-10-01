@@ -6,7 +6,6 @@ import os
 import time
 from uuid import uuid4
 
-from fastapi.testclient import TestClient
 import psycopg
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
@@ -14,12 +13,11 @@ from psycopg_pool import ConnectionPool
 import pytest
 
 from app.api.history import export_csv
-from app.main import create_app
 from app.planner import RULES
 from app.runtime.coordinator import Coordinator
 from app.runtime.planning import PlannerProcess,calculate_variants
 from app.runtime.state import encode_checkpoint
-from app.settings import Settings
+from auth_support import signed_in_client
 from app.simulation import apply_plan
 from app.simulation.engine import SimulationError
 from app.storage.bootstrap import bootstrap
@@ -141,7 +139,7 @@ def test_planning_jobs_recovery_coalescing_and_atomic_acceptance(repository):
 def test_http_incident_to_background_plan_to_departure_and_history(repository):
     repo=repository
     owner=Coordinator(repo,*repo.load_runtime(),planner=PlannerProcess())
-    with TestClient(create_app(Settings(_env_file=None),repo,owner)) as client:
+    with signed_in_client(repo,owner) as client:
         run_id=owner.state.run_id
         assert client.post('/api/incidents',json=dict(command_id='delay',run_id=run_id,
             kind='delay_train',target_id='T01',delay_s=120)).status_code==200
