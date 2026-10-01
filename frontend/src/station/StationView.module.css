@@ -20,13 +20,14 @@
 .trackG { cursor: pointer; }
 .trackFree { stroke: var(--free); stroke-width: 5; stroke-linecap: round; }
 .trackOcc { stroke: var(--occupied); stroke-width: 3; stroke-linecap: round; opacity: .55; }
+.trackReserved { stroke: var(--occupied); stroke-width: 3; stroke-dasharray: 10 8; stroke-linecap: round; opacity: .6; }
 .trackClosed { stroke: var(--closed); stroke-width: 4; stroke-linecap: round; }
 .trackG:hover .trackFree { stroke: #4a5893; }
 .trackG:hover .trackOcc { opacity: .9; }
 .trackLabel { fill: var(--text); font: 700 17px var(--mono); pointer-events: none; }
 .trackChip { fill: var(--bg-2); stroke: var(--border-strong); }
-.trackNote { fill: var(--muted); font: 14px var(--mono); }
-.trackNoteBad { fill: #ff8c97; letter-spacing: .04em; font: 700 16px var(--mono); }
+.trackNote { fill: var(--muted); font: 14px var(--mono); paint-order: stroke; stroke: var(--bg); stroke-width: 5px; }
+.trackNoteBad { fill: #ff8c97; letter-spacing: .04em; paint-order: stroke; stroke: var(--bg); stroke-width: 5px; font: 700 16px var(--mono); }
 .selRect { fill: rgba(248, 250, 252, 0.06); stroke: var(--select); stroke-width: 1.5; }
 .hlRect { fill: rgba(255, 181, 59, 0.08); stroke: var(--wait); stroke-width: 2; animation: pulse 1.2s ease-in-out infinite; }
 .previewRect { fill: var(--preview-soft); stroke: var(--preview); stroke-dasharray: 6 4; stroke-width: 1.5; }
@@ -42,6 +43,7 @@
 .trainSel { fill: none; stroke: var(--select); stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; }
 .trainHl { fill: none; stroke: var(--wait); stroke-width: 24; stroke-linecap: round; stroke-linejoin: round; opacity: .6; animation: pulse 1.2s ease-in-out infinite; }
 .trainTag { fill: rgba(7, 9, 19, 0.92); stroke: #2a3458; }
+.trainTagWait { fill: rgba(30, 20, 4, 0.95); stroke: var(--wait); }
 .trainLabel { fill: var(--text); font: 700 15px var(--mono); pointer-events: none; }
 .delayTag { fill: rgba(7, 9, 19, 0.92); stroke: var(--wait); }
 .delayText { fill: var(--wait); font: 700 14px var(--mono); }
@@ -69,6 +71,7 @@
 .legend i { display: inline-block; width: 18px; height: 5px; border-radius: 3px; }
 .lgFree { background: var(--free); }
 .lgOcc { background: var(--occupied); }
+.lgRes { background: repeating-linear-gradient(90deg, var(--occupied) 0 5px, transparent 5px 9px); opacity: .7; }
 .lgWait { background: var(--wait); }
 .lgClosed { background: repeating-linear-gradient(45deg, var(--closed) 0 3px, transparent 3px 6px); height: 8px !important; }
 .lgPlan { background: repeating-linear-gradient(90deg, #60a5fa 0 5px, transparent 5px 9px); }
@@ -79,4 +82,4 @@
 
 .previewBadge { padding: 3px 10px; border-radius: 3px; font-family: var(--display) !important; letter-spacing: .1em; background: var(--preview-soft); border: 1px solid var(--preview); color: #e9d5ff; font-weight: 700; font-size: 11.5px; white-space: nowrap; }
 .historyBadge { padding: 3px 10px; border-radius: 3px; background: var(--wait-soft); border: 1px solid var(--wait); color: var(--wait); font: 700 11px var(--display); letter-spacing: .12em; white-space: nowrap; }
-@media (max-width: 1500px) { .legend span:nth-child(n+5) { display: none; } }
+@media (max-width: 1500px) { .legend span:nth-child(n+6) { display: none; } }

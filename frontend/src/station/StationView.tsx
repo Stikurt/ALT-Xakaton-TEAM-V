@@ -130,9 +130,15 @@ export default function StationView(p: StationViewProps) {
 
   const W = topo.nodes.W, GW = topo.nodes.GW, GE = topo.nodes.GE, E = topo.nodes.E
   const resById = Object.fromEntries(snap.resources.map((r) => [r.id, r]))
+  const trainById = Object.fromEntries(snap.trains.map((t) => [t.id, t]))
   const opById = useMemo(() => Object.fromEntries(snap.operations.map((o) => [o.id, o])), [snap.operations])
 
   const queue = snap.trains.filter((t) => t.status === 'waiting_entry')
+  const entryText = (tid: string) => {
+    const op = snap.operations.find((o) => o.train_id === tid && o.kind === 'arrival')
+    const a = op ? activeByOp[op.id] : undefined
+    return a ? `вход в ${fmtT(a.start_s)}` : 'нет назначения'
+  }
   const soon = snap.trains
     .filter((t) => t.status === 'scheduled')
     .sort((a, b) => a.expected_arrival_s - b.expected_arrival_s)
@@ -215,10 +221,13 @@ export default function StationView(p: StationViewProps) {
         {topo.tracks.map((t) => {
           const st = stTracks[t.id]
           const closed = st?.availability === 'closed'
-          const occ = !!st?.occupant_train_id
+          const occTrain = st?.occupant_train_id ? trainById[st.occupant_train_id] : undefined
+          // занят физически — состав стоит на пути; резерв — к пути едет или с него уходит состав
+          const occ = !!occTrain && !occTrain.movement
+          const reserved = !!occTrain && !!occTrain.movement
           const sel = p.selection?.type === 'track' && selId === t.id
           const y = t.geometry.y1
-          const cls = closed ? s.trackClosed : occ ? s.trackOcc : s.trackFree
+          const cls = closed ? s.trackClosed : occ ? s.trackOcc : reserved ? s.trackReserved : s.trackFree
           return (
             <g key={t.id} className={s.trackG} onClick={click({ type: 'track', id: t.id })}>
               <rect x={t.geometry.x1 - 60} y={y - 16} width={t.geometry.x2 - t.geometry.x1 + 140} height={32} fill="transparent" />
@@ -230,6 +239,7 @@ export default function StationView(p: StationViewProps) {
                 <rect x={t.geometry.x1 - 4} y={y - 10} width={t.geometry.x2 - t.geometry.x1 + 8} height={20} rx={5} className={s.previewRect} />
               )}
               <line x1={t.geometry.x1} y1={y} x2={t.geometry.x2} y2={y} className={cls} filter={closed || occ ? 'url(#glowSoft)' : undefined} />
+              {reserved && !closed && <title>{`${t.id}: резерв под ${occTrain!.id} на время перемещения`}</title>}
               {closed && <rect x={t.geometry.x1} y={y - 7} width={t.geometry.x2 - t.geometry.x1} height={14} fill="url(#hatch)" rx={2} />}
               <rect x={t.geometry.x1 - 2} y={y - 12} width={48} height={24} rx={5} className={s.trackChip} />
               <text x={t.geometry.x1 + 22} y={y + 6} textAnchor="middle" className={s.trackLabel}>{t.id}</text>
@@ -296,7 +306,7 @@ export default function StationView(p: StationViewProps) {
               <g key={t.id} transform={`translate(14, ${512 + i * 38})`} className={s.queueChip} onClick={click({ type: 'train', id: t.id })}>
                 <rect width={160} height={32} rx={6} className={waitingReason ? s.qWait : s.qOk} strokeWidth={sel ? 2.5 : 1} stroke={sel ? 'var(--select)' : undefined} />
                 <text x={8} y={21} className={s.qText}>{t.id}</text>
-                <text x={48} y={21} className={s.qSub}>{waitingReason ? `ждёт: ${waitingReason}`.slice(0, 16) : 'вход по плану'}</text>
+                <text x={48} y={21} className={s.qSub}>{waitingReason ? `ждёт: ${waitingReason}`.slice(0, 16) : entryText(t.id)}</text>
               </g>
             )
           })}
@@ -361,6 +371,7 @@ function Legend() {
     <div className={s.legend}>
       <span><i className={s.lgFree} />свободно</span>
       <span><i className={s.lgOcc} />занято</span>
+      <span><i className={s.lgRes} />резерв</span>
       <span><i className={s.lgWait} />ожидание</span>
       <span><i className={s.lgClosed} />закрыто</span>
       <span><i className={s.lgPlan} />план</span>
@@ -429,6 +440,8 @@ const TrainsLayer = memo(function TrainsLayer(p: TLProps) {
         const hl = p.hl.has(t.id)
         const color = waiting ? 'var(--wait)' : `var(--k-${t.kind})`
         const d = toPath(body)
+        // подпись не выходит за пути и не наезжает на подписи длины справа
+        const tagX = Math.max(70, Math.min(center[0], t.delay_s > 0 ? 960 : 1020))
         return (
           <g key={t.id} className={s.trainG} onClick={p.onClick(t.id)}>
             {trace && <path d={toPath(trace)} className={s.routeActual} />}
@@ -439,21 +452,20 @@ const TrainsLayer = memo(function TrainsLayer(p: TLProps) {
             <g transform={`translate(${head[0]},${head[1]}) rotate(${(ang * 180) / Math.PI})`}>
               <path d="M-2,-6 L8,0 L-2,6 Z" fill={color} />
             </g>
-            <g transform={`translate(${center[0]},${center[1] - 18})`}>
-              <rect x={-56} y={-15} width={112} height={21} rx={5} className={s.trainTag} />
+            <g transform={`translate(${tagX},${center[1] - 18})`}>
+              <rect x={-56} y={-15} width={112} height={21} rx={5} className={waiting ? s.trainTagWait : s.trainTag} />
               <text textAnchor="middle" y={1} className={s.trainLabel}>
-                {t.id} · {TRAIN_KIND_SHORT[t.kind]}
+                {waiting ? '! ' : ''}{t.id} · {TRAIN_KIND_SHORT[t.kind]}
               </text>
             </g>
             {t.delay_s > 0 && (
-              <g transform={`translate(${center[0] + 62},${center[1] - 18})`}>
+              <g transform={`translate(${tagX + 62},${center[1] - 18})`}>
                 <rect x={0} y={-15} width={70} height={21} rx={5} className={s.delayTag} />
                 <text x={35} y={1} textAnchor="middle" className={s.delayText}>+{Math.round(t.delay_s / 60)} мин</text>
               </g>
             )}
-            {waiting && (
-              <text x={center[0]} y={center[1] + 30} textAnchor="middle" className={s.waitText}>ждёт: {t.wait_reason}</text>
-            )}
+            <title>{[`${t.id} · ${TRAIN_KIND_SHORT[t.kind]}`, waiting ? `ждёт: ${t.wait_reason}` : null,
+              t.delay_s > 0 ? `прогноз задержки ${Math.round(t.delay_s / 60)} мин` : null].filter(Boolean).join('\n')}</title>
           </g>
         )
       })}
