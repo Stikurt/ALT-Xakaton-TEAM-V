@@ -1,0 +1,371 @@
+{
+ "schema_version": 1,
+ "name": "Узел 12 (учебная станция)",
+ "horizon_s": 7200,
+ "viewbox": [
+  0,
+  0,
+  1400,
+  900
+ ],
+ "nodes": {
+  "W": [
+   40,
+   450
+  ],
+  "GW": [
+   180,
+   450
+  ],
+  "GE": [
+   1220,
+   450
+  ],
+  "E": [
+   1360,
+   450
+  ]
+ },
+ "zones": [
+  {
+   "id": "GW",
+   "name": "Западная горловина"
+  },
+  {
+   "id": "GE",
+   "name": "Восточная горловина"
+  }
+ ],
+ "tracks": [
+  {
+   "id": "P01",
+   "kind": "passenger",
+   "usable_length_m": 500,
+   "geometry": {
+    "x1": 320,
+    "y1": 120,
+    "x2": 1080,
+    "y2": 120
+   }
+  },
+  {
+   "id": "P02",
+   "kind": "passenger",
+   "usable_length_m": 500,
+   "geometry": {
+    "x1": 320,
+    "y1": 180,
+    "x2": 1080,
+    "y2": 180
+   }
+  },
+  {
+   "id": "P03",
+   "kind": "freight",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 240,
+    "x2": 1080,
+    "y2": 240
+   }
+  },
+  {
+   "id": "P04",
+   "kind": "freight",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 300,
+    "x2": 1080,
+    "y2": 300
+   }
+  },
+  {
+   "id": "P05",
+   "kind": "freight",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 360,
+    "x2": 1080,
+    "y2": 360
+   }
+  },
+  {
+   "id": "P06",
+   "kind": "freight",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 420,
+    "x2": 1080,
+    "y2": 420
+   }
+  },
+  {
+   "id": "P07",
+   "kind": "staging",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 480,
+    "x2": 1080,
+    "y2": 480
+   }
+  },
+  {
+   "id": "P08",
+   "kind": "staging",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 540,
+    "x2": 1080,
+    "y2": 540
+   }
+  },
+  {
+   "id": "P09",
+   "kind": "staging",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 600,
+    "x2": 1080,
+    "y2": 600
+   }
+  },
+  {
+   "id": "P10",
+   "kind": "cargo",
+   "usable_length_m": 700,
+   "geometry": {
+    "x1": 320,
+    "y1": 660,
+    "x2": 1080,
+    "y2": 660
+   }
+  },
+  {
+   "id": "P11",
+   "kind": "cargo",
+   "usable_length_m": 700,
+   "geometry": {
+    "x1": 320,
+    "y1": 720,
+    "x2": 1080,
+    "y2": 720
+   }
+  },
+  {
+   "id": "P12",
+   "kind": "loco",
+   "usable_length_m": 150,
+   "geometry": {
+    "x1": 320,
+    "y1": 780,
+    "x2": 1080,
+    "y2": 780
+   }
+  }
+ ],
+ "areas": [
+  {
+   "id": "platform",
+   "label": "Платформы",
+   "track_ids": [
+    "P01",
+    "P02"
+   ]
+  },
+  {
+   "id": "cargo",
+   "label": "Грузовой фронт F10/F11",
+   "track_ids": [
+    "P10",
+    "P11"
+   ]
+  }
+ ],
+ "resources": [
+  {
+   "id": "L01",
+   "kind": "shunting_loco",
+   "capabilities": [
+    "shunt"
+   ]
+  },
+  {
+   "id": "L02",
+   "kind": "shunting_loco",
+   "capabilities": [
+    "shunt"
+   ]
+  },
+  {
+   "id": "B01",
+   "kind": "shunting_crew",
+   "capabilities": [
+    "shunt",
+    "formation"
+   ]
+  },
+  {
+   "id": "B02",
+   "kind": "shunting_crew",
+   "capabilities": [
+    "shunt",
+    "formation"
+   ]
+  },
+  {
+   "id": "B03",
+   "kind": "inspection_crew",
+   "capabilities": [
+    "inspection",
+    "preparation"
+   ]
+  },
+  {
+   "id": "B04",
+   "kind": "inspection_crew",
+   "capabilities": [
+    "inspection",
+    "preparation"
+   ]
+  }
+ ],
+ "durations_s": {
+  "arrival": 120,
+  "departure": 120,
+  "shunt": 180,
+  "stop": 360,
+  "inspection": 480,
+  "preparation": 180,
+  "cargo": 900,
+  "formation": 300
+ },
+ "trains": [
+  {
+   "id": "T01",
+   "kind": "passenger",
+   "length_m": 350,
+   "priority": 3,
+   "scheduled_arrival_s": 0,
+   "scheduled_departure_s": 600
+  },
+  {
+   "id": "T02",
+   "kind": "transit",
+   "length_m": 750,
+   "priority": 2,
+   "scheduled_arrival_s": 120,
+   "scheduled_departure_s": 1200
+  },
+  {
+   "id": "T03",
+   "kind": "local",
+   "length_m": 600,
+   "priority": 1,
+   "scheduled_arrival_s": 240,
+   "scheduled_departure_s": 3300
+  },
+  {
+   "id": "T04",
+   "kind": "passenger",
+   "length_m": 350,
+   "priority": 3,
+   "scheduled_arrival_s": 480,
+   "scheduled_departure_s": 1080
+  },
+  {
+   "id": "T05",
+   "kind": "transit",
+   "length_m": 800,
+   "priority": 2,
+   "scheduled_arrival_s": 600,
+   "scheduled_departure_s": 1680
+  },
+  {
+   "id": "T06",
+   "kind": "local",
+   "length_m": 650,
+   "priority": 1,
+   "scheduled_arrival_s": 720,
+   "scheduled_departure_s": 3900
+  },
+  {
+   "id": "T07",
+   "kind": "passenger",
+   "length_m": 350,
+   "priority": 3,
+   "scheduled_arrival_s": 1080,
+   "scheduled_departure_s": 1680
+  },
+  {
+   "id": "T08",
+   "kind": "transit",
+   "length_m": 750,
+   "priority": 2,
+   "scheduled_arrival_s": 1200,
+   "scheduled_departure_s": 2280
+  },
+  {
+   "id": "T09",
+   "kind": "local",
+   "length_m": 600,
+   "priority": 1,
+   "scheduled_arrival_s": 1320,
+   "scheduled_departure_s": 4680
+  },
+  {
+   "id": "T10",
+   "kind": "transit",
+   "length_m": 800,
+   "priority": 2,
+   "scheduled_arrival_s": 1680,
+   "scheduled_departure_s": 2760
+  },
+  {
+   "id": "T11",
+   "kind": "passenger",
+   "length_m": 350,
+   "priority": 3,
+   "scheduled_arrival_s": 1920,
+   "scheduled_departure_s": 2520
+  },
+  {
+   "id": "T12",
+   "kind": "local",
+   "length_m": 650,
+   "priority": 1,
+   "scheduled_arrival_s": 2160,
+   "scheduled_departure_s": 5640
+  },
+  {
+   "id": "T13",
+   "kind": "transit",
+   "length_m": 750,
+   "priority": 2,
+   "scheduled_arrival_s": 2400,
+   "scheduled_departure_s": 3480
+  },
+  {
+   "id": "T14",
+   "kind": "passenger",
+   "length_m": 350,
+   "priority": 3,
+   "scheduled_arrival_s": 2760,
+   "scheduled_departure_s": 3360
+  },
+  {
+   "id": "T15",
+   "kind": "local",
+   "length_m": 600,
+   "priority": 1,
+   "scheduled_arrival_s": 3000,
+   "scheduled_departure_s": 6720
+  }
+ ]
+}

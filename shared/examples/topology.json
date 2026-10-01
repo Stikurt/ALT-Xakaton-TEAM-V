@@ -1,0 +1,2241 @@
+{
+ "schema_version": 1,
+ "name": "Узел 12 (учебная станция)",
+ "viewbox": [
+  0,
+  0,
+  1400,
+  900
+ ],
+ "nodes": {
+  "W": [
+   40,
+   450
+  ],
+  "GW": [
+   180,
+   450
+  ],
+  "GE": [
+   1220,
+   450
+  ],
+  "E": [
+   1360,
+   450
+  ]
+ },
+ "zones": [
+  {
+   "id": "GW",
+   "name": "Западная горловина"
+  },
+  {
+   "id": "GE",
+   "name": "Восточная горловина"
+  }
+ ],
+ "areas": [
+  {
+   "id": "platform",
+   "label": "Платформы",
+   "track_ids": [
+    "P01",
+    "P02"
+   ]
+  },
+  {
+   "id": "cargo",
+   "label": "Грузовой фронт F10/F11",
+   "track_ids": [
+    "P10",
+    "P11"
+   ]
+  }
+ ],
+ "tracks": [
+  {
+   "id": "P01",
+   "kind": "passenger",
+   "usable_length_m": 500,
+   "geometry": {
+    "x1": 320,
+    "y1": 120,
+    "x2": 1080,
+    "y2": 120
+   }
+  },
+  {
+   "id": "P02",
+   "kind": "passenger",
+   "usable_length_m": 500,
+   "geometry": {
+    "x1": 320,
+    "y1": 180,
+    "x2": 1080,
+    "y2": 180
+   }
+  },
+  {
+   "id": "P03",
+   "kind": "freight",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 240,
+    "x2": 1080,
+    "y2": 240
+   }
+  },
+  {
+   "id": "P04",
+   "kind": "freight",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 300,
+    "x2": 1080,
+    "y2": 300
+   }
+  },
+  {
+   "id": "P05",
+   "kind": "freight",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 360,
+    "x2": 1080,
+    "y2": 360
+   }
+  },
+  {
+   "id": "P06",
+   "kind": "freight",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 420,
+    "x2": 1080,
+    "y2": 420
+   }
+  },
+  {
+   "id": "P07",
+   "kind": "staging",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 480,
+    "x2": 1080,
+    "y2": 480
+   }
+  },
+  {
+   "id": "P08",
+   "kind": "staging",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 540,
+    "x2": 1080,
+    "y2": 540
+   }
+  },
+  {
+   "id": "P09",
+   "kind": "staging",
+   "usable_length_m": 900,
+   "geometry": {
+    "x1": 320,
+    "y1": 600,
+    "x2": 1080,
+    "y2": 600
+   }
+  },
+  {
+   "id": "P10",
+   "kind": "cargo",
+   "usable_length_m": 700,
+   "geometry": {
+    "x1": 320,
+    "y1": 660,
+    "x2": 1080,
+    "y2": 660
+   }
+  },
+  {
+   "id": "P11",
+   "kind": "cargo",
+   "usable_length_m": 700,
+   "geometry": {
+    "x1": 320,
+    "y1": 720,
+    "x2": 1080,
+    "y2": 720
+   }
+  },
+  {
+   "id": "P12",
+   "kind": "loco",
+   "usable_length_m": 150,
+   "geometry": {
+    "x1": 320,
+    "y1": 780,
+    "x2": 1080,
+    "y2": 780
+   }
+  }
+ ],
+ "routes": [
+  {
+   "id": "R_W_P01",
+   "from_id": "W",
+   "to_id": "P01",
+   "kind": "arrival",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 120,
+   "polyline": [
+    [
+     40,
+     450
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     120
+    ],
+    [
+     700,
+     120
+    ]
+   ]
+  },
+  {
+   "id": "R_P01_E",
+   "from_id": "P01",
+   "to_id": "E",
+   "kind": "departure",
+   "conflict_zone_ids": [
+    "GE"
+   ],
+   "duration_s": 120,
+   "polyline": [
+    [
+     700,
+     120
+    ],
+    [
+     1080,
+     120
+    ],
+    [
+     1220,
+     450
+    ],
+    [
+     1360,
+     450
+    ]
+   ]
+  },
+  {
+   "id": "R_W_P02",
+   "from_id": "W",
+   "to_id": "P02",
+   "kind": "arrival",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 120,
+   "polyline": [
+    [
+     40,
+     450
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     180
+    ],
+    [
+     700,
+     180
+    ]
+   ]
+  },
+  {
+   "id": "R_P02_E",
+   "from_id": "P02",
+   "to_id": "E",
+   "kind": "departure",
+   "conflict_zone_ids": [
+    "GE"
+   ],
+   "duration_s": 120,
+   "polyline": [
+    [
+     700,
+     180
+    ],
+    [
+     1080,
+     180
+    ],
+    [
+     1220,
+     450
+    ],
+    [
+     1360,
+     450
+    ]
+   ]
+  },
+  {
+   "id": "R_W_P03",
+   "from_id": "W",
+   "to_id": "P03",
+   "kind": "arrival",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 120,
+   "polyline": [
+    [
+     40,
+     450
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     240
+    ],
+    [
+     700,
+     240
+    ]
+   ]
+  },
+  {
+   "id": "R_P03_E",
+   "from_id": "P03",
+   "to_id": "E",
+   "kind": "departure",
+   "conflict_zone_ids": [
+    "GE"
+   ],
+   "duration_s": 120,
+   "polyline": [
+    [
+     700,
+     240
+    ],
+    [
+     1080,
+     240
+    ],
+    [
+     1220,
+     450
+    ],
+    [
+     1360,
+     450
+    ]
+   ]
+  },
+  {
+   "id": "R_W_P04",
+   "from_id": "W",
+   "to_id": "P04",
+   "kind": "arrival",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 120,
+   "polyline": [
+    [
+     40,
+     450
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     300
+    ],
+    [
+     700,
+     300
+    ]
+   ]
+  },
+  {
+   "id": "R_P04_E",
+   "from_id": "P04",
+   "to_id": "E",
+   "kind": "departure",
+   "conflict_zone_ids": [
+    "GE"
+   ],
+   "duration_s": 120,
+   "polyline": [
+    [
+     700,
+     300
+    ],
+    [
+     1080,
+     300
+    ],
+    [
+     1220,
+     450
+    ],
+    [
+     1360,
+     450
+    ]
+   ]
+  },
+  {
+   "id": "R_W_P05",
+   "from_id": "W",
+   "to_id": "P05",
+   "kind": "arrival",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 120,
+   "polyline": [
+    [
+     40,
+     450
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     360
+    ],
+    [
+     700,
+     360
+    ]
+   ]
+  },
+  {
+   "id": "R_P05_E",
+   "from_id": "P05",
+   "to_id": "E",
+   "kind": "departure",
+   "conflict_zone_ids": [
+    "GE"
+   ],
+   "duration_s": 120,
+   "polyline": [
+    [
+     700,
+     360
+    ],
+    [
+     1080,
+     360
+    ],
+    [
+     1220,
+     450
+    ],
+    [
+     1360,
+     450
+    ]
+   ]
+  },
+  {
+   "id": "R_W_P06",
+   "from_id": "W",
+   "to_id": "P06",
+   "kind": "arrival",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 120,
+   "polyline": [
+    [
+     40,
+     450
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     420
+    ],
+    [
+     700,
+     420
+    ]
+   ]
+  },
+  {
+   "id": "R_P06_E",
+   "from_id": "P06",
+   "to_id": "E",
+   "kind": "departure",
+   "conflict_zone_ids": [
+    "GE"
+   ],
+   "duration_s": 120,
+   "polyline": [
+    [
+     700,
+     420
+    ],
+    [
+     1080,
+     420
+    ],
+    [
+     1220,
+     450
+    ],
+    [
+     1360,
+     450
+    ]
+   ]
+  },
+  {
+   "id": "R_P03_P10",
+   "from_id": "P03",
+   "to_id": "P10",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     240
+    ],
+    [
+     320,
+     240
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     700,
+     660
+    ]
+   ]
+  },
+  {
+   "id": "R_P10_P03",
+   "from_id": "P10",
+   "to_id": "P03",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     660
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     240
+    ],
+    [
+     700,
+     240
+    ]
+   ]
+  },
+  {
+   "id": "R_P03_P11",
+   "from_id": "P03",
+   "to_id": "P11",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     240
+    ],
+    [
+     320,
+     240
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     700,
+     720
+    ]
+   ]
+  },
+  {
+   "id": "R_P11_P03",
+   "from_id": "P11",
+   "to_id": "P03",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     720
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     240
+    ],
+    [
+     700,
+     240
+    ]
+   ]
+  },
+  {
+   "id": "R_P04_P10",
+   "from_id": "P04",
+   "to_id": "P10",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     300
+    ],
+    [
+     320,
+     300
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     700,
+     660
+    ]
+   ]
+  },
+  {
+   "id": "R_P10_P04",
+   "from_id": "P10",
+   "to_id": "P04",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     660
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     300
+    ],
+    [
+     700,
+     300
+    ]
+   ]
+  },
+  {
+   "id": "R_P04_P11",
+   "from_id": "P04",
+   "to_id": "P11",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     300
+    ],
+    [
+     320,
+     300
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     700,
+     720
+    ]
+   ]
+  },
+  {
+   "id": "R_P11_P04",
+   "from_id": "P11",
+   "to_id": "P04",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     720
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     300
+    ],
+    [
+     700,
+     300
+    ]
+   ]
+  },
+  {
+   "id": "R_P05_P10",
+   "from_id": "P05",
+   "to_id": "P10",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     360
+    ],
+    [
+     320,
+     360
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     700,
+     660
+    ]
+   ]
+  },
+  {
+   "id": "R_P10_P05",
+   "from_id": "P10",
+   "to_id": "P05",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     660
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     360
+    ],
+    [
+     700,
+     360
+    ]
+   ]
+  },
+  {
+   "id": "R_P05_P11",
+   "from_id": "P05",
+   "to_id": "P11",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     360
+    ],
+    [
+     320,
+     360
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     700,
+     720
+    ]
+   ]
+  },
+  {
+   "id": "R_P11_P05",
+   "from_id": "P11",
+   "to_id": "P05",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     720
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     360
+    ],
+    [
+     700,
+     360
+    ]
+   ]
+  },
+  {
+   "id": "R_P06_P10",
+   "from_id": "P06",
+   "to_id": "P10",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     420
+    ],
+    [
+     320,
+     420
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     700,
+     660
+    ]
+   ]
+  },
+  {
+   "id": "R_P10_P06",
+   "from_id": "P10",
+   "to_id": "P06",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     660
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     420
+    ],
+    [
+     700,
+     420
+    ]
+   ]
+  },
+  {
+   "id": "R_P06_P11",
+   "from_id": "P06",
+   "to_id": "P11",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     420
+    ],
+    [
+     320,
+     420
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     700,
+     720
+    ]
+   ]
+  },
+  {
+   "id": "R_P11_P06",
+   "from_id": "P11",
+   "to_id": "P06",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     720
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     420
+    ],
+    [
+     700,
+     420
+    ]
+   ]
+  },
+  {
+   "id": "R_P10_P07",
+   "from_id": "P10",
+   "to_id": "P07",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     660
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     480
+    ],
+    [
+     700,
+     480
+    ]
+   ]
+  },
+  {
+   "id": "R_P07_P10",
+   "from_id": "P07",
+   "to_id": "P10",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     480
+    ],
+    [
+     320,
+     480
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     700,
+     660
+    ]
+   ]
+  },
+  {
+   "id": "R_P10_P08",
+   "from_id": "P10",
+   "to_id": "P08",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     660
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     540
+    ],
+    [
+     700,
+     540
+    ]
+   ]
+  },
+  {
+   "id": "R_P08_P10",
+   "from_id": "P08",
+   "to_id": "P10",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     540
+    ],
+    [
+     320,
+     540
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     700,
+     660
+    ]
+   ]
+  },
+  {
+   "id": "R_P10_P09",
+   "from_id": "P10",
+   "to_id": "P09",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     660
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     600
+    ],
+    [
+     700,
+     600
+    ]
+   ]
+  },
+  {
+   "id": "R_P09_P10",
+   "from_id": "P09",
+   "to_id": "P10",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     600
+    ],
+    [
+     320,
+     600
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     660
+    ],
+    [
+     700,
+     660
+    ]
+   ]
+  },
+  {
+   "id": "R_P11_P07",
+   "from_id": "P11",
+   "to_id": "P07",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     720
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     480
+    ],
+    [
+     700,
+     480
+    ]
+   ]
+  },
+  {
+   "id": "R_P07_P11",
+   "from_id": "P07",
+   "to_id": "P11",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     480
+    ],
+    [
+     320,
+     480
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     700,
+     720
+    ]
+   ]
+  },
+  {
+   "id": "R_P11_P08",
+   "from_id": "P11",
+   "to_id": "P08",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     720
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     540
+    ],
+    [
+     700,
+     540
+    ]
+   ]
+  },
+  {
+   "id": "R_P08_P11",
+   "from_id": "P08",
+   "to_id": "P11",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     540
+    ],
+    [
+     320,
+     540
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     700,
+     720
+    ]
+   ]
+  },
+  {
+   "id": "R_P11_P09",
+   "from_id": "P11",
+   "to_id": "P09",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     720
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     600
+    ],
+    [
+     700,
+     600
+    ]
+   ]
+  },
+  {
+   "id": "R_P09_P11",
+   "from_id": "P09",
+   "to_id": "P11",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     600
+    ],
+    [
+     320,
+     600
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     720
+    ],
+    [
+     700,
+     720
+    ]
+   ]
+  },
+  {
+   "id": "R_P07_P03",
+   "from_id": "P07",
+   "to_id": "P03",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     480
+    ],
+    [
+     320,
+     480
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     240
+    ],
+    [
+     700,
+     240
+    ]
+   ]
+  },
+  {
+   "id": "R_P03_P07",
+   "from_id": "P03",
+   "to_id": "P07",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     240
+    ],
+    [
+     320,
+     240
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     480
+    ],
+    [
+     700,
+     480
+    ]
+   ]
+  },
+  {
+   "id": "R_P07_P04",
+   "from_id": "P07",
+   "to_id": "P04",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     480
+    ],
+    [
+     320,
+     480
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     300
+    ],
+    [
+     700,
+     300
+    ]
+   ]
+  },
+  {
+   "id": "R_P04_P07",
+   "from_id": "P04",
+   "to_id": "P07",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     300
+    ],
+    [
+     320,
+     300
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     480
+    ],
+    [
+     700,
+     480
+    ]
+   ]
+  },
+  {
+   "id": "R_P07_P05",
+   "from_id": "P07",
+   "to_id": "P05",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     480
+    ],
+    [
+     320,
+     480
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     360
+    ],
+    [
+     700,
+     360
+    ]
+   ]
+  },
+  {
+   "id": "R_P05_P07",
+   "from_id": "P05",
+   "to_id": "P07",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     360
+    ],
+    [
+     320,
+     360
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     480
+    ],
+    [
+     700,
+     480
+    ]
+   ]
+  },
+  {
+   "id": "R_P07_P06",
+   "from_id": "P07",
+   "to_id": "P06",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     480
+    ],
+    [
+     320,
+     480
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     420
+    ],
+    [
+     700,
+     420
+    ]
+   ]
+  },
+  {
+   "id": "R_P06_P07",
+   "from_id": "P06",
+   "to_id": "P07",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     420
+    ],
+    [
+     320,
+     420
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     480
+    ],
+    [
+     700,
+     480
+    ]
+   ]
+  },
+  {
+   "id": "R_P08_P03",
+   "from_id": "P08",
+   "to_id": "P03",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     540
+    ],
+    [
+     320,
+     540
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     240
+    ],
+    [
+     700,
+     240
+    ]
+   ]
+  },
+  {
+   "id": "R_P03_P08",
+   "from_id": "P03",
+   "to_id": "P08",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     240
+    ],
+    [
+     320,
+     240
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     540
+    ],
+    [
+     700,
+     540
+    ]
+   ]
+  },
+  {
+   "id": "R_P08_P04",
+   "from_id": "P08",
+   "to_id": "P04",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     540
+    ],
+    [
+     320,
+     540
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     300
+    ],
+    [
+     700,
+     300
+    ]
+   ]
+  },
+  {
+   "id": "R_P04_P08",
+   "from_id": "P04",
+   "to_id": "P08",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     300
+    ],
+    [
+     320,
+     300
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     540
+    ],
+    [
+     700,
+     540
+    ]
+   ]
+  },
+  {
+   "id": "R_P08_P05",
+   "from_id": "P08",
+   "to_id": "P05",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     540
+    ],
+    [
+     320,
+     540
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     360
+    ],
+    [
+     700,
+     360
+    ]
+   ]
+  },
+  {
+   "id": "R_P05_P08",
+   "from_id": "P05",
+   "to_id": "P08",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     360
+    ],
+    [
+     320,
+     360
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     540
+    ],
+    [
+     700,
+     540
+    ]
+   ]
+  },
+  {
+   "id": "R_P08_P06",
+   "from_id": "P08",
+   "to_id": "P06",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     540
+    ],
+    [
+     320,
+     540
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     420
+    ],
+    [
+     700,
+     420
+    ]
+   ]
+  },
+  {
+   "id": "R_P06_P08",
+   "from_id": "P06",
+   "to_id": "P08",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     420
+    ],
+    [
+     320,
+     420
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     540
+    ],
+    [
+     700,
+     540
+    ]
+   ]
+  },
+  {
+   "id": "R_P09_P03",
+   "from_id": "P09",
+   "to_id": "P03",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     600
+    ],
+    [
+     320,
+     600
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     240
+    ],
+    [
+     700,
+     240
+    ]
+   ]
+  },
+  {
+   "id": "R_P03_P09",
+   "from_id": "P03",
+   "to_id": "P09",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     240
+    ],
+    [
+     320,
+     240
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     600
+    ],
+    [
+     700,
+     600
+    ]
+   ]
+  },
+  {
+   "id": "R_P09_P04",
+   "from_id": "P09",
+   "to_id": "P04",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     600
+    ],
+    [
+     320,
+     600
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     300
+    ],
+    [
+     700,
+     300
+    ]
+   ]
+  },
+  {
+   "id": "R_P04_P09",
+   "from_id": "P04",
+   "to_id": "P09",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     300
+    ],
+    [
+     320,
+     300
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     600
+    ],
+    [
+     700,
+     600
+    ]
+   ]
+  },
+  {
+   "id": "R_P09_P05",
+   "from_id": "P09",
+   "to_id": "P05",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     600
+    ],
+    [
+     320,
+     600
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     360
+    ],
+    [
+     700,
+     360
+    ]
+   ]
+  },
+  {
+   "id": "R_P05_P09",
+   "from_id": "P05",
+   "to_id": "P09",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     360
+    ],
+    [
+     320,
+     360
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     600
+    ],
+    [
+     700,
+     600
+    ]
+   ]
+  },
+  {
+   "id": "R_P09_P06",
+   "from_id": "P09",
+   "to_id": "P06",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     600
+    ],
+    [
+     320,
+     600
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     420
+    ],
+    [
+     700,
+     420
+    ]
+   ]
+  },
+  {
+   "id": "R_P06_P09",
+   "from_id": "P06",
+   "to_id": "P09",
+   "kind": "shunt",
+   "conflict_zone_ids": [
+    "GW"
+   ],
+   "duration_s": 180,
+   "polyline": [
+    [
+     700,
+     420
+    ],
+    [
+     320,
+     420
+    ],
+    [
+     180,
+     450
+    ],
+    [
+     320,
+     600
+    ],
+    [
+     700,
+     600
+    ]
+   ]
+  }
+ ],
+ "horizon_s": 7200,
+ "resources": [
+  {
+   "id": "L01",
+   "kind": "shunting_loco",
+   "capabilities": [
+    "shunt"
+   ]
+  },
+  {
+   "id": "L02",
+   "kind": "shunting_loco",
+   "capabilities": [
+    "shunt"
+   ]
+  },
+  {
+   "id": "B01",
+   "kind": "shunting_crew",
+   "capabilities": [
+    "shunt",
+    "formation"
+   ]
+  },
+  {
+   "id": "B02",
+   "kind": "shunting_crew",
+   "capabilities": [
+    "shunt",
+    "formation"
+   ]
+  },
+  {
+   "id": "B03",
+   "kind": "inspection_crew",
+   "capabilities": [
+    "inspection",
+    "preparation"
+   ]
+  },
+  {
+   "id": "B04",
+   "kind": "inspection_crew",
+   "capabilities": [
+    "inspection",
+    "preparation"
+   ]
+  }
+ ]
+}

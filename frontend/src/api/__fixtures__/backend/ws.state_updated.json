@@ -1,0 +1,381 @@
+{
+  "schema_version": 1,
+  "run_id": "example-run",
+  "ws_seq": 2,
+  "state_version": 2,
+  "type": "state_updated",
+  "payload": {
+    "snapshot": {
+      "schema_version": 1,
+      "run_id": "example-run",
+      "state_version": 2,
+      "last_seq": 2,
+      "sim_time_s": 60,
+      "speed": 1,
+      "paused": false,
+      "trains": [
+        {
+          "id": "T01",
+          "kind": "passenger",
+          "length_m": 350,
+          "priority": 3,
+          "scheduled_arrival_s": 0,
+          "expected_arrival_s": 0,
+          "scheduled_departure_s": 600,
+          "status": "moving",
+          "track_id": null,
+          "movement": {
+            "route_id": "R_W_P01",
+            "started_at_s": 0,
+            "expected_end_at_s": 120
+          }
+        }
+      ],
+      "tracks": [
+        {
+          "id": "P01",
+          "kind": "passenger",
+          "usable_length_m": 500,
+          "geometry": [
+            [
+              320.0,
+              120.0
+            ],
+            [
+              1080.0,
+              120.0
+            ]
+          ],
+          "availability": "open",
+          "closed_until_s": null,
+          "occupant_train_id": null
+        },
+        {
+          "id": "P02",
+          "kind": "passenger",
+          "usable_length_m": 500,
+          "geometry": [
+            [
+              320.0,
+              180.0
+            ],
+            [
+              1080.0,
+              180.0
+            ]
+          ],
+          "availability": "open",
+          "closed_until_s": null,
+          "occupant_train_id": null
+        },
+        {
+          "id": "P03",
+          "kind": "freight",
+          "usable_length_m": 900,
+          "geometry": [
+            [
+              320.0,
+              240.0
+            ],
+            [
+              1080.0,
+              240.0
+            ]
+          ],
+          "availability": "open",
+          "closed_until_s": null,
+          "occupant_train_id": null
+        },
+        {
+          "id": "P04",
+          "kind": "freight",
+          "usable_length_m": 900,
+          "geometry": [
+            [
+              320.0,
+              300.0
+            ],
+            [
+              1080.0,
+              300.0
+            ]
+          ],
+          "availability": "open",
+          "closed_until_s": null,
+          "occupant_train_id": null
+        },
+        {
+          "id": "P05",
+          "kind": "freight",
+          "usable_length_m": 900,
+          "geometry": [
+            [
+              320.0,
+              360.0
+            ],
+            [
+              1080.0,
+              360.0
+            ]
+          ],
+          "availability": "open",
+          "closed_until_s": null,
+          "occupant_train_id": null
+        },
+        {
+          "id": "P06",
+          "kind": "freight",
+          "usable_length_m": 900,
+          "geometry": [
+            [
+              320.0,
+              420.0
+            ],
+            [
+              1080.0,
+              420.0
+            ]
+          ],
+          "availability": "open",
+          "closed_until_s": null,
+          "occupant_train_id": null
+        },
+        {
+          "id": "P07",
+          "kind": "storage",
+          "usable_length_m": 900,
+          "geometry": [
+            [
+              320.0,
+              480.0
+            ],
+            [
+              1080.0,
+              480.0
+            ]
+          ],
+          "availability": "open",
+          "closed_until_s": null,
+          "occupant_train_id": null
+        },
+        {
+          "id": "P08",
+          "kind": "storage",
+          "usable_length_m": 900,
+          "geometry": [
+            [
+              320.0,
+              540.0
+            ],
+            [
+              1080.0,
+              540.0
+            ]
+          ],
+          "availability": "open",
+          "closed_until_s": null,
+          "occupant_train_id": null
+        },
+        {
+          "id": "P09",
+          "kind": "storage",
+          "usable_length_m": 900,
+          "geometry": [
+            [
+              320.0,
+              600.0
+            ],
+            [
+              1080.0,
+              600.0
+            ]
+          ],
+          "availability": "open",
+          "closed_until_s": null,
+          "occupant_train_id": null
+        },
+        {
+          "id": "P10",
+          "kind": "cargo",
+          "usable_length_m": 700,
+          "geometry": [
+            [
+              320.0,
+              660.0
+            ],
+            [
+              1080.0,
+              660.0
+            ]
+          ],
+          "availability": "open",
+          "closed_until_s": null,
+          "occupant_train_id": null
+        },
+        {
+          "id": "P11",
+          "kind": "cargo",
+          "usable_length_m": 700,
+          "geometry": [
+            [
+              320.0,
+              720.0
+            ],
+            [
+              1080.0,
+              720.0
+            ]
+          ],
+          "availability": "open",
+          "closed_until_s": null,
+          "occupant_train_id": null
+        },
+        {
+          "id": "P12",
+          "kind": "locomotive",
+          "usable_length_m": 150,
+          "geometry": [
+            [
+              320.0,
+              780.0
+            ],
+            [
+              1080.0,
+              780.0
+            ]
+          ],
+          "availability": "open",
+          "closed_until_s": null,
+          "occupant_train_id": null
+        }
+      ],
+      "resources": [
+        {
+          "id": "L01",
+          "kind": "locomotive",
+          "capabilities": [
+            "shunt"
+          ],
+          "availability": "available",
+          "unavailable_until_s": null,
+          "active_operation_id": null
+        },
+        {
+          "id": "L02",
+          "kind": "locomotive",
+          "capabilities": [
+            "shunt"
+          ],
+          "availability": "available",
+          "unavailable_until_s": null,
+          "active_operation_id": null
+        },
+        {
+          "id": "B01",
+          "kind": "crew",
+          "capabilities": [
+            "shunt",
+            "formation"
+          ],
+          "availability": "available",
+          "unavailable_until_s": null,
+          "active_operation_id": null
+        },
+        {
+          "id": "B02",
+          "kind": "crew",
+          "capabilities": [
+            "shunt",
+            "formation"
+          ],
+          "availability": "available",
+          "unavailable_until_s": null,
+          "active_operation_id": null
+        },
+        {
+          "id": "B03",
+          "kind": "crew",
+          "capabilities": [
+            "inspection",
+            "preparation"
+          ],
+          "availability": "available",
+          "unavailable_until_s": null,
+          "active_operation_id": null
+        },
+        {
+          "id": "B04",
+          "kind": "crew",
+          "capabilities": [
+            "inspection",
+            "preparation"
+          ],
+          "availability": "available",
+          "unavailable_until_s": null,
+          "active_operation_id": null
+        },
+        {
+          "id": "F10",
+          "kind": "cargo_front",
+          "capabilities": [
+            "cargo"
+          ],
+          "availability": "available",
+          "unavailable_until_s": null,
+          "active_operation_id": null
+        },
+        {
+          "id": "F11",
+          "kind": "cargo_front",
+          "capabilities": [
+            "cargo"
+          ],
+          "availability": "available",
+          "unavailable_until_s": null,
+          "active_operation_id": null
+        }
+      ],
+      "operations": [
+        {
+          "id": "T01_01_arrival",
+          "train_id": "T01",
+          "kind": "arrival",
+          "duration_s": 120,
+          "predecessor_ids": [],
+          "status": "running",
+          "actual_start_s": 0,
+          "actual_end_s": null,
+          "wait_reason": null
+        },
+        {
+          "id": "T01_02_dwell",
+          "train_id": "T01",
+          "kind": "dwell",
+          "duration_s": 360,
+          "predecessor_ids": [
+            "T01_01_arrival"
+          ],
+          "status": "pending",
+          "actual_start_s": null,
+          "actual_end_s": null,
+          "wait_reason": null
+        },
+        {
+          "id": "T01_03_departure",
+          "train_id": "T01",
+          "kind": "departure",
+          "duration_s": 120,
+          "predecessor_ids": [
+            "T01_02_dwell"
+          ],
+          "status": "pending",
+          "actual_start_s": null,
+          "actual_end_s": null,
+          "wait_reason": null
+        }
+      ],
+      "active_plan_id": "example-plan",
+      "conflicts": []
+    }
+  }
+}
