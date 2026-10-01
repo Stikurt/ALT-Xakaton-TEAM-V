@@ -1,5 +1,6 @@
 """Shared wire contracts, schema_version=1. Railway rules belong to the planner."""
 from datetime import datetime
+from uuid import uuid4
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -154,6 +155,22 @@ class Unassigned(Contract):
     message: str
 
 
+class PlanViolation(Contract):
+    code: str
+    message: str
+    severity: str = "error"
+    entity_ids: list[str] = Field(default_factory=list)
+    operation_ids: list[str] = Field(default_factory=list)
+    start_s: Seconds | None = None
+    end_s: Seconds | None = None
+
+
+class AssignmentChange(Contract):
+    operation_id: Id
+    before: Assignment | None
+    after: Assignment | None
+
+
 class Plan(Contract):
     id: Id
     run_id: Id
@@ -166,6 +183,10 @@ class Plan(Contract):
     metrics: dict[str, float | None] = Field(default_factory=dict)
     explanations: list[str] = Field(default_factory=list)
     timed_out: bool = False
+    based_on_time_s: Seconds = 0
+    calculation_time_ms: Annotated[float, Field(ge=0)] = 0
+    violations: list[PlanViolation] = Field(default_factory=list)
+    changes: list[AssignmentChange] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def valid_assignments(self):
@@ -175,7 +196,7 @@ class Plan(Contract):
             raise ValueError("Duplicate operation in plan")
         if set(assigned) & set(missing):
             raise ValueError("Operation cannot be both assigned and unassigned")
-        if self.status == "feasible" and self.unassigned:
+        if self.status == "feasible" and (self.unassigned or self.violations):
             raise ValueError("Feasible plan cannot have unassigned operations")
         return self
 
@@ -318,6 +339,41 @@ class ApplyPlanCommand(Contract):
     command_id: Id
     run_id: Id
     expected_state_version: Seconds
+
+
+class ReplanCommand(Contract):
+    command_id: Id = Field(default_factory=lambda: str(uuid4()))
+    run_id: Id
+
+
+class ReplanAccepted(Contract):
+    command_id: Id
+    run_id: Id
+    job_id: Id
+
+
+class ReplanJob(Contract):
+    job_id: Id
+    run_id: Id
+    based_on_version: Seconds
+    based_on_time_s: Seconds
+    status: Literal["queued", "running", "completed", "failed", "superseded"]
+    plan_ids: list[Id] = Field(default_factory=list)
+    stale: bool = False
+    identical: bool = False
+    error: dict[str, str] | None = None
+
+
+class PlanResponse(Contract):
+    plan: Plan
+    stale: bool
+    applicable: bool
+
+
+class HistoricalState(StateResponse):
+    view: Literal["history"] = "history"
+    read_only: Literal[True] = True
+    at_s: Seconds
 
 
 class WsEnvelope(Contract):

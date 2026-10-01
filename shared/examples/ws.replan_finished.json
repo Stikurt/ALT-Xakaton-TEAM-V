@@ -10,6 +10,7 @@
       "example-plan"
     ],
     "based_on_version": 0,
-    "stale": true
+    "stale": true,
+    "identical": false
   }
 }

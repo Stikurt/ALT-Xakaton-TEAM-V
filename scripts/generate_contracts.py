@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT / "backend"))
 from pydantic import TypeAdapter
 from app.domain.models import (
     ApplyPlanCommand, ControlCommand, Event, IncidentCommand, IncidentBatchCommand, CommandResult, Plan, StateResponse, WsEnvelope,
+    ReplanCommand, ReplanAccepted, ReplanJob, PlanResponse, HistoricalState,
 )
 from app.main import create_app
 
@@ -77,7 +78,7 @@ def generate():
         "state_updated": {"snapshot": moving.snapshot.model_dump(mode="json")},
         "clock_sync": {"sim_time_s": 60, "speed": 1, "paused": False},
         "replan_started": {"job_id":"example-job","based_on_version":2},
-        "replan_finished": {"job_id":"example-job","plan_ids":["example-plan"],"based_on_version":0,"stale":True},
+        "replan_finished": {"job_id":"example-job","plan_ids":["example-plan"],"based_on_version":0,"stale":True,"identical":False},
         "replan_failed": {"job_id":"example-job","code":"PLANNER_ERROR","message":"Расчёт не выполнен."},
         "simulation_error": {"code":"DATABASE_UNAVAILABLE","message":"Сохранение недоступно, модель остановлена."},
     }
@@ -86,7 +87,12 @@ def generate():
                               state_version=0 if kind=="snapshot" else 2,type=kind,payload=payload)
         write(f"shared/examples/ws.{kind}.json",envelope.model_dump(mode="json"))
     schema = TypeAdapter(Union[StateResponse, Plan, Event, ControlCommand, IncidentCommand, IncidentBatchCommand, CommandResult,
-                              ApplyPlanCommand, WsEnvelope]).json_schema()
+                              ApplyPlanCommand, WsEnvelope,ReplanCommand,ReplanAccepted,ReplanJob,PlanResponse,HistoricalState]).json_schema()
+    write('shared/examples/history.json',HistoricalState(**moving.model_dump(),at_s=60).model_dump(mode='json'))
+    write('shared/examples/replan.accepted.json',ReplanAccepted(command_id='example-command',run_id='example-run',job_id='example-job').model_dump(mode='json'))
+    write('shared/examples/replan.completed.json',ReplanJob(job_id='example-job',run_id='example-run',based_on_version=0,
+        based_on_time_s=0,status='completed',plan_ids=['example-plan'],stale=True).model_dump(mode='json'))
+    write('shared/examples/plan.response.json',PlanResponse(plan=feasible,stale=False,applicable=True).model_dump(mode='json'))
     write("shared/schemas/contracts.schema.json",schema)
     write("shared/schemas/openapi.json",create_app().openapi())
 

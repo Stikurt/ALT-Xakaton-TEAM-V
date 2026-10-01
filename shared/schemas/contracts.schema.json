@@ -100,6 +100,45 @@
       "title": "Assignment",
       "type": "object"
     },
+    "AssignmentChange": {
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "before": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Assignment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "after": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Assignment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "operation_id",
+        "before",
+        "after"
+      ],
+      "title": "AssignmentChange",
+      "type": "object"
+    },
     "CommandResult": {
       "additionalProperties": false,
       "properties": {
@@ -345,6 +384,47 @@
         "recorded_at"
       ],
       "title": "Event",
+      "type": "object"
+    },
+    "HistoricalState": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/Snapshot"
+        },
+        "topology": {
+          "$ref": "#/$defs/Topology"
+        },
+        "view": {
+          "const": "history",
+          "default": "history",
+          "title": "View",
+          "type": "string"
+        },
+        "read_only": {
+          "const": true,
+          "default": true,
+          "title": "Read Only",
+          "type": "boolean"
+        },
+        "at_s": {
+          "minimum": 0,
+          "title": "At S",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "snapshot",
+        "topology",
+        "at_s"
+      ],
+      "title": "HistoricalState",
       "type": "object"
     },
     "IncidentBatchCommand": {
@@ -719,6 +799,32 @@
           "default": false,
           "title": "Timed Out",
           "type": "boolean"
+        },
+        "based_on_time_s": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Based On Time S",
+          "type": "integer"
+        },
+        "calculation_time_ms": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Calculation Time Ms",
+          "type": "number"
+        },
+        "violations": {
+          "items": {
+            "$ref": "#/$defs/PlanViolation"
+          },
+          "title": "Violations",
+          "type": "array"
+        },
+        "changes": {
+          "items": {
+            "$ref": "#/$defs/AssignmentChange"
+          },
+          "title": "Changes",
+          "type": "array"
         }
       },
       "required": [
@@ -731,6 +837,234 @@
         "unassigned"
       ],
       "title": "Plan",
+      "type": "object"
+    },
+    "PlanResponse": {
+      "additionalProperties": false,
+      "properties": {
+        "plan": {
+          "$ref": "#/$defs/Plan"
+        },
+        "stale": {
+          "title": "Stale",
+          "type": "boolean"
+        },
+        "applicable": {
+          "title": "Applicable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "plan",
+        "stale",
+        "applicable"
+      ],
+      "title": "PlanResponse",
+      "type": "object"
+    },
+    "PlanViolation": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "severity": {
+          "default": "error",
+          "title": "Severity",
+          "type": "string"
+        },
+        "entity_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Entity Ids",
+          "type": "array"
+        },
+        "operation_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Operation Ids",
+          "type": "array"
+        },
+        "start_s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start S"
+        },
+        "end_s": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End S"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "PlanViolation",
+      "type": "object"
+    },
+    "ReplanAccepted": {
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "job_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Job Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command_id",
+        "run_id",
+        "job_id"
+      ],
+      "title": "ReplanAccepted",
+      "type": "object"
+    },
+    "ReplanCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "command_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Command Id",
+          "type": "string"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Run Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id"
+      ],
+      "title": "ReplanCommand",
+      "type": "object"
+    },
+    "ReplanJob": {
+      "additionalProperties": false,
+      "properties": {
+        "job_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Job Id",
+          "type": "string"
+        },
+        "run_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_.:-]+$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "based_on_version": {
+          "minimum": 0,
+          "title": "Based On Version",
+          "type": "integer"
+        },
+        "based_on_time_s": {
+          "minimum": 0,
+          "title": "Based On Time S",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "queued",
+            "running",
+            "completed",
+            "failed",
+            "superseded"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "plan_ids": {
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.:-]+$",
+            "type": "string"
+          },
+          "title": "Plan Ids",
+          "type": "array"
+        },
+        "stale": {
+          "default": false,
+          "title": "Stale",
+          "type": "boolean"
+        },
+        "identical": {
+          "default": false,
+          "title": "Identical",
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        }
+      },
+      "required": [
+        "job_id",
+        "run_id",
+        "based_on_version",
+        "based_on_time_s",
+        "status"
+      ],
+      "title": "ReplanJob",
       "type": "object"
     },
     "Resource": {
@@ -1442,6 +1776,21 @@
     },
     {
       "$ref": "#/$defs/WsEnvelope"
+    },
+    {
+      "$ref": "#/$defs/ReplanCommand"
+    },
+    {
+      "$ref": "#/$defs/ReplanAccepted"
+    },
+    {
+      "$ref": "#/$defs/ReplanJob"
+    },
+    {
+      "$ref": "#/$defs/PlanResponse"
+    },
+    {
+      "$ref": "#/$defs/HistoricalState"
     }
   ]
 }

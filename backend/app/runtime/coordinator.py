@@ -4,12 +4,14 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import logging
+import math
 import time
 
 from app.runtime.broadcast import Broadcast
-from app.runtime.state import response, restore_initial_plan
+from app.runtime.state import response, restore_initial_plan, encode_checkpoint
+from app.runtime.planning import candidate_problem
 from app.planner import RULES
-from app.simulation import advance_elapsed, apply_command
+from app.simulation import advance_to, apply_command, apply_plan
 from app.simulation.engine import Transition, SimulationError
 
 logger = logging.getLogger(__name__)
@@ -21,10 +23,11 @@ class RuntimeUnavailable(Exception):
 
 class Coordinator:
     """One actor applies commands/ticks. State becomes visible only after SQL commit."""
-    def __init__(self, repository, state, initial_plan, *, tick_s=.1, queue_size=64, replan_required=False):
+    def __init__(self, repository, state, initial_plan, *, tick_s=.1, queue_size=64, replan_required=False, planner=None):
         self.repository, self.state = repository, state
         self.initial_plan = initial_plan
         self.replan_required = replan_required
+        self.planner = planner
         self.tick_s = tick_s
         self.commands = asyncio.Queue(maxsize=queue_size)
         self.broadcast = Broadcast()
@@ -46,6 +49,8 @@ class Coordinator:
                     state_version=self.state.state_version, type=kind, payload=payload)
 
     async def start(self):
+        if self.planner:
+            await asyncio.to_thread(self.repository.recover_planning,self.state)
         # Recovery is explicit: continue from the checkpoint in pause after restart.
         if not self.state.paused:
             pause = {"command_id": "recovery-" + datetime.now(timezone.utc).isoformat(),
@@ -60,6 +65,7 @@ class Coordinator:
         if self.task:
             # Finish an in-flight database transaction before closing its pool.
             await self.task
+        if self.planner: await self.planner.close()
         while not self.commands.empty():
             _, future = self.commands.get_nowait()
             if not future.done():
@@ -80,7 +86,10 @@ class Coordinator:
         await asyncio.to_thread(self.repository.save_transition, self.state, transition,
                                 self.initial_plan, command, request_hash)
         self.replan_required = (self.replan_required if self.state.run_id == transition.state.run_id else False) or transition.replan_required
+        if command and command['action']=='apply_plan': self.replan_required=False
         self.state = transition.state
+        if command and command['action'] in ('reset','apply_plan') and self.planner:
+            await self.planner.close()
         if transition.events:
             self.broadcast.publish(self.message("state_updated", {
                 "snapshot": self.get_state().snapshot.model_dump(mode="json")}))
@@ -88,8 +97,20 @@ class Coordinator:
     async def tick(self, elapsed_s):
         if self.fault or self.state.paused:
             return
-        transition = advance_elapsed(self.state, elapsed_s, rules=RULES)
-        await self._commit(transition)
+        total=self.state.fractional_s+elapsed_s*self.state.speed
+        whole=math.floor(total+1e-9)
+        target=self.state.sim_time_s+whole
+        # Never collapse events from different model instants into one history projection.
+        # Persist every minute even when a delayed host tick spans many model minutes.
+        while True:
+            now=self.state.sim_time_s
+            boundary=min(target,(now//60+1)*60)
+            if self.state.queue and self.state.queue[0][0]<=boundary:
+                boundary=max(now,self.state.queue[0][0])
+            transition=advance_to(self.state,boundary,rules=RULES)
+            transition.state.fractional_s=max(0.,total-whole) if boundary==target else 0.
+            await self._commit(transition)
+            if boundary==target: break
 
     async def execute(self, command):
         """Only called by the actor (or directly by deterministic unit tests)."""
@@ -107,7 +128,25 @@ class Coordinator:
                 raise SimulationError(error["code"],error["message"],error["details"])
             return cached["response"]
         try:
-            transition = apply_command(self.state, command, rules=RULES)
+            if command['action'] in ('replan','apply_plan'):
+                if command['run_id']!=self.state.run_id:
+                    raise SimulationError('STALE_RUN','Команда другого запуска')
+                if command['action']=='replan':
+                    reply=await asyncio.to_thread(self.repository.save_replan_command,self.state,command,fingerprint)
+                    self.replan_required=True
+                    self.broadcast.publish(self.message('state_updated',{'snapshot':self.get_state().snapshot.model_dump(mode='json')}))
+                    return reply
+                candidate=await asyncio.to_thread(self.repository.get_plan,command['plan_id'])
+                if candidate is None: raise SimulationError('PLAN_NOT_FOUND','План не найден')
+                problem=candidate_problem(self.state,candidate,command['expected_state_version'])
+                if problem: raise problem
+                transition=apply_plan(self.state,candidate,rules=RULES)
+                transition.result=dict(command_id=command['command_id'],run_id=self.state.run_id,
+                                       state_version=transition.state.state_version)
+                key=json.dumps([command['run_id'],command['command_id']])
+                transition.state.commands[key]=dict(fingerprint=json.dumps(command,sort_keys=True,ensure_ascii=False),result={})
+            else:
+                transition = apply_command(self.state, command, rules=RULES)
         except SimulationError as exc:
             # Cache domain refusals for known runs too: conditions may change on retry.
             # Structural HTTP 422 responses and unknown run IDs are not persisted.
@@ -125,10 +164,41 @@ class Coordinator:
             (self.replan_required if self.state.run_id == transition.state.run_id else False)
             or transition.replan_required
         )
+        if command['action']=='apply_plan': transition.result['replan_required']=False
         key = json.dumps([command["run_id"],command["command_id"]])
         transition.state.commands[key]["result"] = deepcopy(transition.result)
         await self._commit(transition, command, fingerprint)
         return transition.result
+
+    async def poll_planner(self):
+        if self.fault or not self.planner: return
+        completed=await self.planner.poll()
+        if completed:
+            job,result=completed
+            plans=result.get('plans',[])
+            result['stale']=job['run_id']!=self.state.run_id or job['based_on_version']!=self.state.state_version or any(
+                (problem:=candidate_problem(self.state,p)) is not None and problem.code=='STALE_PLAN' for p in plans)
+            result['identical']=len(plans)==2 and plans[0]['assignments']==plans[1]['assignments']
+            saved=await asyncio.to_thread(self.repository.finish_replan,job,result)
+            if saved and job['run_id']==self.state.run_id:
+                payload=dict(job_id=job['job_id'],based_on_version=job['based_on_version'])
+                if result.get('error'):
+                    payload.update(result['error'])
+                    self.broadcast.publish(self.message('replan_failed',payload))
+                else:
+                    payload.update(plan_ids=[p['id'] for p in plans],stale=result['stale'],identical=result['identical'])
+                    self.broadcast.publish(self.message('replan_finished',payload))
+        if self.planner.process is None:
+            job=await asyncio.to_thread(self.repository.claim_replan,self.state)
+            if job:
+                try:
+                    self.planner.start(job,encode_checkpoint(self.state,self.initial_plan))
+                except Exception:
+                    error=dict(code='PLANNER_ERROR',message='Не удалось запустить процесс расчёта.')
+                    await asyncio.to_thread(self.repository.finish_replan,job,dict(error=error))
+                    self.broadcast.publish(self.message('replan_failed',dict(job_id=job['job_id'],**error)))
+                else:
+                    self.broadcast.publish(self.message('replan_started',dict(job_id=job['job_id'],based_on_version=job['based_on_version'])))
 
     def _fail(self, exc, command=None):
         self.fault = "Ошибка сохранения или исполнения; симуляция остановлена. Перезапустите backend."
@@ -158,6 +228,7 @@ class Coordinator:
                         if not future.done(): future.set_exception(exc)
                     else:
                         if not future.done(): future.set_result(result)
+                await self.poll_planner()
                 if now - self._clock_sent >= 1:
                     self._clock_sent = now
                     self.broadcast.publish(self.message("clock_sync", {
@@ -169,5 +240,6 @@ class Coordinator:
                 raise
             except Exception as exc:
                 self._fail(exc, item[0] if item else None)
+                if self.planner: await self.planner.close()
                 if item and not item[1].done():
                     item[1].set_exception(RuntimeUnavailable(self.fault))

@@ -1,0 +1,13 @@
+{
+  "job_id": "example-job",
+  "run_id": "example-run",
+  "based_on_version": 0,
+  "based_on_time_s": 0,
+  "status": "completed",
+  "plan_ids": [
+    "example-plan"
+  ],
+  "stale": true,
+  "identical": false,
+  "error": null
+}

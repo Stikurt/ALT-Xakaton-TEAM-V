@@ -86,6 +86,16 @@ def build_calendars(snapshot, config):
         if op and get_value(op, "kind") in MOVING:
             route = routes.get(get_value(assignment, "route_id"))
             if route:
+                train_id = get_value(op, "train_id")
+                source,target = get_value(route,"from_id"),get_value(route,"to_id")
+                if source in calendars['tracks']:
+                    calendars['tracks'][source].remove_owner(f"train:{train_id}")
+                    closed_until=get_value(_track_map(snapshot).get(source),'closed_until_s',0) or 0
+                    free_after=max(now,closed_until)
+                    if free_after<end_s:
+                        calendars['tracks'][source].reserve(free_after,end_s,f"running:{oid}",allow_same_owner=True)
+                if target in calendars['tracks']:
+                    calendars['tracks'][target].reserve(now,horizon,f"train:{train_id}",allow_same_owner=True)
                 for zone in get_value(route, "conflict_zone_ids", []) or []:
                     calendars["zones"].setdefault(zone, ResourceCalendar()).reserve(
                         now, end_s, oid, allow_same_owner=True
@@ -270,9 +280,25 @@ def _target_hold_span(operations, operation_index):
     return total
 
 
+def _future_position(snapshot, config, train):
+    now = get_value(snapshot,"sim_time_s",0)
+    track = get_value(train,"track_id")
+    operations = _operation_map(snapshot)
+    routes = _route_map(config,snapshot)
+    for oid,a in (get_value(snapshot,"running_assignments",{}) or {}).items():
+        op = operations.get(oid)
+        if op and get_value(op,'train_id')==get_value(train,'id'):
+            now = max(now,get_value(a,'end_s',now))
+            route = routes.get(get_value(a,'route_id'))
+            if route:
+                target=get_value(route,'to_id')
+                track = None if target=='E' else target
+    return now,track
+
+
 def _occupancy_intervals(snapshot, config, train, assignments):
     routes = _route_map(config, snapshot)
-    current_track = get_value(train, "track_id")
+    _,current_track = _future_position(snapshot,config,train)
     now = get_value(snapshot, "sim_time_s", 0)
     hold_start = now if current_track else None
     result = []
@@ -324,7 +350,8 @@ def schedule_train(snapshot, config, train, calendars, horizon_s):
         get_value(train, "expected_arrival_s", get_value(train, "scheduled_arrival_s", now)) or now,
     )
 
-    current_track = get_value(train, "track_id")
+    available_s,current_track = _future_position(snapshot,config,train)
+    current_s = max(current_s,available_s)
     raw_assignments = []
     trial = {
         group: {ident: cal.clone() for ident, cal in values.items()}
@@ -589,8 +616,8 @@ def plan(snapshot, config, strategy: str, budget_s: float = 2.0):
     context = {
         "snapshot": snapshot,
         "topology": config,
-        "reservations": {},
-        "busy_zones": {},
+        "reservations": get_value(snapshot,"reservations",{}) or {},
+        "busy_zones": get_value(snapshot,"busy_zones",{}) or {},
         "running_assignments": get_value(snapshot, "running_assignments", {}) or {},
     }
 

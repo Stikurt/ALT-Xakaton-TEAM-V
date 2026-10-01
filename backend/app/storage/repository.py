@@ -4,13 +4,15 @@ from psycopg.types.json import Jsonb
 from psycopg_pool import ConnectionPool
 
 from app.domain.models import StateResponse
+from app.storage.planning import PlanningRepository, queue_replan
+from app.storage.history import HistoryRepository
 
 
 class NotInitialized(Exception):
     pass
 
 
-class Repository:
+class Repository(PlanningRepository,HistoryRepository):
     def __init__(self, pool: ConnectionPool):
         self.pool = pool
         self.owner_connection = None
@@ -85,25 +87,27 @@ class Repository:
                 conn.execute("INSERT INTO runs(id,station_config_id,status) VALUES (%s,%s,'active')",
                              (state.run_id,row[2]))
                 conn.execute("DELETE FROM replan_requests WHERE run_id=%s",(previous.run_id,))
+                conn.execute("UPDATE replan_jobs SET status='superseded',updated_at=now() WHERE run_id=%s AND status IN ('queued','running')",(previous.run_id,))
+            if command and command['action']=='apply_plan':
+                conn.execute('UPDATE runs SET replan_required=false WHERE id=%s',(state.run_id,))
+                conn.execute("UPDATE replan_jobs SET status='superseded',updated_at=now() WHERE run_id=%s AND status IN ('queued','running')",(state.run_id,))
+                conn.execute('DELETE FROM replan_requests WHERE run_id=%s',(state.run_id,))
             if transition.replan_required:
-                conn.execute("""INSERT INTO replan_requests(run_id,based_on_version,last_seq,command_id)
-                    VALUES (%s,%s,%s,%s) ON CONFLICT(run_id) DO UPDATE SET
-                    based_on_version=excluded.based_on_version,last_seq=excluded.last_seq,
-                    command_id=excluded.command_id,requested_at=now()""",
-                    (state.run_id,state.state_version,state.last_seq,(command or {}).get('command_id')))
-            snapshot['replan_required'] = bool(conn.execute(
-                "SELECT 1 FROM replan_requests WHERE run_id=%s",(state.run_id,)).fetchone())
-            for event in transition.events:
-                conn.execute("""INSERT INTO events(run_id,event_id,seq,sim_time_s,recorded_at,type,entity_id,payload)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                queue_replan(conn,state,(command or {}).get('command_id'))
+            snapshot['replan_required'] = conn.execute(
+                "SELECT replan_required FROM runs WHERE id=%s",(state.run_id,)).fetchone()[0]
+            for index,event in enumerate(transition.events):
+                projection = snapshot if index==len(transition.events)-1 and event['sim_time_s']==state.sim_time_s else None
+                conn.execute("""INSERT INTO events(run_id,event_id,seq,sim_time_s,recorded_at,type,entity_id,payload,projection)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
                     (event['run_id'],event['event_id'],event['seq'],event['sim_time_s'],datetime.now(timezone.utc),
-                     event['type'],event['entity_id'],Jsonb(event['payload'])))
+                     event['type'],event['entity_id'],Jsonb(event['payload']),Jsonb(projection) if projection else None))
             conn.execute("UPDATE runs SET state_version=%s,last_seq=%s WHERE id=%s",
                          (state.state_version,state.last_seq,state.run_id))
             conn.execute("""INSERT INTO engine_checkpoints(run_id,format_version,payload) VALUES (%s,1,%s)
                 ON CONFLICT(run_id) DO UPDATE SET payload=excluded.payload,updated_at=now()""",
                          (state.run_id,Jsonb(encode_checkpoint(state,initial_plan))))
-            if transition.events or previous.sim_time_s//60 != state.sim_time_s//60:
+            if previous.sim_time_s//60 != state.sim_time_s//60 or any(e['type'] in ('incident_applied','plan_applied','simulation_reset') for e in transition.events):
                 conn.execute("""INSERT INTO snapshots(run_id,state_version,last_seq,sim_time_s,payload)
                     VALUES (%s,%s,%s,%s,%s) ON CONFLICT(run_id,sim_time_s,last_seq) DO NOTHING""",
                     (state.run_id,state.state_version,state.last_seq,state.sim_time_s,Jsonb(snapshot)))
@@ -116,7 +120,7 @@ class Repository:
             if state.active_plan:
                 p = state.active_plan
                 conn.execute("""INSERT INTO plans(run_id,id,based_on_version,status,payload,applied_at)
-                    VALUES (%s,%s,%s,%s,%s,now()) ON CONFLICT(run_id,id) DO NOTHING""",
+                    VALUES (%s,%s,%s,%s,%s,now()) ON CONFLICT(run_id,id) DO UPDATE SET applied_at=COALESCE(plans.applied_at,excluded.applied_at)""",
                     (state.run_id,p['id'],p['based_on_version'],p['status'],Jsonb(p)))
             if command:
                 conn.execute("""INSERT INTO commands(run_id,command_id,request_hash,response_status,response)
@@ -125,7 +129,7 @@ class Repository:
     def check_ready(self) -> None:
         with self.pool.connection() as conn:
             row = conn.execute("""
-                SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE name='003_replan_requests.sql'),
+                SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE name='004_planning_history.sql'),
                        EXISTS(SELECT 1 FROM runs r JOIN snapshots s ON s.run_id=r.id
                               WHERE r.status='active')
             """).fetchone()
@@ -133,21 +137,15 @@ class Repository:
                 raise NotInitialized("Run migrations and bootstrap first")
 
     def current_state(self) -> StateResponse:
-        # A single statement sees config + snapshot in one PostgreSQL MVCC snapshot.
+        from app.runtime.state import decode_checkpoint,response
         with self.pool.connection() as conn:
             row = conn.execute("""
-                SELECT s.payload, c.config->'topology',
-                       EXISTS(SELECT 1 FROM replan_requests q WHERE q.run_id=r.id)
-                FROM runs r
-                JOIN station_config c ON c.id=r.station_config_id
-                JOIN LATERAL (
-                    SELECT payload FROM snapshots WHERE run_id=r.id
-                    ORDER BY sim_time_s DESC, last_seq DESC LIMIT 1
-                ) s ON true
+                SELECT e.payload,r.replan_required FROM runs r
+                JOIN engine_checkpoints e ON e.run_id=r.id
                 WHERE r.status='active'
             """).fetchone()
         if row is None:
             raise NotInitialized("No active run")
-        state = StateResponse(snapshot=row[0], topology=row[1])
-        state.snapshot.replan_required = row[2]
+        state = response(decode_checkpoint(row[0])[0])
+        state.snapshot.replan_required = row[1]
         return state
