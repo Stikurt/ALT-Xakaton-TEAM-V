@@ -1,0 +1,27 @@
+.wrap { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; position: relative; }
+.svg { display: block; }
+.rowEven { fill: transparent; }
+.rowOdd { fill: rgba(120, 140, 220, 0.025); }
+.groupSep { stroke: var(--border-strong); }
+.rowLabel { fill: var(--text-2); font: 700 11px var(--mono); cursor: pointer; }
+.rowLabel:hover { fill: var(--text); }
+.tick { stroke: rgba(120, 140, 220, 0.07); }
+.tickMajor { stroke: rgba(120, 140, 220, 0.18); }
+.tickLabel { fill: var(--muted); font: 10px var(--mono); }
+.bar { cursor: pointer; }
+.barPlan { fill: url(#tlPlan); stroke-width: 1.2; stroke-dasharray: 3 2; }
+.barPreview { fill: var(--preview-soft); stroke: var(--preview); stroke-width: 1.4; stroke-dasharray: 4 2; }
+.barFact { opacity: 0.9; filter: drop-shadow(0 0 3px rgba(46, 230, 255, .35)); }
+.barText { fill: #fff; font: 700 9.5px var(--mono); pointer-events: none; paint-order: stroke; stroke: rgba(0,0,0,.55); stroke-width: 2px; }
+.barSel { fill: none; stroke: var(--select); stroke-width: 1.5; }
+.now { stroke: var(--occupied); stroke-width: 1.5; filter: drop-shadow(0 0 4px var(--occupied)); }
+.nowTag { fill: var(--occupied); }
+.nowText { fill: #04121a; font: 700 10px var(--mono); }
+.legend { position: sticky; bottom: 0; display: flex; gap: 14px; padding: 4px 14px; font-size: 11px; color: var(--text-2); background: var(--bg-2); border-top: 1px solid var(--border); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 18px; height: 9px; border-radius: 2px; display: inline-block; }
+.lgFact { background: var(--k-passenger); }
+.lgPlan { border: 1.2px dashed var(--text-2); }
+.lgPrev { border: 1.4px dashed var(--preview); background: var(--preview-soft); }
+.lgClosed { background: repeating-linear-gradient(45deg, rgba(239,68,68,.6) 0 2px, transparent 2px 5px); }
+.emptyNote { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); padding: 8px 14px; border: 1px dashed var(--border-strong); border-radius: 4px; color: var(--text-2); background: var(--bg-2); font-size: 12px; white-space: nowrap; }

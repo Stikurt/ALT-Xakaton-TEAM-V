@@ -1,0 +1,38 @@
+{
+  "id": "one-train-execution-fixture",
+  "run_id": "fixture-one",
+  "based_on_version": 0,
+  "strategy": "fixed-execution-fixture",
+  "status": "feasible",
+  "unassigned": [],
+  "assignments": [
+    {
+      "operation_id": "T01_01_arrival",
+      "start_s": 0,
+      "end_s": 120,
+      "track_id": "P01",
+      "route_id": "R_W_P01",
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T01_02_dwell",
+      "start_s": 120,
+      "end_s": 480,
+      "track_id": "P01",
+      "route_id": null,
+      "resource_ids": []
+    },
+    {
+      "operation_id": "T01_03_departure",
+      "start_s": 480,
+      "end_s": 600,
+      "track_id": "P01",
+      "route_id": "R_P01_E",
+      "resource_ids": []
+    }
+  ],
+  "metrics": {},
+  "explanations": [
+    "Regression fixture; validate using participant Н rules before production use."
+  ]
+}
